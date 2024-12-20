@@ -3,9 +3,11 @@ import { createCommand } from 'commander';
 import nodeCleanup from 'node-cleanup';
 import updateNotifier from 'update-notifier';
 import { description, name, version } from '../package.json';
-import { CdUser } from './commands/user';
-
 import 'zx/globals';
+
+function ensureWorkingDirectoryClean() {
+  return import('@/utils/git').then((v) => v.ensureWorkingDirectoryClean());
+}
 
 const startAt = Date.now();
 nodeCleanup((exitCode) =>
@@ -17,7 +19,7 @@ nodeCleanup((exitCode) =>
 );
 
 // Command setup
-const program = createCommand('cd-cli');
+const program = createCommand('your-command-name');
 
 program
   .version(version)
@@ -31,23 +33,17 @@ program
 
 /**
  * Command register
+ * @see https://github.com/tj/commander.js
  */
 program
-  .command('login')
-  .description('Log in to the system.')
-  .option('-u, --user <username>', 'Username')
-  .option('-p, --password <password>', 'Password')
-  .action(async (options) => {
-    const user = new CdUser();
-    await user.auth(options.user, options.password);
-  });
-
-program
-  .command('logout')
-  .description('Log out from the system.')
-  .action(() => {
-    const user = new CdUser();
-    user.logout();
-  });
+  .command('test')
+  .description('Test command.')
+  .option('--verbose', 'To be verbose.')
+  // Maybe you want to check something, try to use hooks.
+  .hook('preAction', () => ensureWorkingDirectoryClean())
+  // Use dynamic import to speed up the startup process.
+  .action((options) =>
+    import('./commands/test').then((v) => v.default(options)),
+  );
 
 program.parse();

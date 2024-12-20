@@ -4,6 +4,7 @@ export default antfu({
   rules: {
     'antfu/consistent-list-newline': 'off',
     'no-console': 'off',
+    'brace-style': ['error', '1tbs', { allowSingleLine: true }],
     'style/semi': ['error', 'always'],
     'style/member-delimiter-style': [
       'error',
