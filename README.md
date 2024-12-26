@@ -10,7 +10,16 @@ pnpm watch
 pnpm ln -g # link your command globally so that you can debug easier.
 
 # execute your global-linked command.
-command-name -h
+npm link
+
+# build
+pnpm build
+# make sure the end point for Coprdesk api is setup
+# and is running
+cd-cli login -u user-name -p password
+
+# logout
+cd-cli logout
 
 # publish your package to npm.
 pnpm changeset

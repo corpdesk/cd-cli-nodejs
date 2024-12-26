@@ -8,6 +8,7 @@ import { CdUser } from './commands/user';
 import 'zx/globals';
 
 const startAt = Date.now();
+
 nodeCleanup((exitCode) =>
   console.log(
     exitCode
