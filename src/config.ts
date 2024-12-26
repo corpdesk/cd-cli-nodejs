@@ -1,4 +1,3 @@
-/* eslint-disable unused-imports/no-unused-vars */
 import { description, name, version } from '../package.json';
 import { ModCraftController } from './CdCli/sys/moduleman/controllers/mod-craft.controller';
 import { UserController } from './CdCli/sys/user/controllers/user.controller';
@@ -20,8 +19,8 @@ export default {
       ],
       action: {
         execute: async (options) => {
-          const user = new UserController();
-          await user.auth(options.user, options.password);
+          const userController = new UserController();
+          await userController.auth(options.user, options.password);
         },
       },
     },
@@ -30,53 +29,40 @@ export default {
       description: 'Log out from the system.',
       action: {
         execute: () => {
-          const user = new UserController();
-          user.logout();
+          const userController = new UserController();
+          userController.logout();
         },
       },
     },
     {
-      name: 'template-api init',
-      description: 'Initialize a new API module from a template.',
-      options: [
-        { flags: '--name <moduleName>', description: 'Name of the new module' },
+      name: 'template',
+      description: 'Manage module templates.',
+      subcommands: [
         {
-          flags: '--url <gitRepo>',
-          description: 'Git repository URL of the template',
+          name: 'init',
+          description: 'Initialize a new module from a template.',
+          options: [
+            {
+              flags: '--type <templateType>',
+              description:
+                'Type of the module template (e.g., module-api, module-frontend)',
+            },
+            {
+              flags: '--url <gitRepo>',
+              description: 'Git repository URL of the template',
+            },
+          ],
+          action: {
+            execute: async (options) => {
+              if (!options.type || !options.url) {
+                throw new Error('Both --type and --url options are required.');
+              }
+              const modCraftController = new ModCraftController();
+              await modCraftController.initTemplate(options.type, options.url);
+            },
+          },
         },
       ],
-      action: {
-        execute: async (options) => {
-          const modCraftController = new ModCraftController();
-          await modCraftController.initTemplate(options.name, options.url);
-        },
-      },
     },
   ],
 };
-
-interface CommandOption {
-  flags: string;
-  description: string;
-}
-
-interface CommandAction {
-  execute: (options: any) => Promise<void> | void;
-}
-
-interface CommandConfig {
-  name: string;
-  description: string;
-  options?: CommandOption[];
-  action: CommandAction;
-}
-
-interface AppConfig {
-  meta: {
-    name: string;
-    version: string;
-    description: string;
-    showHelpAfterError: boolean;
-  };
-  commands: CommandConfig[];
-}

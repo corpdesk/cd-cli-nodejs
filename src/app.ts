@@ -5,7 +5,6 @@ import nodeCleanup from 'node-cleanup';
 import updateNotifier from 'update-notifier';
 import config from './config';
 import { description, name, version } from '../package.json';
-import { CdUser } from './commands/user';
 import 'zx/globals';
 
 export class App {
@@ -49,15 +48,41 @@ export class App {
         }
       }
 
-      cmd.action(async (options) => {
-        try {
-          await command.action.execute(options);
-        } catch (error) {
-          console.error(
-            `${chalk.red.bold('error')} ${(error as Error).message}`,
-          );
+      // Check for subcommands
+      if (command.subcommands) {
+        for (const subcommand of command.subcommands) {
+          const subCmd = cmd
+            .command(subcommand.name)
+            .description(subcommand.description);
+
+          if (subcommand.options) {
+            for (const option of subcommand.options) {
+              subCmd.option(option.flags, option.description);
+            }
+          }
+
+          subCmd.action(async (options) => {
+            try {
+              await subcommand.action.execute(options);
+            } catch (error) {
+              console.error(
+                `${chalk.red.bold('error')} ${(error as Error).message}`,
+              );
+            }
+          });
         }
-      });
+      } else {
+        // Register action for top-level commands
+        cmd.action(async (options) => {
+          try {
+            await command.action.execute(options);
+          } catch (error) {
+            console.error(
+              `${chalk.red.bold('error')} ${(error as Error).message}`,
+            );
+          }
+        });
+      }
     }
 
     program.parse();
