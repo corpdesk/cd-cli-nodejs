@@ -35,6 +35,45 @@ export default {
       },
     },
     {
+      name: 'module',
+      description: 'Manage modules.',
+      subcommands: [
+        {
+          name: 'init',
+          description: 'Initialize a new module from a repository.',
+          options: [
+            {
+              flags: '--type <templateType>',
+              description:
+                'Type of the module template (e.g., module-api, module-frontend)',
+            },
+            {
+              flags: '--repo <gitRepo>',
+              description: 'Git repository URL of the module',
+            },
+            {
+              flags: '--dev-srv <devServer>',
+              description: 'Development server to SSH into',
+            },
+          ],
+          action: {
+            execute: async (options) => {
+              if (!options.type || !options.repo || !options.devSrv) {
+                throw new Error(
+                  'Both --type, --repo, and --dev-srv options are required.',
+                );
+              }
+              const modCraftController = new ModCraftController();
+              await modCraftController.initModuleFromRepo(
+                options.repo,
+                options.devSrv,
+              );
+            },
+          },
+        },
+      ],
+    },
+    {
       name: 'template',
       description: 'Manage module templates.',
       subcommands: [

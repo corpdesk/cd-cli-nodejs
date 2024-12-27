@@ -6,7 +6,7 @@
   "author": "情绪羊 <emosheep@qq.com>",
   "license": "MIT",
   "bin": {
-    "cd-cli": "./dist/app.js"
+    "cd-cli": "./dist/index.js"
   },
   "files": [
     "CHANGELOG.md",
