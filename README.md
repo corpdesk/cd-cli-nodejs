@@ -10,13 +10,16 @@ pnpm watch
 pnpm ln -g # link your command globally so that you can debug easier.
 
 # execute your global-linked command.
-npm link
+nppm link
 
 # build
 pnpm build
 # make sure the end point for Coprdesk api is setup
 # and is running
 cd-cli login -u user-name -p password
+
+# initialize template:
+cd-cli template init --type=module-api --url=<module-template-repository>
 
 # logout
 cd-cli logout

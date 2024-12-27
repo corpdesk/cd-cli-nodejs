@@ -1,3 +1,4 @@
+/* eslint-disable node/prefer-global/process */
 /* eslint-disable style/brace-style */
 import { exec } from 'node:child_process';
 import * as fs from 'node:fs';
@@ -88,6 +89,48 @@ export class ModCraftController {
         content = content.replace(/\{\{moduleName\}\}/g, moduleName);
         fs.writeFileSync(filePath, content, 'utf8');
       }
+    }
+  }
+
+  /**
+   * Method to connect to a development server via SSH and clone a module repository.
+   * usage:
+   * cd-cli module init --type=module-api --repo=https://github.com/corpdesk/cd-geo --dev-srv=<development-server>
+   */
+  async initModuleFromRepo(gitRepo: string, devServer: string) {
+    try {
+      if (!gitRepo || !devServer) {
+        throw new Error('Both --repo and --dev-srv options are required.');
+      }
+
+      // Load configuration from .env file
+      const sshKey = process.env.SSH_KEY;
+      const remoteUser = process.env.REMOTE_USER || 'devops'; // Default to 'devops' if not set
+      const cdApiDir = process.env.CD_API_DIR || '~/cd-api'; // Default to '~/cd-api' if not set
+
+      // Construct the SSH command to clone the repository
+      let command: string;
+
+      // If SSH key is provided, use it for the SSH connection
+      if (sshKey) {
+        command = `ssh -i "${sshKey}" "${remoteUser}@${devServer}" "sudo -H -u ${remoteUser} bash -c 'git clone ${gitRepo} ${cdApiDir}/src/CdApi/app'"`;
+      } else {
+        // Otherwise, fallback to default SSH connection using ssh-copy-id (no key)
+        command = `ssh "${remoteUser}@${devServer}" "sudo -H -u ${remoteUser} bash -c 'git clone ${gitRepo} ${cdApiDir}/src/CdApi/app/cd-api'"`;
+      }
+
+      // Execute the SSH command
+      Logger.info(
+        `Executing SSH command to clone repository from ${gitRepo} on server ${devServer}...`,
+      );
+      await this.runCommand(command);
+      Logger.success(
+        `Module successfully cloned into ${cdApiDir}/src/CdApi/app.`,
+      );
+    } catch (error) {
+      Logger.error(
+        `Error initializing module from repository: ${(error as Error).message}`,
+      );
     }
   }
 }

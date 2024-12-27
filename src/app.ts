@@ -36,7 +36,7 @@ export class App {
       }),
     );
 
-    // Command registration
+    // Command registration: Ensuring that we register commands properly
     for (const command of config.commands) {
       const cmd = program
         .command(command.name)
@@ -85,6 +85,7 @@ export class App {
       }
     }
 
+    console.log('Registered commands:', config.commands);
     program.parse();
   }
 }
