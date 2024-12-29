@@ -113,10 +113,10 @@ export class ModCraftController {
 
       // If SSH key is provided, use it for the SSH connection
       if (sshKey) {
-        command = `ssh -i "${sshKey}" "${remoteUser}@${devServer}" "sudo -H -u ${remoteUser} bash -c 'git clone ${gitRepo} ${cdApiDir}/src/CdApi/app'"`;
+        command = `ssh -i "${sshKey}" "${remoteUser}@${devServer}" "sudo -H -u ${remoteUser} bash -c 'git clone ${gitRepo} ${cdApiDir}/src/CdApi/app/cd-geo'"`;
       } else {
         // Otherwise, fallback to default SSH connection using ssh-copy-id (no key)
-        command = `ssh "${remoteUser}@${devServer}" "sudo -H -u ${remoteUser} bash -c 'git clone ${gitRepo} ${cdApiDir}/src/CdApi/app/cd-api'"`;
+        command = `ssh "${remoteUser}@${devServer}" "sudo -H -u ${remoteUser} bash -c 'git clone ${gitRepo} ${cdApiDir}/src/CdApi/app/cd-geo'"`;
       }
 
       // Execute the SSH command
