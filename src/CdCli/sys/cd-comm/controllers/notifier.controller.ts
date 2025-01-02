@@ -7,7 +7,7 @@ class Logger {
     return `[${timestamp}] ${level} ${message}`;
   }
 
-  static info(message: string, context?: object) {
+  static info(message: string, context?: object | string | null) {
     const formattedMessage = context
       ? `${message} | Context: ${JSON.stringify(context)}`
       : message;

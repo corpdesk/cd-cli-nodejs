@@ -1,8 +1,17 @@
+/* eslint-disable ts/consistent-type-imports */
 import { description, name, version } from '../package.json';
+import { ISessResp } from './CdCli/sys/base/IBase';
+import { CdCliProfileController } from './CdCli/sys/cd-cli/controllers/cd-cli-profile.cointroller';
 import { ModCraftController } from './CdCli/sys/moduleman/controllers/mod-craft.controller';
 import { UserController } from './CdCli/sys/user/controllers/user.controller';
 
+const sess: ISessResp = {
+  jwt: null,
+  ttl: 300,
+};
 export default {
+  cdApiEndPoint: 'https://localhost:3001/api',
+  cdSession: sess,
   meta: {
     name: 'cd-cli',
     version,
@@ -33,6 +42,22 @@ export default {
           userController.logout();
         },
       },
+    },
+    {
+      name: 'profile',
+      description: 'Manage profiles.',
+      subcommands: [
+        {
+          name: 'create-ssh',
+          description: 'Create a new SSH profile for a development server.',
+          action: {
+            execute: async () => {
+              const cdCliProfileController = new CdCliProfileController();
+              await cdCliProfileController.createSshProfile();
+            },
+          },
+        },
+      ],
     },
     {
       name: 'module',

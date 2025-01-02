@@ -1,28 +1,23 @@
 /* eslint-disable style/brace-style */
+import type { ICdResponse, ISessResp } from '../../base/IBase';
 import fs from 'node:fs';
 import https from 'node:https'; // Use `import` instead of `require`
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import axios from 'axios';
+import config from '../../../../config';
+import { HttpService } from '../../base/http.service';
+import Logger from '../../cd-comm/controllers/notifier.controller';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-const axiosInstance = axios.create({
-  baseURL: 'https://localhost:3001/api',
-  httpsAgent: new https.Agent({
-    rejectUnauthorized: false, // Ignore SSL errors
-  }),
-});
-
 export class UserController {
-  //   private sessionFilePath = path.join(process.cwd(), 'session.json');
+  svServer = new HttpService();
   private sessionFilePath = path.join(__dirname, 'session.json');
 
   /**
    * Authenticate the user and manage session.
    */
-
   async auth(userName: string, password: string): Promise<void> {
     const payload = {
       ctx: 'Sys',
@@ -45,20 +40,46 @@ export class UserController {
     };
 
     try {
-      console.log('Authenticating...');
-      const response = await axiosInstance.post('/', payload);
-      console.log('Response:', response.data);
+      Logger.info('Authenticating...');
+      Logger.info('Payload:', payload); // Simplified logging of the payload
+
+      // Send the request to the server
+      const response: ICdResponse = await this.svServer.proc(payload);
+
+      // Log the response data (avoid logging the entire response object to prevent circular references)
+      // Logger.info('Response data:', response.data);
+      // Logger.info('Full response:', response);
+      // Logger.info('App State:', response.app_state);
+      // Logger.info('Session Data:', response.app_state?.sess);
+      console.log('response:', response);
+
+      // Check if the session data is present in the response
+      if (response.app_state?.sess) {
+        Logger.info('Session data:', response.app_state.sess);
+        this.saveSession(response.app_state.sess);
+      } else {
+        Logger.error('Invalid server response: No session data');
+      }
     } catch (error: any) {
-      console.error('Error during login:', error.message);
+      Logger.error('Error during login:', error.message);
     }
   }
 
   /**
    * Save session details to a file.
    */
-  private saveSession(session: any): void {
+  private saveSession(session: ISessResp | null): void {
+    Logger.info(`session:${session}`);
+    Logger.info(`sessionFilePath:${this.sessionFilePath}`);
+    if (session) {
+      // Update session in config
+      config.cdSession = session;
+    }
+
+    // Save session to file
     fs.writeFileSync(this.sessionFilePath, JSON.stringify(session, null, 2));
-    console.log('Session saved.');
+    Logger.info('Session saved.');
+    Logger.info(`sessionFilePath:${this.sessionFilePath}`);
   }
 
   /**
@@ -67,16 +88,19 @@ export class UserController {
   logout(): void {
     if (fs.existsSync(this.sessionFilePath)) {
       fs.unlinkSync(this.sessionFilePath);
-      console.log('Logged out successfully.');
+      Logger.info('Logged out successfully.');
     } else {
-      console.log('No active session found.');
+      Logger.info('No active session found.');
     }
   }
 
   /**
    * Get the current session.
    */
-  getSession(): any {
+  getSession(): ISessResp | null {
+    // if (config.cdSession.cd_token) {
+    //   return config.cdSession;
+    // }
     if (fs.existsSync(this.sessionFilePath)) {
       return JSON.parse(fs.readFileSync(this.sessionFilePath, 'utf-8'));
     }
