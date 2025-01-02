@@ -26,6 +26,7 @@
     "chalk": "^5.4.1",
     "commander": "^12.1.0",
     "dayjs": "^1.11.13",
+    "inquirer": "^12.3.0",
     "node-cleanup": "^2.1.2",
     "path": "^0.12.7",
     "typescript": "^5.6.3",
