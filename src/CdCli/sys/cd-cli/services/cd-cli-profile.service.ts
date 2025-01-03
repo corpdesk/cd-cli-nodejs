@@ -16,12 +16,10 @@
 // import { MemberMeta } from '../coops.model';
 
 import type { ICdRequest, IQuery } from '../../base/IBase';
+import { fileURLToPath } from 'node:url';
 import { HttpService } from '../../base/http.service';
 import { DEFAULT_ENVELOPE_CREATE } from '../../base/IBase';
 
-// @Injectable({
-//   providedIn: 'root',
-// })
 export class CdCliProfileService {
   svServer = new HttpService();
   postData: ICdRequest = DEFAULT_ENVELOPE_CREATE;
@@ -50,7 +48,7 @@ export class CdCliProfileService {
     }
    */
   createCdCliProfile(newCdCliProfile: any, cdToken: string) {
-    console.log('starting createCdCliProfile()/01:');
+    // console.log('starting createCdCliProfile()/01:');
     this.setEnvelopeCreateCdCliProfile(newCdCliProfile, cdToken);
     console.log(
       'createCdCliProfile()/this.postData:',
@@ -62,9 +60,9 @@ export class CdCliProfileService {
   }
 
   setEnvelopeCreateCdCliProfile(d: any, cdToken: string) {
-    console.log('starting setEnvelopeCreateCdCliProfile()/01:');
-    console.log('starting setEnvelopeCreateCdCliProfile()/d:', d);
-    console.log('starting setEnvelopeCreateCdCliProfile()/d.data:', d.data);
+    // console.log('starting setEnvelopeCreateCdCliProfile()/01:');
+    // console.log('starting setEnvelopeCreateCdCliProfile()/d:', d);
+    // console.log('starting setEnvelopeCreateCdCliProfile()/d.data:', d.data);
     return {
       ctx: 'Sys',
       m: 'CdCli',
@@ -83,7 +81,7 @@ export class CdCliProfileService {
   }
 
   getCdCliProfile(q: IQuery, cdToken: string) {
-    this.setEnvelopeCdCliProfile(q, cdToken);
+    this.setEnvelopeGetCountCdCliProfile(q, cdToken);
     console.log(
       'getCdCliProfile()/this.postData:',
       JSON.stringify(this.postData),
@@ -101,18 +99,18 @@ export class CdCliProfileService {
   //     return this.svServer.proc(this.postData);
   //   }
 
-  getCdCliProfileProfile(uidObject: { userId: number }, cdToken: string) {
-    console.log(
-      'CdCliProfileService::getCdCliProfileProfile()/uidObject:',
-      uidObject,
-    );
-    this.setEnvelopeGetCdCliProfileProfile(uidObject, cdToken);
-    console.log(
-      'CdCliProfileService::getCdCliProfileProfile()/this.postData:',
-      JSON.stringify(this.postData),
-    );
-    return this.svServer.proc(this.postData);
-  }
+  // getCdCliProfileProfile(uidObject: { userId: number }, cdToken: string) {
+  //   console.log(
+  //     'CdCliProfileService::getCdCliProfileProfile()/uidObject:',
+  //     uidObject,
+  //   );
+  //   this.setEnvelopeGetCdCliProfileProfile(uidObject, cdToken);
+  //   console.log(
+  //     'CdCliProfileService::getCdCliProfileProfile()/this.postData:',
+  //     JSON.stringify(this.postData),
+  //   );
+  //   return this.svServer.proc(this.postData);
+  // }
 
   getCdCliProfileType(q: IQuery, cdToken: string) {
     this.setEnvelopeCdCliProfileType(q, cdToken);
@@ -123,7 +121,7 @@ export class CdCliProfileService {
     return this.svServer.proc(this.postData);
   }
 
-  setEnvelopeCdCliProfile(q: IQuery, cdToken: string) {
+  setEnvelopeGetCountCdCliProfile(q: IQuery, cdToken: string) {
     this.postData = {
       ctx: 'Sys',
       m: 'CdCli',
@@ -132,7 +130,7 @@ export class CdCliProfileService {
       dat: {
         f_vals: [
           {
-            data: q,
+            query: q,
           },
         ],
         token: cdToken,

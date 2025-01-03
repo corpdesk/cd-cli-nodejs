@@ -4,9 +4,13 @@ import fs from 'node:fs';
 import https from 'node:https'; // Use `import` instead of `require`
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import inquirer from 'inquirer';
 import config from '../../../../config';
+import { environment } from '../../../../environments/environment'; // Import the environment config
 import { HttpService } from '../../base/http.service';
+import { CdCliProfileController } from '../../cd-cli/controllers/cd-cli-profile.cointroller';
 import Logger from '../../cd-comm/controllers/notifier.controller';
+import { DEFAULT_ENVELOPE_LOGIN } from '../models/user.model';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -18,26 +22,69 @@ export class UserController {
   /**
    * Authenticate the user and manage session.
    */
+  // async auth(userName: string, password: string): Promise<void> {
+  //   // Extract consumerGuid dynamically from environment.ts
+  //   const consumerGuid = environment.clientContext.consumerToken;
+  //   // If password is not provided, prompt for it
+  //   if (!password) {
+  //     const answers = await inquirer.prompt([
+  //       {
+  //         type: 'password',
+  //         name: 'password',
+  //         message: 'Please enter your password:',
+  //         mask: '*', // Mask the input
+  //       },
+  //     ]);
+  //     password = answers.password; // Get the password from the prompt
+  //   }
+
+  //   // use DEFAULT_ENVELOPE_LOGIN to setup payload
+  //   const payload = DEFAULT_ENVELOPE_LOGIN;
+  //   payload.dat.f_vals[0].data.userName = userName;
+  //   payload.dat.f_vals[0].data.password = password;
+  //   payload.dat.f_vals[0].data.consumerGuid = consumerGuid;
+
+  //   try {
+  //     Logger.info('Authenticating...');
+  //     Logger.info('Payload:', payload); // Simplified logging of the payload
+
+  //     // Send the request to the server
+  //     const response: ICdResponse = await this.svServer.proc(payload);
+
+  //     console.log('response:', response);
+
+  //     // Check if the session data is present in the response
+  //     if (response.app_state?.sess) {
+  //       Logger.info('Session data:', response.app_state.sess);
+  //       this.saveSession(response.app_state.sess);
+  //     } else {
+  //       Logger.error('Invalid server response: No session data');
+  //     }
+  //   } catch (error: any) {
+  //     Logger.error('Error during login:', error.message);
+  //   }
+  // }
   async auth(userName: string, password: string): Promise<void> {
-    const payload = {
-      ctx: 'Sys',
-      m: 'User',
-      c: 'User',
-      a: 'Login',
-      dat: {
-        f_vals: [
-          {
-            data: {
-              userName,
-              password,
-              consumerGuid: 'B0B3DA99-1859-A499-90F6-1E3F69575DCD',
-            },
-          },
-        ],
-        token: null,
-      },
-      args: null,
-    };
+    const consumerGuid = environment.clientContext.consumerToken;
+
+    // If password is not provided, prompt for it
+    if (!password) {
+      const answers = await inquirer.prompt([
+        {
+          type: 'password',
+          name: 'password',
+          message: 'Please enter your password:',
+          mask: '*', // Mask the input
+        },
+      ]);
+      password = answers.password;
+    }
+
+    // Use DEFAULT_ENVELOPE_LOGIN to setup payload
+    const payload = DEFAULT_ENVELOPE_LOGIN;
+    payload.dat.f_vals[0].data.userName = userName;
+    payload.dat.f_vals[0].data.password = password;
+    payload.dat.f_vals[0].data.consumerGuid = consumerGuid;
 
     try {
       Logger.info('Authenticating...');
@@ -46,19 +93,33 @@ export class UserController {
       // Send the request to the server
       const response: ICdResponse = await this.svServer.proc(payload);
 
-      // Log the response data (avoid logging the entire response object to prevent circular references)
-      // Logger.info('Response data:', response.data);
-      // Logger.info('Full response:', response);
-      // Logger.info('App State:', response.app_state);
-      // Logger.info('Session Data:', response.app_state?.sess);
-      console.log('response:', response);
+      Logger.info('Response:', response);
 
-      // Check if the session data is present in the response
-      if (response.app_state?.sess) {
-        Logger.info('Session data:', response.app_state.sess);
-        this.saveSession(response.app_state.sess);
+      // Check if the login is successful
+      if (response.app_state?.success) {
+        // If successful, save session data
+        if (response.app_state?.sess) {
+          // Logger.info('Session data:', response.app_state.sess);
+          this.saveSession(response.app_state.sess);
+
+          // Fetch and save profiles after successful login
+          const cdToken = response.app_state.sess.cd_token;
+          const profileController = new CdCliProfileController();
+          if (cdToken) {
+            await profileController.fetchAndSaveProfiles(cdToken); // Fetch and save profiles
+          } else {
+            Logger.error('could not save the profile due to invalid session');
+          }
+        }
       } else {
-        Logger.error('Invalid server response: No session data');
+        // If not successful, log an error and stop the process
+        Logger.error(
+          'Login failed:',
+          response.app_state?.info || { error: 'Unknown error' },
+        );
+        throw new Error(
+          'Login failed. Please check your credentials and try again.',
+        );
       }
     } catch (error: any) {
       Logger.error('Error during login:', error.message);

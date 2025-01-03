@@ -1,31 +1,40 @@
+/* eslint-disable style/operator-linebreak */
+import type { ICdResponse } from '../../base/IBase';
+import { fileURLToPath } from 'node:url';
 /* eslint-disable style/brace-style */
-import type { ISessResp } from '../../base/IBase';
-/* eslint-disable unused-imports/no-unused-vars */
-import { exec } from 'node:child_process';
-import { promisify } from 'node:util';
 import inquirer from 'inquirer';
 import config from '../../../../config';
-import Logger from '../../cd-comm/controllers/notifier.controller'; // Assume a logger utility is available
+import Logger from '../../cd-comm/controllers/notifier.controller';
 import { UserController } from '../../user/controllers/user.controller';
 import { CdCliProfileService } from '../services/cd-cli-profile.service';
 
-const execPromise = promisify(exec);
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 export class CdCliProfileController {
   svUser = new UserController();
-  sess: ISessResp = config.cdSession;
+  svCdCliProfile = new CdCliProfileService();
+  private profilesFilePath = path.join(__dirname, 'profile.json');
+
   constructor() {}
 
-  // Method to prompt user and create SSH profile
-  // Usage: cd-cli profile create-ssh
   async createSshProfile() {
     try {
+      // Step 1: Check if session exists
       if (!this.svUser.getSession()) {
-        Logger.warning('config.cdSession:', config.cdSession);
-        Logger.error(`You have to login to create a profile`);
-        return;
+        Logger.warning('Session does not exist. Attempting to log in...');
+
+        // If session doesn't exist, try logging in
+        await this.loginWithRetry();
+
+        // If session still does not exist after login attempt, stop further execution
+        if (!this.svUser.getSession()) {
+          Logger.error('Login failed. Exiting profile creation.');
+          return;
+        }
       }
-      // Step 1: Prompt user for profile details
+
+      // Step 2: Prompt user for profile details
       const answers = await inquirer.prompt([
         {
           type: 'input',
@@ -66,10 +75,10 @@ export class CdCliProfileController {
         },
       ]);
 
-      // Step 2: Prepare the profile data
+      // Step 3: Prepare the profile data
       const profileData = {
         owner: {
-          userId: 1010, // Example user ID, this could be dynamic based on the logged-in user
+          userId: 1010, // Example user ID, could be dynamic based on the logged-in user
           groupId: 0, // Group ID, like "_public"
         },
         permissions: {
@@ -102,38 +111,65 @@ export class CdCliProfileController {
         },
       };
 
-      // Step 3: Prepare the payload to send to cd-api
-      const cdEnvelope = {
-        ctx: 'Sys',
-        m: 'Moduleman',
-        c: 'CdCliProfile',
-        a: 'Create',
-        dat: {
-          f_vals: [
-            {
-              data: {
-                cdCliProfileName: answers.profileName,
-                cdCliProfileDescription: answers.description,
-                cdCliProfileData: profileData,
-                cdCliProfileEnabled: true,
-                cdCliProfileTypeId: 2, // Represent SSH profile type
-                userId: 1010,
-              },
-            },
-          ],
-          //   token: '6E831EAF-244D-2E5A-0A9E-27C1FDF7821D',
-          token: config.cdSession.cd_token,
+      // Step 4: Prepare the payload to send to cd-api
+      const cdToken = await this.svUser.getSession()?.cd_token;
+      Logger.info(`cdToken:${cdToken}`);
+      // const cdEnvelope = {
+      //   ctx: 'Sys',
+      //   m: 'Moduleman',
+      //   c: 'CdCliProfile',
+      //   a: 'Create',
+      //   dat: {
+      //     f_vals: [
+      //       {
+      //         data: {
+      //           cdCliProfileName: answers.profileName,
+      //           cdCliProfileDescription: answers.description,
+      //           cdCliProfileData: profileData,
+      //           cdCliProfileEnabled: true,
+      //           cdCliProfileTypeId: 2, // Represent SSH profile type
+      //           userId: 1010,
+      //         },
+      //       },
+      //     ],
+      //     token: cdToken, // Ensure the session token is available
+      //   },
+      //   args: null,
+      // };
+      const d = {
+        data: {
+          cdCliProfileName: answers.profileName,
+          cdCliProfileDescription: answers.description,
+          cdCliProfileData: profileData,
+          cdCliProfileEnabled: true,
+          cdCliProfileTypeId: 2, // Represent SSH profile type
+          userId: 1010,
         },
-        args: null,
       };
 
-      // Step 4: Send the profile data to cd-api
-      const profileService = new CdCliProfileService();
-      if (this.sess.cd_token) {
-        await profileService.createCdCliProfile(cdEnvelope, this.sess.cd_token);
-        Logger.success(
-          `Profile '${answers.profileName}' created successfully.`,
-        );
+      // Step 5: Send the profile data to cd-api
+
+      if (cdToken) {
+        const response: ICdResponse =
+          await this.svCdCliProfile.createCdCliProfile(d, cdToken);
+
+        // Check if the profile creation is successful
+        if (response.app_state?.success) {
+          if (response.app_state?.sess) {
+            Logger.info('response:', response);
+            Logger.success(
+              `Profile '${answers.profileName}' created successfully.`,
+            );
+          }
+        } else {
+          // If not successful, log an error and stop the process
+          Logger.error('response:', response);
+          Logger.error(
+            'Creation of profile failed:',
+            response.app_state?.info || { error: 'Unknown error' },
+          );
+          throw new Error('Profile creation failed.');
+        }
       } else {
         Logger.error(
           `Invalid Session. Profile '${answers.profileName}' could not be created.`,
@@ -141,6 +177,92 @@ export class CdCliProfileController {
       }
     } catch (error) {
       Logger.error(`Error creating SSH profile: ${(error as Error).message}`);
+    }
+  }
+
+  // Login wizard method with retry attempts
+  async loginWithRetry() {
+    let attempts = 0;
+    while (attempts < 3) {
+      try {
+        attempts++;
+        Logger.info(`Attempt ${attempts} of 3: Please log in.`);
+
+        // Prompt for username
+        const usernameAnswer = await inquirer.prompt([
+          {
+            type: 'input',
+            name: 'userName',
+            message: 'Enter your username:',
+          },
+        ]);
+
+        // Call auth method from UserController to handle login
+        await this.svUser.auth(usernameAnswer.userName, '');
+
+        // Check if login was successful by verifying session
+        if (this.svUser.getSession()) {
+          Logger.success('Login successful!');
+          return; // Exit login retry loop if successful
+        } else {
+          Logger.error('Login failed. Please try again.');
+        }
+      } catch (error: any) {
+        Logger.error('Error during login attempt:', error.message);
+      }
+
+      // If the user exceeds 3 attempts, exit with an error message
+      if (attempts >= 3) {
+        Logger.error('Too many failed login attempts. Exiting.');
+        break;
+      }
+    }
+  }
+
+  /**
+   * Fetch profiles after successful login and save them to profiles.json
+   */
+  async fetchAndSaveProfiles(cdToken: string): Promise<void> {
+    if (!cdToken) {
+      Logger.error('No valid cdToken found. Cannot fetch profiles.');
+      return;
+    }
+
+    // Prepare the query object to fetch profiles
+    const q = {
+      where: { userId: -1 }, // userId of -1 signals backend to use the cdToken to derive the userId
+    };
+
+    try {
+      Logger.info('Fetching profiles from backend...');
+      const response: ICdResponse = await this.svCdCliProfile.getCdCliProfile(
+        q,
+        cdToken,
+      );
+      Logger.info('Response from backend:', response);
+
+      // Check if the response indicates success
+      if (response.app_state?.success) {
+        // Assuming profiles are available in the response data
+        const profiles = response.data;
+
+        // Save profiles to profiles.json
+        // const profilesFilePath = './profiles.json'; // Path to store the profiles
+        fs.writeFileSync(
+          this.profilesFilePath,
+          JSON.stringify(profiles, null, 2),
+        );
+
+        Logger.success(
+          `Profiles saved successfully to ${this.profilesFilePath}.`,
+        );
+      } else {
+        Logger.error(
+          `Failed to fetch profiles:${response.app_state?.info?.app_msg || 'Unknown error'}`,
+        );
+      }
+    } catch (error: any) {
+      Logger.error('Error fetching profiles:', error.message);
     }
   }
 }
