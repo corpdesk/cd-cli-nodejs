@@ -8,6 +8,39 @@
  * @action // class method to invoke
  */
 
+// export interface EnvConfig {
+//   clientAppGuid: string;
+//   appId: string;
+//   production: boolean;
+//   apiEndpoint: string;
+//   sioEndpoint: string;
+//   wsEndpoint: string;
+//   wsMode: string;
+//   pushConfig: any;
+//   consumerToken?: string; // current company consumer. To depricate in favour of clientContext which will include consumerToken, entity:eg company name or project name eg ASDAP, MPEP etc
+//   clientContext: any;
+//   USER_RESOURCES: string;
+//   apiHost: string;
+//   shellHost: string;
+//   sioHost: string;
+//   CD_PORT?: number; // optional setting for apiEndpoint
+//   consumer: string;
+//   clientAppId: number; // this client application identifies itself to the server with this id
+//   SOCKET_IO_PORT: number; // push server port
+//   defaultauth?: string;
+//   mfManifestPath?: string;
+//   apiOptions?: any;
+//   sioOptions?: any;
+//   wsOptions?: any;
+//   initialPage?: string;
+//   firebaseConfig?: any;
+// }
+/**
+ * @path // the path of the controller relative to the BaseService file
+ * @clsName // class name
+ * @action // class method to invoke
+ */
+
 export interface EnvConfig {
   clientAppGuid: string;
   appId: string;

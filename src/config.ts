@@ -19,6 +19,20 @@ export default {
     showHelpAfterError: true,
   },
   commands: [
+    // {
+    //   name: 'login',
+    //   description: 'Log in to the system.',
+    //   options: [
+    //     { flags: '-u, --user <username>', description: 'Username' },
+    //     { flags: '-p, --password <password>', description: 'Password' },
+    //   ],
+    //   action: {
+    //     execute: async (options) => {
+    //       const userController = new UserController();
+    //       await userController.auth(options.user, options.password);
+    //     },
+    //   },
+    // },
     {
       name: 'login',
       description: 'Log in to the system.',
@@ -29,7 +43,8 @@ export default {
       action: {
         execute: async (options) => {
           const userController = new UserController();
-          await userController.auth(options.user, options.password);
+          const { user, password } = options;
+          await userController.auth(user, password); // Password is now optional
         },
       },
     },
