@@ -6,6 +6,7 @@ import updateNotifier from 'update-notifier';
 import config from './config';
 import { description, name, version } from '../package.json';
 import 'zx/globals';
+import Logger from './CdCli/sys/cd-comm/controllers/notifier.controller';
 
 export class App {
   constructor() {}
@@ -36,6 +37,7 @@ export class App {
       }),
     );
 
+    Logger.info('config:', config);
     // Command registration: Ensuring that we register commands properly
     for (const command of config.commands) {
       const cmd = program
@@ -85,7 +87,7 @@ export class App {
       }
     }
 
-    console.log('Registered commands:', config.commands);
+    // console.log('Registered commands:', config.commands);
     program.parse();
   }
 }

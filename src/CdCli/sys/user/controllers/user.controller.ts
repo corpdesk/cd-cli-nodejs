@@ -10,14 +10,17 @@ import { environment } from '../../../../environments/environment'; // Import th
 import { HttpService } from '../../base/http.service';
 import { CdCliProfileController } from '../../cd-cli/controllers/cd-cli-profile.cointroller';
 import Logger from '../../cd-comm/controllers/notifier.controller';
-import { DEFAULT_ENVELOPE_LOGIN } from '../models/user.model';
+import {
+  DEFAULT_ENVELOPE_LOGIN,
+  SESSION_FILE_STORE,
+} from '../models/user.model';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 export class UserController {
   svServer = new HttpService();
-  private sessionFilePath = path.join(__dirname, 'session.json');
+  private sessionFilePath = path.join(__dirname, SESSION_FILE_STORE);
 
   /**
    * Authenticate the user and manage session.
@@ -123,6 +126,47 @@ export class UserController {
       }
     } catch (error: any) {
       Logger.error('Error during login:', error.message);
+    }
+  }
+
+  // Login wizard method with retry attempts
+  async loginWithRetry() {
+    console.log('UserController::loginWithRetry()/01');
+    let attempts = 0;
+    while (attempts < 3) {
+      console.log('UserController::loginWithRetry()/02');
+      try {
+        attempts++;
+        Logger.info(`Attempt ${attempts} of 3: Please log in.`);
+
+        // Prompt for username
+        const usernameAnswer = await inquirer.prompt([
+          {
+            type: 'input',
+            name: 'userName',
+            message: 'Enter your username:',
+          },
+        ]);
+
+        // Call auth method from UserController to handle login
+        await this.auth(usernameAnswer.userName, '');
+
+        // Check if login was successful by verifying session
+        if (this.getSession()) {
+          Logger.success('Login successful!');
+          return; // Exit login retry loop if successful
+        } else {
+          Logger.error('Login failed. Please try again.');
+        }
+      } catch (error: any) {
+        Logger.error('Error during login attempt:', error.message);
+      }
+
+      // If the user exceeds 3 attempts, exit with an error message
+      if (attempts >= 3) {
+        Logger.error('Too many failed login attempts. Exiting.');
+        break;
+      }
     }
   }
 
