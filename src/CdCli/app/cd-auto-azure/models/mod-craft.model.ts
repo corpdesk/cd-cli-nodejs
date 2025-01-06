@@ -42,16 +42,16 @@ export const DEFAULT_PROMPT_DATA = {
   userId: -1,
 };
 
-// export const CREATE_SSH_PROFILE_CMD = {
-//   name: 'create-ssh',
-//   description: 'Create a new SSH profile for a development server.',
-//   action: {
-//     execute: async () => {
-//       const cdCliProfileController = new CdCliProfileController();
-//       await cdCliProfileController.createSshProfile();
-//     },
-//   },
-// };
+export const CREATE_SSH_PROFILE_CMD = {
+  name: 'create-ssh',
+  description: 'Create a new SSH profile for a development server.',
+  action: {
+    execute: async () => {
+      const cdCliProfileController = new CdCliProfileController();
+      await cdCliProfileController.createSshProfile();
+    },
+  },
+};
 
 export const MODULE_CMD = {
   name: 'module',

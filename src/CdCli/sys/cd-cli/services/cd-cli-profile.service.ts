@@ -82,35 +82,8 @@ export class CdCliProfileService {
 
   getCdCliProfile(q: IQuery, cdToken: string) {
     this.setEnvelopeGetCountCdCliProfile(q, cdToken);
-    console.log(
-      'getCdCliProfile()/this.postData:',
-      JSON.stringify(this.postData),
-    );
     return this.svServer.proc(this.postData);
   }
-
-  //   getCdCliProfile(q: IQuery, cdToken: string) {
-  //     console.log('CdCliProfileService::getCdCliProfile()/q:', q);
-  //     this.setEnvelopeCdCliProfile(q, cdToken);
-  //     console.log(
-  //       'CdCliProfileService::getCdCliProfile()/this.postData:',
-  //       JSON.stringify(this.postData),
-  //     );
-  //     return this.svServer.proc(this.postData);
-  //   }
-
-  // getCdCliProfileProfile(uidObject: { userId: number }, cdToken: string) {
-  //   console.log(
-  //     'CdCliProfileService::getCdCliProfileProfile()/uidObject:',
-  //     uidObject,
-  //   );
-  //   this.setEnvelopeGetCdCliProfileProfile(uidObject, cdToken);
-  //   console.log(
-  //     'CdCliProfileService::getCdCliProfileProfile()/this.postData:',
-  //     JSON.stringify(this.postData),
-  //   );
-  //   return this.svServer.proc(this.postData);
-  // }
 
   getCdCliProfileType(q: IQuery, cdToken: string) {
     this.setEnvelopeCdCliProfileType(q, cdToken);
