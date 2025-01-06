@@ -1,5 +1,6 @@
 /* eslint-disable style/brace-style */
 import { fileURLToPath } from 'node:url';
+import { logger, setLogLevel } from '../../cd-comm/controllers/cd-winston';
 import { CdCliProfileController } from '../controllers/cd-cli-profile.cointroller';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -322,6 +323,17 @@ export const PROFILE_CMD = {
       ],
       action: {
         execute: async (options) => {
+          console.log(
+            'CdCliProfileModel::PROFILE_CMD::action/execute()/options:',
+            options,
+          );
+          // console.log(
+          //   'CdCliProfileModel::PROFILE_CMD::action/execute()/options.debug:',
+          //   options.debug,
+          // );
+          // logger.setDebugLevel(options.debug);
+          // Set the log level dynamically (optional)
+          // setLogLevel('debug'); // This will enable debug, info, warn, and error messages
           const cdCliProfileController = new CdCliProfileController();
           await cdCliProfileController.createProfile(options.file);
         },

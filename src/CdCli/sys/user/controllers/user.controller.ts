@@ -1,7 +1,6 @@
 /* eslint-disable style/brace-style */
 import type { ICdResponse, ISessResp } from '../../base/IBase';
 import fs from 'node:fs';
-import https from 'node:https'; // Use `import` instead of `require`
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import inquirer from 'inquirer';
@@ -9,7 +8,7 @@ import config from '../../../../config';
 import { environment } from '../../../../environments/environment'; // Import the environment config
 import { HttpService } from '../../base/http.service';
 import { CdCliProfileController } from '../../cd-cli/controllers/cd-cli-profile.cointroller';
-import Logger from '../../cd-comm/controllers/notifier.controller';
+import { logg, logger } from '../../cd-comm/controllers/cd-winston';
 import {
   DEFAULT_ENVELOPE_LOGIN,
   SESSION_FILE_STORE,
@@ -25,48 +24,6 @@ export class UserController {
   /**
    * Authenticate the user and manage session.
    */
-  // async auth(userName: string, password: string): Promise<void> {
-  //   // Extract consumerGuid dynamically from environment.ts
-  //   const consumerGuid = environment.clientContext.consumerToken;
-  //   // If password is not provided, prompt for it
-  //   if (!password) {
-  //     const answers = await inquirer.prompt([
-  //       {
-  //         type: 'password',
-  //         name: 'password',
-  //         message: 'Please enter your password:',
-  //         mask: '*', // Mask the input
-  //       },
-  //     ]);
-  //     password = answers.password; // Get the password from the prompt
-  //   }
-
-  //   // use DEFAULT_ENVELOPE_LOGIN to setup payload
-  //   const payload = DEFAULT_ENVELOPE_LOGIN;
-  //   payload.dat.f_vals[0].data.userName = userName;
-  //   payload.dat.f_vals[0].data.password = password;
-  //   payload.dat.f_vals[0].data.consumerGuid = consumerGuid;
-
-  //   try {
-  //     Logger.info('Authenticating...');
-  //     Logger.info('Payload:', payload); // Simplified logging of the payload
-
-  //     // Send the request to the server
-  //     const response: ICdResponse = await this.svServer.proc(payload);
-
-  //     console.log('response:', response);
-
-  //     // Check if the session data is present in the response
-  //     if (response.app_state?.sess) {
-  //       Logger.info('Session data:', response.app_state.sess);
-  //       this.saveSession(response.app_state.sess);
-  //     } else {
-  //       Logger.error('Invalid server response: No session data');
-  //     }
-  //   } catch (error: any) {
-  //     Logger.error('Error during login:', error.message);
-  //   }
-  // }
   async auth(userName: string, password: string): Promise<void> {
     const consumerGuid = environment.clientContext.consumerToken;
 
@@ -90,19 +47,19 @@ export class UserController {
     payload.dat.f_vals[0].data.consumerGuid = consumerGuid;
 
     try {
-      Logger.info('Authenticating...');
-      Logger.info('Payload:', payload); // Simplified logging of the payload
+      logger.info('Authenticating...');
+      logger.info('Payload:', payload); // Simplified logging of the payload
 
       // Send the request to the server
       const response: ICdResponse = await this.svServer.proc(payload);
 
-      Logger.info('Response:', response);
+      logger.info('Response:', response);
 
       // Check if the login is successful
       if (response.app_state?.success) {
         // If successful, save session data
         if (response.app_state?.sess) {
-          // Logger.info('Session data:', response.app_state.sess);
+          // logger.info('Session data:', response.app_state.sess);
           this.saveSession(response.app_state.sess);
 
           // Fetch and save profiles after successful login
@@ -111,12 +68,12 @@ export class UserController {
           if (cdToken) {
             await profileController.fetchAndSaveProfiles(cdToken); // Fetch and save profiles
           } else {
-            Logger.error('could not save the profile due to invalid session');
+            logger.error('could not save the profile due to invalid session');
           }
         }
       } else {
         // If not successful, log an error and stop the process
-        Logger.error(
+        logger.error(
           'Login failed:',
           response.app_state?.info || { error: 'Unknown error' },
         );
@@ -125,7 +82,7 @@ export class UserController {
         );
       }
     } catch (error: any) {
-      Logger.error('Error during login:', error.message);
+      logger.error('Error during login:', error.message);
     }
   }
 
@@ -135,7 +92,7 @@ export class UserController {
     while (attempts < 3) {
       try {
         attempts++;
-        Logger.info(`Attempt ${attempts} of 3: Please log in.`);
+        logger.info(`Attempt ${attempts} of 3: Please log in.`);
 
         // Prompt for username
         const usernameAnswer = await inquirer.prompt([
@@ -151,18 +108,18 @@ export class UserController {
 
         // Check if login was successful by verifying session
         if (this.getSession()) {
-          Logger.success('Login successful!');
+          logg.success('Login successful!');
           return; // Exit login retry loop if successful
         } else {
-          Logger.error('Login failed. Please try again.');
+          logger.error('Login failed. Please try again.');
         }
       } catch (error: any) {
-        Logger.error('Error during login attempt:', error.message);
+        logger.error('Error during login attempt:', error.message);
       }
 
       // If the user exceeds 3 attempts, exit with an error message
       if (attempts >= 3) {
-        Logger.error('Too many failed login attempts. Exiting.');
+        logger.error('Too many failed login attempts. Exiting.');
         break;
       }
     }
@@ -172,8 +129,8 @@ export class UserController {
    * Save session details to a file.
    */
   private saveSession(session: ISessResp | null): void {
-    Logger.info(`session:${session}`);
-    Logger.info(`sessionFilePath:${this.sessionFilePath}`);
+    logger.info(`session:${session}`);
+    logger.info(`sessionFilePath:${this.sessionFilePath}`);
     if (session) {
       // Update session in config
       config.cdSession = session;
@@ -181,8 +138,8 @@ export class UserController {
 
     // Save session to file
     fs.writeFileSync(this.sessionFilePath, JSON.stringify(session, null, 2));
-    Logger.info('Session saved.');
-    Logger.info(`sessionFilePath:${this.sessionFilePath}`);
+    logger.info('Session saved.');
+    logger.info(`sessionFilePath:${this.sessionFilePath}`);
   }
 
   /**
@@ -191,9 +148,9 @@ export class UserController {
   logout(): void {
     if (fs.existsSync(this.sessionFilePath)) {
       fs.unlinkSync(this.sessionFilePath);
-      Logger.info('Logged out successfully.');
+      logger.info('Logged out successfully.');
     } else {
-      Logger.info('No active session found.');
+      logger.info('No active session found.');
     }
   }
 

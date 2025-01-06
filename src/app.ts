@@ -6,7 +6,11 @@ import updateNotifier from 'update-notifier';
 import config from './config';
 import { description, name, version } from '../package.json';
 import 'zx/globals';
-import Logger from './CdCli/sys/cd-comm/controllers/notifier.controller';
+import {
+  logger,
+  setLogLevel,
+} from './CdCli/sys/cd-comm/controllers/cd-winston';
+// import { logger } from './CdCli/sys/cd-comm/controllers/cd-winston';
 
 export class App {
   constructor() {}
@@ -31,16 +35,38 @@ export class App {
       program.showHelpAfterError('(add --help for additional information)');
     }
 
+    // ---------------------------------------------------------
+    // const program = new Command();
+
+    // Add the --debug flag globally
+    program.option(
+      '--debug <level>',
+      'Set the debug level dynamically during runtime',
+      (level: string) => {
+        // Parse the level and set it
+        setLogLevel(level);
+        return level; // Return the level to be used internally
+      },
+      'info', // Default level
+    );
+
+    // Parse the arguments
+    // program.parse(process.argv);
+
+    // ---------------------------------------------------------
+
     program.hook('preAction', () =>
       updateNotifier({ pkg: { name, version } }).notify({
         isGlobal: true,
       }),
     );
 
-    // Logger.info('config:', config);
+    // logger.info('config:', config);
     // Command registration: Ensuring that we register commands properly
+    console.log('config.commands:', config.commands);
     for (const command of config.commands) {
-      // Logger.info('command:', command.name);
+      logger.debug('command.name:', command.name);
+      console.log('command.name', command.name);
       const cmd = program
         .command(command.name)
         .description(command.description);
@@ -54,7 +80,7 @@ export class App {
       // Check for subcommands
       if (command.subcommands) {
         for (const subcommand of command.subcommands) {
-          // Logger.info('subcommand:', subcommand.name);
+          logger.debug('subcommand.name:', subcommand.name);
           const subCmd = cmd
             .command(subcommand.name)
             .description(subcommand.description);
