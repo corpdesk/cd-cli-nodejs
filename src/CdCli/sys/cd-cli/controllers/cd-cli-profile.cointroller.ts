@@ -7,7 +7,7 @@ import { promisify } from 'node:util';
 /* eslint-disable style/brace-style */
 import inquirer from 'inquirer';
 import config from '../../../../config';
-import Logger from '../../cd-comm/controllers/notifier.controller';
+import { logg, logger } from '../../cd-comm/controllers/cd-winston';
 import { UserController } from '../../user/controllers/user.controller';
 import {
   createProfilePromptData,
@@ -65,7 +65,7 @@ export class CdCliProfileController {
   //     // Step 5: Prepare the payload to send to the API
   //     const cdToken = await this.svUser.getSession()?.cd_token;
   //     if (!cdToken) {
-  //       Logger.error('Invalid session. Please log in again.');
+  //       logger.error('Invalid session. Please log in again.');
   //       return;
   //     }
 
@@ -85,18 +85,22 @@ export class CdCliProfileController {
   //     const response: ICdResponse =
   //       await this.svCdCliProfile.createCdCliProfile(d, cdToken);
   //     if (response.app_state?.success) {
-  //       Logger.success(
+  //       logg.success(
   //         `Profile '${answers.profileName}' created successfully.`,
   //       );
   //     } else {
-  //       Logger.error(`Profile creation failed:${response.app_state?.info}`);
+  //       logger.error(`Profile creation failed:${response.app_state?.info}`);
   //     }
   //   } catch (error) {
-  //     Logger.error(`Error creating profile: ${(error as Error).message}`);
+  //     logger.error(`Error creating profile: ${(error as Error).message}`);
   //   }
   // }
 
   async createProfile(profileFilePath: string): Promise<void> {
+    console.log(
+      'CdCliProfileController::createProfile()/profileFilePath:',
+      profileFilePath,
+    );
     try {
       // Ensure profile.json exists or trigger login process
       await this.checkProfileAndLogin(); // Will prompt for login if profile.json doesn't exist
@@ -128,7 +132,7 @@ export class CdCliProfileController {
       // Step 5: Prepare the payload to send to the API
       const cdToken = await this.svUser.getSession()?.cd_token;
       if (!cdToken) {
-        Logger.error('Invalid session. Please log in again.');
+        logger.error('Invalid session. Please log in again.');
         return;
       }
 
@@ -147,27 +151,25 @@ export class CdCliProfileController {
       const response: ICdResponse =
         await this.svCdCliProfile.createCdCliProfile(d, cdToken);
       if (response.app_state?.success) {
-        Logger.success(
-          `Profile '${answers.profileName}' created successfully.`,
-        );
+        logg.success(`Profile '${answers.profileName}' created successfully.`);
       } else {
-        Logger.error(`Profile creation failed:${response.app_state?.info}`);
+        logger.error(`Profile creation failed:${response.app_state?.info}`);
       }
     } catch (error) {
-      Logger.error(`Error creating profile: ${(error as Error).message}`);
+      logger.error(`Error creating profile: ${(error as Error).message}`);
     }
   }
 
   private loadProfileDetails(filePath: string): any {
     try {
       if (!fs.existsSync(filePath)) {
-        Logger.warning(`Profile details file not found: ${filePath}`);
+        logg.warn(`Profile details file not found: ${filePath}`);
         return {};
       }
       const data = fs.readFileSync(filePath, 'utf-8');
       return JSON.parse(data);
     } catch (error) {
-      Logger.error(
+      logger.error(
         `Error reading profile details from file: ${(error as Error).message}`,
       );
       return {};
@@ -179,7 +181,7 @@ export class CdCliProfileController {
    */
   async fetchAndSaveProfiles(cdToken: string): Promise<void> {
     if (!cdToken) {
-      Logger.error('No valid cdToken found. Cannot fetch profiles.');
+      logger.error('No valid cdToken found. Cannot fetch profiles.');
       return;
     }
 
@@ -189,12 +191,12 @@ export class CdCliProfileController {
     };
 
     try {
-      Logger.info('Fetching profiles from backend...');
+      logger.info('Fetching profiles from backend...');
       const response: ICdResponse = await this.svCdCliProfile.getCdCliProfile(
         q,
         cdToken,
       );
-      // Logger.info('Response from backend:', response);
+      // logger.info('Response from backend:', response);
 
       // Check if the response indicates success
       if (response.app_state?.success) {
@@ -213,7 +215,7 @@ export class CdCliProfileController {
             PROFILE_FILE_STORE,
             JSON.stringify(emptyProfileData, null, 2),
           );
-          Logger.info(
+          logger.info(
             `No profiles found. Created empty profile file: ${PROFILE_FILE_STORE}`,
           );
         } else {
@@ -222,41 +224,42 @@ export class CdCliProfileController {
             PROFILE_FILE_STORE,
             JSON.stringify(profiles, null, 2),
           );
-          Logger.success(
-            `Profiles saved successfully to ${PROFILE_FILE_STORE}.`,
-          );
+          logg.success(`Profiles saved successfully to ${PROFILE_FILE_STORE}.`);
         }
       } else {
-        Logger.error(
+        logger.error(
           `Failed to fetch profiles: ${response.app_state?.info?.app_msg || 'Unknown error'}`,
         );
       }
     } catch (error: any) {
-      Logger.error('Error fetching profiles:', error.message);
+      logger.error('Error fetching profiles:', error.message);
     }
   }
 
   // Check for profile existence and initiate login if necessary
   async checkProfileAndLogin() {
     try {
-      // console.log('CdCliProfileController::checkProfileAndLogin()/01');
+      console.log('CdCliProfileController::checkProfileAndLogin()/01');
       // Check if profile.json exists
       if (!fs.existsSync(PROFILE_FILE_STORE)) {
         // console.log('CdCliProfileController::checkProfileAndLogin()/02');
-        Logger.warning('Profile file not found. Initiating login process...');
+        logg.warn('Profile file not found. Initiating login process...');
 
         const userController = new UserController();
         await userController.loginWithRetry();
-        // console.log('CdCliProfileController::checkProfileAndLogin()/03');
+        console.log('CdCliProfileController::checkProfileAndLogin()/03');
         // After successful login, check again for profile.json
         if (!fs.existsSync(PROFILE_FILE_STORE)) {
-          // console.log('CdCliProfileController::checkProfileAndLogin()/04');
+          console.log('CdCliProfileController::checkProfileAndLogin()/04');
           throw new Error('Profile file not found after login attempt.');
         }
       }
     } catch (error) {
-      // console.log('CdCliProfileController::checkProfileAndLogin()/05');
-      Logger.error(
+      console.log('CdCliProfileController::checkProfileAndLogin()/05');
+      console.error(
+        `Error during profile check or login:${(error as Error).message}`,
+      );
+      logg.error(
         `Error during profile check or login:${(error as Error).message}`,
       );
       throw error;
@@ -278,7 +281,7 @@ export class CdCliProfileController {
       );
 
       if (profilesData.count === 0) {
-        Logger.info('No profiles available.');
+        logger.info('No profiles available.');
         return;
       }
 
@@ -291,7 +294,7 @@ export class CdCliProfileController {
       // Call printTable to display the profiles in a formatted table
       printTable(['Profile Name', 'Description'], rows); // Table headers: Profile Name, Description
     } catch (error) {
-      Logger.error(`Error listing profiles: ${(error as Error).message}`);
+      logger.error(`Error listing profiles: ${(error as Error).message}`);
     }
   }
 
@@ -301,7 +304,7 @@ export class CdCliProfileController {
   async removeProfile(profileName: string): Promise<void> {
     try {
       if (!fs.existsSync(PROFILE_FILE_STORE)) {
-        Logger.error('Profile file not found.');
+        logger.error('Profile file not found.');
         return;
       }
 
@@ -314,7 +317,7 @@ export class CdCliProfileController {
       );
 
       if (profileIndex === -1) {
-        Logger.error(`Profile '${profileName}' not found.`);
+        logger.error(`Profile '${profileName}' not found.`);
         return;
       }
 
@@ -328,9 +331,9 @@ export class CdCliProfileController {
         JSON.stringify(profilesData, null, 2),
       );
 
-      Logger.success(`Profile '${profileName}' removed successfully.`);
+      logg.success(`Profile '${profileName}' removed successfully.`);
     } catch (error) {
-      Logger.error(`Error removing profile: ${(error as Error).message}`);
+      logger.error(`Error removing profile: ${(error as Error).message}`);
     }
   }
 
@@ -340,7 +343,7 @@ export class CdCliProfileController {
   async showProfile(profileName: string): Promise<void> {
     try {
       if (!fs.existsSync(PROFILE_FILE_STORE)) {
-        Logger.error('Profile file not found.');
+        logger.error('Profile file not found.');
         return;
       }
 
@@ -353,27 +356,27 @@ export class CdCliProfileController {
       );
 
       if (!profile) {
-        Logger.error(`Profile '${profileName}' not found.`);
+        logger.error(`Profile '${profileName}' not found.`);
         return;
       }
 
-      Logger.info(`Details of profile '${profileName}':`);
-      Logger.info(`- Name: ${profile.cdCliProfileName}`);
-      Logger.info(
+      logger.info(`Details of profile '${profileName}':`);
+      logger.info(`- Name: ${profile.cdCliProfileName}`);
+      logger.info(
         `- Description: ${profile.cdCliProfileData.details.description}`,
       );
-      Logger.info(`- SSH Key Path: ${profile.cdCliProfileData.details.sshKey}`);
-      Logger.info(
+      logger.info(`- SSH Key Path: ${profile.cdCliProfileData.details.sshKey}`);
+      logger.info(
         `- Remote User: ${profile.cdCliProfileData.details.remoteUser}`,
       );
-      Logger.info(
+      logger.info(
         `- Development Server: ${profile.cdCliProfileData.details.devServer}`,
       );
-      Logger.info(
+      logger.info(
         `- Directory on Server: ${profile.cdCliProfileData.details.cdApiDir}`,
       );
     } catch (error) {
-      Logger.error(`Error showing profile: ${(error as Error).message}`);
+      logger.error(`Error showing profile: ${(error as Error).message}`);
     }
   }
 }

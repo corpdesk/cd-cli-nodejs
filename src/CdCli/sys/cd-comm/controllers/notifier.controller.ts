@@ -6,6 +6,12 @@ class Logger {
   // Default debug level (0 means no logs, 4 means all logs will be displayed)
   static debugLevel: number = 0;
 
+  constructor() {
+    this.init();
+  }
+
+  init() {}
+
   // Define log levels
   static LOG_LEVELS = {
     NONE: 0,
@@ -23,7 +29,9 @@ class Logger {
 
   // Info level
   static info(message: string, context?: object | string | null) {
+    console.log(`Logger::info()/level:${Logger.debugLevel}`);
     if (Logger.debugLevel >= Logger.LOG_LEVELS.INFO) {
+      console.log(`Logger::info()/02`);
       const formattedMessage = context
         ? `${message} | Context: ${JSON.stringify(context)}`
         : message;
@@ -75,11 +83,13 @@ class Logger {
 
   // Method to set the global debug level
   static setDebugLevel(level: number): void {
-    if (Object.values(Logger.LOG_LEVELS).includes(level)) {
-      Logger.debugLevel = level;
-    } else {
+    Logger.info(`starting NotifierController:setDebugLevel()/${level}`);
+    if (typeof level !== 'number' || level > 4 || level < 0) {
       Logger.error('Invalid debug level. Using default level (0).');
       Logger.debugLevel = 0; // Default to NONE if invalid level is provided
+    } else {
+      Logger.info(`debug level set to ${level}`);
+      Logger.debugLevel = level;
     }
   }
 }

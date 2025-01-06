@@ -13,7 +13,7 @@ import util from 'node:util';
 import inquirer from 'inquirer';
 import { CdCliProfileController } from '../../cd-cli/controllers/cd-cli-profile.cointroller';
 import { PROFILE_FILE_STORE } from '../../cd-cli/models/cd-cli-profile.model';
-import Logger from '../../cd-comm/controllers/notifier.controller';
+import { logger } from '../../cd-comm/controllers/cd-winston';
 import {
   DEFAULT_PROMPT_DATA,
   InitModuleFromRepoPromptData,
@@ -64,21 +64,21 @@ export class ModCraftController {
       }
 
       // Clone the repository
-      Logger.info(`Cloning template from ${gitRepo}...`, {
+      logger.info(`Cloning template from ${gitRepo}...`, {
         module: 'moduleman',
         controller: 'ModCraftController',
         action: 'initTemplate',
       });
       await execPromise(`git clone ${gitRepo} ${targetDir}`);
-      Logger.info(`Template cloned to ${targetDir}.`);
+      logger.info(`Template cloned to ${targetDir}.`);
 
       // Update configuration files if necessary
       console.log(`Configuring the module...`);
       this.updateConfigFiles(targetDir, moduleName);
 
-      Logger.success(`✨ Module ${moduleName} initialized successfully.`);
+      logg.success(`✨ Module ${moduleName} initialized successfully.`);
     } catch (error) {
-      Logger.error(`Error initializing module: ${(error as Error).message}`);
+      logger.error(`Error initializing module: ${(error as Error).message}`);
     }
   }
 
@@ -151,7 +151,7 @@ export class ModCraftController {
         if (!profileDetails) {
           throw new Error(`Profile '${profileName}' not found.`);
         }
-        Logger.info(`Using profile name: ${profileName}`);
+        logger.info(`Using profile name: ${profileName}`);
       }
 
       // If no profile data found, prompt for connection details
@@ -181,7 +181,7 @@ export class ModCraftController {
       }
 
       // Execute the SSH command and display real-time output
-      Logger.info(
+      logger.info(
         `Executing SSH command to clone repository from ${gitRepo} on server ${devServer}...`,
       );
 
@@ -216,15 +216,15 @@ export class ModCraftController {
 
       process.on('close', (code) => {
         if (code === 0) {
-          Logger.success(
+          logg.success(
             `Module successfully cloned into ${cdApiDir}/src/CdApi/app.`,
           );
         } else {
-          Logger.error(`Git clone process exited with code ${code}.`);
+          logger.error(`Git clone process exited with code ${code}.`);
         }
       });
     } catch (error) {
-      Logger.error(
+      logger.error(
         `Error initializing module from repository: ${(error as Error).message}`,
       );
     }
