@@ -131,10 +131,8 @@ export class UserController {
 
   // Login wizard method with retry attempts
   async loginWithRetry() {
-    console.log('UserController::loginWithRetry()/01');
     let attempts = 0;
     while (attempts < 3) {
-      console.log('UserController::loginWithRetry()/02');
       try {
         attempts++;
         Logger.info(`Attempt ${attempts} of 3: Please log in.`);

@@ -37,9 +37,10 @@ export class App {
       }),
     );
 
-    Logger.info('config:', config);
+    // Logger.info('config:', config);
     // Command registration: Ensuring that we register commands properly
     for (const command of config.commands) {
+      // Logger.info('command:', command.name);
       const cmd = program
         .command(command.name)
         .description(command.description);
@@ -53,6 +54,7 @@ export class App {
       // Check for subcommands
       if (command.subcommands) {
         for (const subcommand of command.subcommands) {
+          // Logger.info('subcommand:', subcommand.name);
           const subCmd = cmd
             .command(subcommand.name)
             .description(subcommand.description);

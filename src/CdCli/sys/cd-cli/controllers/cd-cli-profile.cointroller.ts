@@ -1,5 +1,7 @@
+/* eslint-disable node/prefer-global/process */
 /* eslint-disable style/operator-linebreak */
 import type { ICdResponse } from '../../base/IBase';
+import type { ProfileData } from '../models/cd-cli-profile.model';
 import { fileURLToPath } from 'node:url';
 import { promisify } from 'node:util';
 /* eslint-disable style/brace-style */
@@ -8,17 +10,22 @@ import config from '../../../../config';
 import Logger from '../../cd-comm/controllers/notifier.controller';
 import { UserController } from '../../user/controllers/user.controller';
 import {
-  CreateSshProfilePromptData,
+  createProfilePromptData,
   PROFILE_FILE_STORE,
+  sshProfileTemplate,
 } from '../models/cd-cli-profile.model';
 import { CdCliProfileService } from '../services/cd-cli-profile.service';
 
 // const fsAccess = promisify(fs.access);
 
 import fs from 'node:fs';
+import { printTable } from '../../base/cli-table';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+const homeDirectory =
+  process.env.HOME || process.env.USERPROFILE || '/home/username'; // Fallback if HOME is undefined
+const PROFILE_DIRECTORY = path.join(homeDirectory, '.cd-cli');
 // import { Logger } from './logger'; // Adjust this import as per your project structure
 
 // const PROFILE_FILE_STORE = './profile.json'; // Adjust the file path as necessary
@@ -31,65 +38,99 @@ export class CdCliProfileController {
 
   constructor() {}
 
-  async createSshProfile() {
+  // async createProfile(
+  //   profileFilePath: string,
+  //   profileType: string,
+  // ): Promise<void> {
+  //   try {
+  //     // Step 1: Ensure profile.json exists or trigger login process
+  //     await this.checkProfileAndLogin(); // Will prompt for login if profile.json doesn't exist
+
+  //     // Step 2: Read the profile template from the given file path (profileTemp.json)
+  //     const profileTemplate = JSON.parse(
+  //       fs.readFileSync(profileFilePath, 'utf-8'),
+  //     );
+
+  //     // Step 3: Prompt user for profile details based on the template (generic for any profile)
+  //     const answers = await inquirer.prompt(
+  //       createProfilePromptData(profileType),
+  //     );
+
+  //     // Step 4: Populate the profile template with user input
+  //     const profileData: ProfileData = {
+  //       ...profileTemplate,
+  //       details: { ...profileTemplate.details, ...answers },
+  //     };
+
+  //     // Step 5: Prepare the payload to send to the API
+  //     const cdToken = await this.svUser.getSession()?.cd_token;
+  //     if (!cdToken) {
+  //       Logger.error('Invalid session. Please log in again.');
+  //       return;
+  //     }
+
+  //     const d = {
+  //       data: {
+  //         cdCliProfileName: answers.profileName,
+  //         cdCliProfileDescription: answers.description,
+  //         cdCliProfileData: profileData,
+  //         cdCliProfileEnabled: true,
+  //         cdCliProfileTypeId: profileTemplate.typeId,
+  //         userId: 1010, // Adjust based on the session or logged in user
+  //       },
+  //     };
+
+  //     // Step 6: Send the profile data to the API for profile creation
+  //     // const response = await this.createCdCliProfile(payload, cdToken);
+  //     const response: ICdResponse =
+  //       await this.svCdCliProfile.createCdCliProfile(d, cdToken);
+  //     if (response.app_state?.success) {
+  //       Logger.success(
+  //         `Profile '${answers.profileName}' created successfully.`,
+  //       );
+  //     } else {
+  //       Logger.error(`Profile creation failed:${response.app_state?.info}`);
+  //     }
+  //   } catch (error) {
+  //     Logger.error(`Error creating profile: ${(error as Error).message}`);
+  //   }
+  // }
+
+  async createProfile(profileFilePath: string): Promise<void> {
     try {
-      // Step 1: Ensure profile.json exists or trigger login process
-      const svCdCliProfile = new CdCliProfileController();
-      await svCdCliProfile.checkProfileAndLogin(); // Will prompt for login if profile.json doesn't exist
+      // Ensure profile.json exists or trigger login process
+      await this.checkProfileAndLogin(); // Will prompt for login if profile.json doesn't exist
 
-      // Step 2: Check if session exists
-      if (!this.svUser.getSession()) {
-        Logger.warning('Session does not exist. Attempting to log in...');
-        await this.svUser.loginWithRetry();
+      // Step 1: Read the profile template from the given file path (profileTemp.json)
+      const profileTemplate = JSON.parse(
+        fs.readFileSync(profileFilePath, 'utf-8'),
+      );
+      const profileType = profileTemplate.type; // Get the profile type (ssh, api, etc.)
 
-        if (!this.svUser.getSession()) {
-          Logger.error('Login failed. Exiting profile creation.');
-          return;
-        }
-      }
+      // Step 2: Read sensitive details from the respective JSON file
+      const detailsFilePath = path.join(
+        PROFILE_DIRECTORY,
+        `${profileType}.json`,
+      );
+      const profileDetails = this.loadProfileDetails(detailsFilePath);
 
-      // Step 3: Prompt user for profile details
-      const answers = await inquirer.prompt(CreateSshProfilePromptData);
+      // Step 3: Prompt user for profile details based on the template (generic for any profile)
+      const answers = await inquirer.prompt(
+        createProfilePromptData(profileType),
+      );
 
-      // Step 4: Prepare the profile data
-      const profileData = {
-        owner: {
-          userId: 1010, // Example user ID, could be dynamic based on the logged-in user
-          groupId: 0, // Group ID, like "_public"
-        },
-        permissions: {
-          userPermissions: [
-            {
-              userId: 1000, // Permissions for a user
-              field: 'sshKey',
-              hidden: false,
-              read: true,
-              write: true,
-              execute: false,
-            },
-          ],
-          groupPermissions: [
-            {
-              groupId: 0, // Public group
-              field: 'sshKey',
-              hidden: false,
-              read: true,
-              write: false,
-              execute: false,
-            },
-          ],
-        },
-        details: {
-          sshKey: answers.sshKey,
-          remoteUser: answers.remoteUser,
-          devServer: answers.remoteServer,
-          cdApiDir: answers.cdApiDir,
-        },
+      // Step 4: Populate the profile template with user input and sensitive details
+      const profileData: ProfileData = {
+        ...profileTemplate,
+        details: { ...profileTemplate.details, ...answers, ...profileDetails },
       };
 
-      // Step 5: Prepare the payload to send to cd-api
+      // Step 5: Prepare the payload to send to the API
       const cdToken = await this.svUser.getSession()?.cd_token;
-      Logger.info(`cdToken:${cdToken}`);
+      if (!cdToken) {
+        Logger.error('Invalid session. Please log in again.');
+        return;
+      }
 
       const d = {
         data: {
@@ -97,37 +138,39 @@ export class CdCliProfileController {
           cdCliProfileDescription: answers.description,
           cdCliProfileData: profileData,
           cdCliProfileEnabled: true,
-          cdCliProfileTypeId: 2, // Represent SSH profile type
-          userId: 1010,
+          cdCliProfileTypeId: profileTemplate.typeId,
+          userId: 1010, // Adjust based on the session or logged in user
         },
       };
 
-      // Step 6: Send the profile data to cd-api
-      if (cdToken) {
-        const response: ICdResponse =
-          await this.svCdCliProfile.createCdCliProfile(d, cdToken);
-
-        // Check if the profile creation is successful
-        if (response.app_state?.success) {
-          Logger.info('response:', response);
-          Logger.success(
-            `Profile '${answers.profileName}' created successfully.`,
-          );
-        } else {
-          Logger.error('response:', response);
-          Logger.error(
-            'Creation of profile failed:',
-            response.app_state?.info || { error: 'Unknown error' },
-          );
-          throw new Error('Profile creation failed.');
-        }
-      } else {
-        Logger.error(
-          `Invalid Session. Profile '${answers.profileName}' could not be created.`,
+      // Step 6: Send the profile data to the API for profile creation
+      const response: ICdResponse =
+        await this.svCdCliProfile.createCdCliProfile(d, cdToken);
+      if (response.app_state?.success) {
+        Logger.success(
+          `Profile '${answers.profileName}' created successfully.`,
         );
+      } else {
+        Logger.error(`Profile creation failed:${response.app_state?.info}`);
       }
     } catch (error) {
-      Logger.error(`Error creating SSH profile: ${(error as Error).message}`);
+      Logger.error(`Error creating profile: ${(error as Error).message}`);
+    }
+  }
+
+  private loadProfileDetails(filePath: string): any {
+    try {
+      if (!fs.existsSync(filePath)) {
+        Logger.warning(`Profile details file not found: ${filePath}`);
+        return {};
+      }
+      const data = fs.readFileSync(filePath, 'utf-8');
+      return JSON.parse(data);
+    } catch (error) {
+      Logger.error(
+        `Error reading profile details from file: ${(error as Error).message}`,
+      );
+      return {};
     }
   }
 
@@ -151,7 +194,7 @@ export class CdCliProfileController {
         q,
         cdToken,
       );
-      Logger.info('Response from backend:', response);
+      // Logger.info('Response from backend:', response);
 
       // Check if the response indicates success
       if (response.app_state?.success) {
@@ -196,23 +239,23 @@ export class CdCliProfileController {
   // Check for profile existence and initiate login if necessary
   async checkProfileAndLogin() {
     try {
-      console.log('CdCliProfileController::checkProfileAndLogin()/01');
+      // console.log('CdCliProfileController::checkProfileAndLogin()/01');
       // Check if profile.json exists
       if (!fs.existsSync(PROFILE_FILE_STORE)) {
-        console.log('CdCliProfileController::checkProfileAndLogin()/02');
+        // console.log('CdCliProfileController::checkProfileAndLogin()/02');
         Logger.warning('Profile file not found. Initiating login process...');
 
         const userController = new UserController();
         await userController.loginWithRetry();
-        console.log('CdCliProfileController::checkProfileAndLogin()/03');
+        // console.log('CdCliProfileController::checkProfileAndLogin()/03');
         // After successful login, check again for profile.json
         if (!fs.existsSync(PROFILE_FILE_STORE)) {
-          console.log('CdCliProfileController::checkProfileAndLogin()/04');
+          // console.log('CdCliProfileController::checkProfileAndLogin()/04');
           throw new Error('Profile file not found after login attempt.');
         }
       }
     } catch (error) {
-      console.log('CdCliProfileController::checkProfileAndLogin()/05');
+      // console.log('CdCliProfileController::checkProfileAndLogin()/05');
       Logger.error(
         `Error during profile check or login:${(error as Error).message}`,
       );
@@ -221,12 +264,14 @@ export class CdCliProfileController {
   }
 
   // Method to list all profiles
+  // Usage:
+  // cd-cli profile list
+  // Method to list all profiles in a table format
   async listProfiles(): Promise<void> {
     try {
-      if (!fs.existsSync(PROFILE_FILE_STORE)) {
-        Logger.error('Profile file not found.');
-        return;
-      }
+      // Ensure profile.json exists or trigger login process
+      const svCdCliProfile = new CdCliProfileController();
+      await svCdCliProfile.checkProfileAndLogin(); // Will prompt for login if profile.json doesn't exist
 
       const profilesData = JSON.parse(
         fs.readFileSync(PROFILE_FILE_STORE, 'utf-8'),
@@ -237,16 +282,22 @@ export class CdCliProfileController {
         return;
       }
 
-      Logger.info('List of available profiles:');
-      profilesData.items.forEach((profile: any) => {
-        Logger.info(`- ${profile.cdCliProfileName}`);
-      });
+      // Prepare rows for the table
+      const rows = profilesData.items.map((profile: any) => [
+        profile.cdCliProfileName, // Column 1: Profile Name
+        profile.cdCliProfileDescription || 'No description provided', // Column 2: Description (with default value if missing)
+      ]);
+
+      // Call printTable to display the profiles in a formatted table
+      printTable(['Profile Name', 'Description'], rows); // Table headers: Profile Name, Description
     } catch (error) {
       Logger.error(`Error listing profiles: ${(error as Error).message}`);
     }
   }
 
   // Method to remove a profile by name
+  // Usage:
+  // cd-cli remove <profile-name>
   async removeProfile(profileName: string): Promise<void> {
     try {
       if (!fs.existsSync(PROFILE_FILE_STORE)) {
@@ -284,6 +335,8 @@ export class CdCliProfileController {
   }
 
   // Method to show profile details by name
+  // Usage:
+  // cd-cli profile show <profile-name>
   async showProfile(profileName: string): Promise<void> {
     try {
       if (!fs.existsSync(PROFILE_FILE_STORE)) {
