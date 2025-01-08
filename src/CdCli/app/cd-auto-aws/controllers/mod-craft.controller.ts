@@ -64,21 +64,21 @@ export class ModCraftController {
       }
 
       // Clone the repository
-      logger.info(`Cloning template from ${gitRepo}...`, {
+      Logger.info(`Cloning template from ${gitRepo}...`, {
         module: 'moduleman',
         controller: 'ModCraftController',
         action: 'initTemplate',
       });
       await execPromise(`git clone ${gitRepo} ${targetDir}`);
-      logger.info(`Template cloned to ${targetDir}.`);
+      Logger.info(`Template cloned to ${targetDir}.`);
 
       // Update configuration files if necessary
       console.log(`Configuring the module...`);
       this.updateConfigFiles(targetDir, moduleName);
 
-      logg.success(`✨ Module ${moduleName} initialized successfully.`);
+      Logger.success(`✨ Module ${moduleName} initialized successfully.`);
     } catch (error) {
-      logger.error(`Error initializing module: ${(error as Error).message}`);
+      Logger.error(`Error initializing module: ${(error as Error).message}`);
     }
   }
 
@@ -151,7 +151,7 @@ export class ModCraftController {
         if (!profileDetails) {
           throw new Error(`Profile '${profileName}' not found.`);
         }
-        logger.info(`Using profile name: ${profileName}`);
+        Logger.info(`Using profile name: ${profileName}`);
       }
 
       // If no profile data found, prompt for connection details
@@ -181,7 +181,7 @@ export class ModCraftController {
       }
 
       // Execute the SSH command and display real-time output
-      logger.info(
+      Logger.info(
         `Executing SSH command to clone repository from ${gitRepo} on server ${devServer}...`,
       );
 
@@ -216,15 +216,15 @@ export class ModCraftController {
 
       process.on('close', (code) => {
         if (code === 0) {
-          logg.success(
+          Logger.success(
             `Module successfully cloned into ${cdApiDir}/src/CdApi/app.`,
           );
         } else {
-          logger.error(`Git clone process exited with code ${code}.`);
+          Logger.error(`Git clone process exited with code ${code}.`);
         }
       });
     } catch (error) {
-      logger.error(
+      Logger.error(
         `Error initializing module from repository: ${(error as Error).message}`,
       );
     }

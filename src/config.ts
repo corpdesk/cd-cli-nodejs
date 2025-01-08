@@ -76,7 +76,7 @@ import { LOGIN_CMD, LOGOUT_CMD } from './CdCli/sys/user/models/user.model';
 // // Get the debug level using program.opts()
 // const options = program.opts();
 // const debugLevel = options.debug; // This will now contain the value of --debug
-// logger.setDebugLevel(debugLevel);
+// Logger.setDebugLevel(debugLevel);
 // ---------------------------
 
 const sess: ISessResp = {

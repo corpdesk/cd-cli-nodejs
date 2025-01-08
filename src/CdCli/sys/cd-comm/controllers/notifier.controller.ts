@@ -41,6 +41,8 @@ class Logger {
 
   // Success level
   static success(message: string, context?: object) {
+    console.log('Logger::success()/message:', message);
+    console.log('Logger::success()/Logger.debugLevel:', Logger.debugLevel);
     if (Logger.debugLevel >= Logger.LOG_LEVELS.INFO) {
       const formattedMessage = context
         ? `${message} | Context: ${JSON.stringify(context)}`
@@ -83,14 +85,28 @@ class Logger {
 
   // Method to set the global debug level
   static setDebugLevel(level: number): void {
-    Logger.info(`starting NotifierController:setDebugLevel()/${level}`);
-    if (typeof level !== 'number' || level > 4 || level < 0) {
-      Logger.error('Invalid debug level. Using default level (0).');
-      Logger.debugLevel = 0; // Default to NONE if invalid level is provided
-    } else {
-      Logger.info(`debug level set to ${level}`);
-      Logger.debugLevel = level;
+    try {
+      level = Number(level);
+      console.log('Logger::setDebugLevel()/log level:', level);
+      Logger.info(`starting NotifierController:setDebugLevel()/${level}`);
+      if (typeof level !== 'number' || level > 4 || level < 0) {
+        console.log('Logger::setDebugLevel()/02:');
+        Logger.error('Invalid debug level. Using default level (0).');
+        Logger.debugLevel = 0; // Default to NONE if invalid level is provided
+      } else {
+        console.log('Logger::setDebugLevel()/03:');
+        Logger.info(`debug level set to ${level}`);
+        Logger.debugLevel = level;
+      }
+    } catch (e) {
+      console.error(
+        `could not set the Debug level. Error: ${(e as Error).message}`,
+      );
     }
+  }
+
+  static getDebugLevel(): number {
+    return Logger.debugLevel;
   }
 }
 
