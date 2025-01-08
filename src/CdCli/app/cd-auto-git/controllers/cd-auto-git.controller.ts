@@ -17,6 +17,7 @@ import fs from 'node:fs';
 import util from 'node:util';
 import { CdCliProfileController } from '@/CdCli/sys/cd-cli/controllers/cd-cli-profile.cointroller';
 import { logger } from '@/CdCli/sys/cd-comm/controllers/cd-winston';
+import Logger from '@/CdCli/sys/cd-comm/controllers/notifier.controller';
 import axios from 'axios';
 import inquirer from 'inquirer';
 import {
@@ -75,7 +76,7 @@ export class CdAutoGitController {
 
       console.log('Repository Created: ', response.data.html_url); // Log the URL of the newly created repository
     } catch (error) {
-      logger.error(`Error creating repository: ${(error as Error).message}`);
+      Logger.error(`Error creating repository: ${(error as Error).message}`);
     }
   }
 
@@ -88,9 +89,9 @@ export class CdAutoGitController {
     const gitCommand = `git clone https://github.com/corpdesk/${repoName}.git ${repoDirectory}/${repoName}`;
     try {
       await this.runCommand(gitCommand); // Method to run shell commands
-      logg.success(`Repository cloned into ${repoDirectory}/${repoName}`);
+      Logger.success(`Repository cloned into ${repoDirectory}/${repoName}`);
     } catch (error) {
-      logger.error(`Error cloning repository: ${(error as Error).message}`);
+      Logger.error(`Error cloning repository: ${(error as Error).message}`);
     }
   }
 
@@ -115,7 +116,7 @@ export class CdAutoGitController {
   async initiateGitHubProject() {
     const profile = await this.getGitHubProfile();
     if (!profile) {
-      logger.error('GitHub profile not found.');
+      Logger.error('GitHub profile not found.');
       return;
     }
 

@@ -1,5 +1,6 @@
 import chalk from 'chalk';
 import winston from 'winston';
+import Logger from './notifier.controller';
 
 // Define custom levels
 const logLevels = {
@@ -49,18 +50,18 @@ export function setLogLevel(level: string) {
 // Define custom log methods for success and other levels
 export const logg = {
   success: (message: string, context?: object) => {
-    logger.log('success', message, context);
+    logger.log('success', message, context); // Log at 'success' level
   },
   debug: (message: string, context?: object) => {
-    logger.debug(message, context);
+    logger.debug(message, context); // Log at 'debug' level
   },
   info: (message: string, context?: object) => {
-    logger.info(message, context);
+    logger.info(message, context); // Log at 'info' level
   },
   warn: (message: string, context?: object) => {
-    logger.warn(message, context);
+    logger.warning(message, context); // Log at 'warn' level
   },
   error: (message: string, context?: object) => {
-    logger.error(message, context);
+    logger.error(message, context); // Log at 'error' level
   },
 };
