@@ -10,10 +10,11 @@ import * as fs from 'node:fs';
 import * as path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import util from 'node:util';
+import { CONFIG_FILE_PATH } from '@/config';
 import inquirer from 'inquirer';
+import CdCliVaultController from '../../base/cd-cli-vault.controller';
 import { CdCliProfileController } from '../../cd-cli/controllers/cd-cli-profile.cointroller';
-import { PROFILE_FILE_STORE } from '../../cd-cli/models/cd-cli-profile.model';
-import { logger } from '../../cd-comm/controllers/cd-winston';
+import CdLogg from '../../cd-comm/controllers/cd-logger.controller';
 import {
   DEFAULT_PROMPT_DATA,
   InitModuleFromRepoPromptData,
@@ -64,21 +65,21 @@ export class ModCraftController {
       }
 
       // Clone the repository
-      Logger.info(`Cloning template from ${gitRepo}...`, {
+      CdLogg.info(`Cloning template from ${gitRepo}...`, {
         module: 'moduleman',
         controller: 'ModCraftController',
         action: 'initTemplate',
       });
       await execPromise(`git clone ${gitRepo} ${targetDir}`);
-      Logger.info(`Template cloned to ${targetDir}.`);
+      CdLogg.info(`Template cloned to ${targetDir}.`);
 
       // Update configuration files if necessary
       console.log(`Configuring the module...`);
       this.updateConfigFiles(targetDir, moduleName);
 
-      Logger.success(`✨ Module ${moduleName} initialized successfully.`);
+      CdLogg.success(`✨ Module ${moduleName} initialized successfully.`);
     } catch (error) {
-      Logger.error(`Error initializing module: ${(error as Error).message}`);
+      CdLogg.error(`Error initializing module: ${(error as Error).message}`);
     }
   }
 
@@ -131,79 +132,103 @@ export class ModCraftController {
 
   async initModuleFromRepo(gitRepo: string, profileName?: string) {
     try {
-      // Ensure profile.json exists or trigger login process
-      const svCdCliProfile = new CdCliProfileController();
-      await svCdCliProfile.checkProfileAndLogin(); // Will prompt for login if profile.json doesn't exist
+      // Step 1: Load configurations from ~/.cd-cli.config.json
+      if (!fs.existsSync(CONFIG_FILE_PATH)) {
+        throw new Error(
+          'Configuration file not found. Please set up your CLI.',
+        );
+      }
 
-      // If a profile name is provided, fetch the profile details
-      let profileData: ProfileModel = DEFAULT_PROMPT_DATA;
+      const config = JSON.parse(fs.readFileSync(CONFIG_FILE_PATH, 'utf-8'));
+
+      if (!config.profiles || config.profiles.count === 0) {
+        throw new Error('No profiles found. Please create a profile first.');
+      }
+
+      // Step 2: Locate the specified profile or use prompts
       let profileDetails: any = null;
 
       if (profileName) {
-        const profiles = JSON.parse(
-          fs.readFileSync(PROFILE_FILE_STORE, 'utf-8'),
-        ).items;
-        profileData = profiles.find(
-          (profile: any) => profile.cdCliProfileName === profileName,
+        const profile = config.profiles.items.find(
+          (p: any) => p.cdCliProfileName === profileName,
         );
-        profileDetails = profileData.cdCliProfileData?.details;
-
-        if (!profileDetails) {
+        if (!profile) {
           throw new Error(`Profile '${profileName}' not found.`);
         }
-        Logger.info(`Using profile name: ${profileName}`);
+        profileDetails = profile.cdCliProfileData?.details;
+
+        // Decrypt sensitive data using CdCliVaultController
+        if (profileDetails?.['cd-vault']) {
+          profileDetails.sshKey = CdCliVaultController.getSensitiveData(
+            profileDetails['cd-vault'],
+          );
+        }
+        CdLogg.info(`Using profile: ${profileName}`);
       }
 
-      // If no profile data found, prompt for connection details
+      // If no profile or details found, prompt the user
       if (!profileDetails) {
-        const answers = await inquirer.prompt(InitModuleFromRepoPromptData);
+        const answers = await inquirer.prompt([
+          {
+            type: 'input',
+            name: 'remoteServer',
+            message: 'Enter development server address:',
+            default: '192.168.1.70',
+          },
+          {
+            type: 'input',
+            name: 'remoteUser',
+            message: 'Enter remote SSH user (default: devops):',
+            default: 'devops',
+          },
+          {
+            type: 'input',
+            name: 'sshKey',
+            message: 'Enter path to your SSH key:',
+            default: '~/path/to/sshKey',
+          },
+          {
+            type: 'input',
+            name: 'cdApiDir',
+            message: 'Enter directory on the server (e.g., ~/cd-api):',
+            default: '~/cd-api',
+          },
+        ]);
 
         profileDetails = {
-          details: {
-            sshKey: answers.sshKey,
-            remoteUser: answers.remoteUser,
-            devServer: answers.remoteServer,
-            cdApiDir: answers.cdApiDir,
-          },
+          remoteServer: answers.remoteServer,
+          remoteUser: answers.remoteUser,
+          sshKey: answers.sshKey,
+          cdApiDir: answers.cdApiDir,
         };
       }
 
-      const { remoteUser, sshKey, devServer, cdApiDir } =
-        profileData.cdCliProfileData?.details || {};
+      // Step 3: Construct SSH command
+      const { remoteUser, sshKey, remoteServer, cdApiDir } = profileDetails;
 
-      // Construct the SSH command to clone the repository
-      let command: string;
+      const command = sshKey
+        ? `ssh -i "${sshKey}" "${remoteUser}@${remoteServer}" "sudo -H -u ${remoteUser} bash -c 'git clone ${gitRepo} ${cdApiDir}/src/CdApi/app/cd-geo'"`
+        : `ssh "${remoteUser}@${remoteServer}" "sudo -H -u ${remoteUser} bash -c 'git clone ${gitRepo} ${cdApiDir}/src/CdApi/app/cd-geo'"`;
 
-      if (sshKey) {
-        command = `ssh -i "${sshKey}" "${remoteUser}@${devServer}" "sudo -H -u ${remoteUser} bash -c 'git clone ${gitRepo} ${cdApiDir}/src/CdApi/app/cd-geo'"`;
-      } else {
-        command = `ssh "${remoteUser}@${devServer}" "sudo -H -u ${remoteUser} bash -c 'git clone ${gitRepo} ${cdApiDir}/src/CdApi/app/cd-geo'"`;
-      }
-
-      // Execute the SSH command and display real-time output
-      Logger.info(
-        `Executing SSH command to clone repository from ${gitRepo} on server ${devServer}...`,
+      // Step 4: Execute SSH command and log output
+      CdLogg.info(
+        `Executing SSH command to clone repository from ${gitRepo} on server ${remoteServer}...`,
       );
 
       const process = exec(command);
 
-      // Pipe stdout and stderr to the console to display real-time output
       process.stdout?.on('data', (data) => {
-        // Check if data is from git's normal output or error output
         if (
           data.includes('Cloning into') ||
           data.includes('Receiving objects')
         ) {
-          // Consider this as regular output
           console.log(`stdout: ${data}`);
         } else {
-          // Otherwise, log it as stderr
           console.error(`stderr: ${data}`);
         }
       });
 
       process.stderr?.on('data', (data) => {
-        // This could also be considered normal output, but if it's a known Git message, treat it as stdout
         if (
           data.includes('Cloning into') ||
           data.includes('Receiving objects')
@@ -216,15 +241,15 @@ export class ModCraftController {
 
       process.on('close', (code) => {
         if (code === 0) {
-          Logger.success(
+          CdLogg.success(
             `Module successfully cloned into ${cdApiDir}/src/CdApi/app.`,
           );
         } else {
-          Logger.error(`Git clone process exited with code ${code}.`);
+          CdLogg.error(`Git clone process exited with code ${code}.`);
         }
       });
     } catch (error) {
-      Logger.error(
+      CdLogg.error(
         `Error initializing module from repository: ${(error as Error).message}`,
       );
     }

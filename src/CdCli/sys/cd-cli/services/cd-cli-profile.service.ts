@@ -19,6 +19,7 @@ import type { ICdRequest, IQuery } from '../../base/IBase';
 import { fileURLToPath } from 'node:url';
 import { HttpService } from '../../base/http.service';
 import { DEFAULT_ENVELOPE_CREATE } from '../../base/IBase';
+import CdLogg from '../../cd-comm/controllers/cd-logger.controller';
 
 export class CdCliProfileService {
   svServer = new HttpService();
@@ -80,9 +81,12 @@ export class CdCliProfileService {
     };
   }
 
-  getCdCliProfile(q: IQuery, cdToken: string) {
+  async getCdCliProfile(q: IQuery, cdToken: string) {
+    CdLogg.debug('starting getCdCliProfile():', { token: cdToken, query: q });
+    const httpService = new HttpService();
+    await httpService.init('cd-api-local'); // Ensure axiosInstance is set with preferred profile
     this.setEnvelopeGetCountCdCliProfile(q, cdToken);
-    return this.svServer.proc(this.postData);
+    return httpService.proc(this.postData);
   }
 
   getCdCliProfileType(q: IQuery, cdToken: string) {
@@ -95,6 +99,10 @@ export class CdCliProfileService {
   }
 
   setEnvelopeGetCountCdCliProfile(q: IQuery, cdToken: string) {
+    CdLogg.debug('starting setEnvelopeGetCountCdCliProfile():', {
+      token: cdToken,
+      query: q,
+    });
     this.postData = {
       ctx: 'Sys',
       m: 'CdCli',

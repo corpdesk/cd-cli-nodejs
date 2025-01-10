@@ -2,70 +2,73 @@
 /* eslint-disable ts/consistent-type-imports */
 import https from 'node:https';
 import axios from 'axios';
-import config from '../../../config';
+import config, { CONFIG_FILE_PATH, loadCdCliConfig } from '../../../config';
+import CdLogg from '../cd-comm/controllers/cd-logger.controller';
 import { ICdRequest } from './IBase'; // Assuming this is imported correctly from your core module
 
 export class HttpService {
-  debug = false;
-  postData: any; // You can define a type for postData if needed
-  module = '';
-  controller = '';
-  resp$: any; // Define this based on your response structure
-  token: any;
-  params: ICdRequest = {
-    ctx: '',
-    m: '',
-    c: '',
-    a: '',
-    dat: {
-      f_vals: [],
-      token: '',
-    },
-    args: {},
-  };
-
   private axiosInstance: any;
 
-  constructor() {
-    // Create axios instance with default settings
-    this.axiosInstance = axios.create({
-      baseURL: config.cdApiEndPoint, // Change this to the correct endpoint if needed
-      httpsAgent: new https.Agent({
-        rejectUnauthorized: false, // Ignore SSL certificate validation
-      }),
-    });
-  }
+  constructor() {}
 
-  // This method processes requests using the axios instance
-  async proc(params: ICdRequest): Promise<any> {
+  /**
+   * Initialize the HTTP service by loading configuration and setting up axios.
+   * Ensures `axiosInstance` is available before making requests.
+   */
+  async init(profileName: string): Promise<void> {
     try {
-      if (this.debug) {
-        console.log('Sending request:', params);
+      // Load the configuration file
+      const cdCliConfig = await loadCdCliConfig();
+
+      // Find the profile named eg: 'cd-api-local'
+      const profile = cdCliConfig.items.find(
+        (item: any) => item.cdCliProfileName === profileName,
+      );
+
+      if (!profile || !profile.cdCliProfileData?.details?.cdEndpoint) {
+        throw new Error(
+          `Profile 'cd-api-local' with 'cdEndpoint' not found in configuration.`,
+        );
       }
 
-      // Ensure the params are valid and then make the POST request
-      const response = await this.axiosInstance.post('/', params);
+      // Create axios instance with settings from the profile
+      this.axiosInstance = axios.create({
+        baseURL: profile.cdCliProfileData.details.cdEndpoint,
+        httpsAgent: new https.Agent({
+          rejectUnauthorized: false, // Ignore SSL certificate validation
+        }),
+      });
 
-      // If successful, log or return the response data
-      if (this.debug) {
-        console.log('Received response:', response);
-      }
-
-      return response.data;
-    } catch (error: any) {
-      console.error('Error during HTTP request:', error.message);
-      throw new Error(`HTTP Request Failed: ${error.message}`);
+      CdLogg.info(
+        `HttpService initialized with endpoint: ${profile.cdCliProfileData.details.cdEndpoint}`,
+      );
+    } catch (error) {
+      CdLogg.error(
+        `Error initializing HttpService: ${(error as Error).message}`,
+      );
+      throw error;
     }
   }
 
-  // Example method for sending a POST request
-  async postDataToServer(data: any): Promise<any> {
+  /**
+   * Process a POST request using the axios instance.
+   * @param params The request payload
+   */
+  async proc(params: ICdRequest): Promise<any> {
+    CdLogg.debug('starting proc():', {
+      p: params,
+    });
+    if (!this.axiosInstance) {
+      throw new Error('HttpService is not initialized.');
+    }
+
     try {
-      const response = await this.axiosInstance.post('/path-to-endpoint', data);
+      CdLogg.debug('Sending request:', params);
+      const response = await this.axiosInstance.post('/', params);
       return response.data;
     } catch (error: any) {
-      console.error('Post data error:', error.message);
-      throw new Error(`Post Data Error: ${error.message}`);
+      CdLogg.error('Error during HTTP request:', error.message);
+      throw new Error(`HTTP Request Failed: ${error.message}`);
     }
   }
 }

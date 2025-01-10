@@ -1,6 +1,6 @@
 import chalk from 'chalk';
 import winston from 'winston';
-import Logger from './notifier.controller';
+import CdLogg from './cd-logger.controller';
 
 // Define custom levels
 const logLevels = {
