@@ -4,6 +4,7 @@ import { createCommand } from 'commander';
 import nodeCleanup from 'node-cleanup';
 import updateNotifier from 'update-notifier';
 import config from './config';
+// import { CdCli } from './CdCli/sys/cd-cli/models/cd-cli-profile.model';
 import { description, name, version } from '../package.json';
 import 'zx/globals';
 import {
@@ -11,7 +12,8 @@ import {
   logger,
   setLogLevel,
 } from './CdCli/sys/cd-comm/controllers/cd-winston';
-import Logger from './CdCli/sys/cd-comm/controllers/notifier.controller';
+import CdLogg from './CdCli/sys/cd-comm/controllers/cd-logger.controller';
+import { CdCli } from './CdCli/sys/cd-cli/models/cd-cli.model';
 // import { logger } from './CdCli/sys/cd-comm/controllers/cd-winston';
 
 export class App {
@@ -47,7 +49,7 @@ export class App {
       (level: any) => {
         // Parse the level and set it
         setLogLevel(level);
-        Logger.setDebugLevel(level);
+        CdLogg.setDebugLevel(level);
         return level; // Return the level to be used internally
       },
       'info', // Default level
@@ -64,10 +66,10 @@ export class App {
       }),
     );
 
-    // Logger.info('config:', config);
+    // CdLogg.info('config:', config);
     // Command registration: Ensuring that we register commands properly
-    // console.log('config.commands:', config.commands);
-    for (const command of config.commands) {
+    // console.log('CdCli.commands:', CdCli.commands);
+    for (const command of CdCli.commands) {
       const cmd = program
         .command(command.name)
         .description(command.description);
@@ -81,7 +83,7 @@ export class App {
       // Check for subcommands
       if (command.subcommands) {
         for (const subcommand of command.subcommands) {
-          // Logger.debug('subcommand.name:', subcommand.name);
+          // CdLogg.debug('subcommand.name:', subcommand.name);
           const subCmd = cmd
             .command(subcommand.name)
             .description(subcommand.description);
@@ -116,7 +118,7 @@ export class App {
       }
     }
 
-    // console.log('Registered commands:', config.commands);
+    // console.log('Registered commands:', CdCli.commands);
     program.parse();
   }
 }

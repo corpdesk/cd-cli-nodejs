@@ -64,21 +64,21 @@ export class ModCraftController {
       }
 
       // Clone the repository
-      Logger.info(`Cloning template from ${gitRepo}...`, {
+      CdLogg.info(`Cloning template from ${gitRepo}...`, {
         module: 'moduleman',
         controller: 'ModCraftController',
         action: 'initTemplate',
       });
       await execPromise(`git clone ${gitRepo} ${targetDir}`);
-      Logger.info(`Template cloned to ${targetDir}.`);
+      CdLogg.info(`Template cloned to ${targetDir}.`);
 
       // Update configuration files if necessary
       console.log(`Configuring the module...`);
       this.updateConfigFiles(targetDir, moduleName);
 
-      Logger.success(`✨ Module ${moduleName} initialized successfully.`);
+      CdLogg.success(`✨ Module ${moduleName} initialized successfully.`);
     } catch (error) {
-      Logger.error(`Error initializing module: ${(error as Error).message}`);
+      CdLogg.error(`Error initializing module: ${(error as Error).message}`);
     }
   }
 
@@ -151,7 +151,7 @@ export class ModCraftController {
         if (!profileDetails) {
           throw new Error(`Profile '${profileName}' not found.`);
         }
-        Logger.info(`Using profile name: ${profileName}`);
+        CdLogg.info(`Using profile name: ${profileName}`);
       }
 
       // If no profile data found, prompt for connection details
@@ -181,7 +181,7 @@ export class ModCraftController {
       }
 
       // Execute the SSH command and display real-time output
-      Logger.info(
+      CdLogg.info(
         `Executing SSH command to clone repository from ${gitRepo} on server ${devServer}...`,
       );
 
@@ -216,15 +216,15 @@ export class ModCraftController {
 
       process.on('close', (code) => {
         if (code === 0) {
-          Logger.success(
+          CdLogg.success(
             `Module successfully cloned into ${cdApiDir}/src/CdApi/app.`,
           );
         } else {
-          Logger.error(`Git clone process exited with code ${code}.`);
+          CdLogg.error(`Git clone process exited with code ${code}.`);
         }
       });
     } catch (error) {
-      Logger.error(
+      CdLogg.error(
         `Error initializing module from repository: ${(error as Error).message}`,
       );
     }

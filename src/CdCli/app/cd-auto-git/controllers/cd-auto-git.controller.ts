@@ -16,8 +16,9 @@ import { exec } from 'node:child_process';
 import fs from 'node:fs';
 import util from 'node:util';
 import { CdCliProfileController } from '@/CdCli/sys/cd-cli/controllers/cd-cli-profile.cointroller';
+import CdLogg from '@/CdCli/sys/cd-comm/controllers/cd-logger.controller';
 import { logger } from '@/CdCli/sys/cd-comm/controllers/cd-winston';
-import Logger from '@/CdCli/sys/cd-comm/controllers/notifier.controller';
+import { CD_REPO_ENDPOINT, PROFILE_FILE_STORE } from '@/config';
 import axios from 'axios';
 import inquirer from 'inquirer';
 import {
@@ -26,8 +27,6 @@ import {
 } from '../models/cd-auto-git.model';
 
 const execPromise = util.promisify(exec);
-const GITHUB_API_URL = 'https://api.github.com';
-const PROFILE_FILE_STORE = './profile.json'; // Path to store the profile data
 
 export class CdAutoGitController {
   // Method to fetch the GitHub profile from profile.json
@@ -60,7 +59,7 @@ export class CdAutoGitController {
       // const token = 'your-github-token'; // The personal access token with rights to create repos in the corpdesk organization
 
       const response = await axios.post(
-        'https://api.github.com/orgs/corpdesk/repos', // GitHub API URL for organization repos
+        CD_REPO_ENDPOINT, // GitHub API URL for CORPDESK organization repos
         {
           name: repoName,
           description,
@@ -76,7 +75,7 @@ export class CdAutoGitController {
 
       console.log('Repository Created: ', response.data.html_url); // Log the URL of the newly created repository
     } catch (error) {
-      Logger.error(`Error creating repository: ${(error as Error).message}`);
+      CdLogg.error(`Error creating repository: ${(error as Error).message}`);
     }
   }
 
@@ -89,9 +88,9 @@ export class CdAutoGitController {
     const gitCommand = `git clone https://github.com/corpdesk/${repoName}.git ${repoDirectory}/${repoName}`;
     try {
       await this.runCommand(gitCommand); // Method to run shell commands
-      Logger.success(`Repository cloned into ${repoDirectory}/${repoName}`);
+      CdLogg.success(`Repository cloned into ${repoDirectory}/${repoName}`);
     } catch (error) {
-      Logger.error(`Error cloning repository: ${(error as Error).message}`);
+      CdLogg.error(`Error cloning repository: ${(error as Error).message}`);
     }
   }
 
@@ -116,7 +115,7 @@ export class CdAutoGitController {
   async initiateGitHubProject() {
     const profile = await this.getGitHubProfile();
     if (!profile) {
-      Logger.error('GitHub profile not found.');
+      CdLogg.error('GitHub profile not found.');
       return;
     }
 

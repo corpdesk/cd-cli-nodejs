@@ -1,14 +1,11 @@
 /* eslint-disable style/brace-style */
 import { fileURLToPath } from 'node:url';
+import CdLogg from '../../cd-comm/controllers/cd-logger.controller';
 import { logger, setLogLevel } from '../../cd-comm/controllers/cd-winston';
-import Logger from '../../cd-comm/controllers/notifier.controller';
 import { CdCliProfileController } from '../controllers/cd-cli-profile.cointroller';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-
-const profilesFilePath = path.join(__dirname, 'profile.json');
-export const PROFILE_FILE_STORE = profilesFilePath;
 
 // The ProfileContainer represents the entire profile data structure
 export interface ProfileContainer {
@@ -73,6 +70,22 @@ export interface GroupPermission {
   execute: boolean;
   groupId: number;
   field: string;
+}
+
+export enum CdCliProfileTypes {
+  CdCliConfig = 1, // 1: cd-cli-config
+  SshConfig, // 2: ssh-config
+  GitHubConfig, // 3: github-config
+  GitLabConfig, // 4: gitlab-config
+  AwsConfig, // 5: aws-config
+  GcpConfig, // 6: gcp-config
+  K8sConfig, // 7: k8s-config
+  CdBackendDev, // 8: cd-backend-dev
+  CdFrontendDev, // 9: cd-frontend-dev
+  CdApi, // 10: cd-api
+  MySql, // 11: mysql connection credentials
+  Redis, // 12: mysql connection credentials
+  SocketIo, // 13: mysql connection credentials
 }
 
 /* eslint-disable unused-imports/no-unused-vars */
@@ -332,12 +345,12 @@ export const PROFILE_CMD = {
           //   'CdCliProfileModel::PROFILE_CMD::action/execute()/options.debug:',
           //   options.debug,
           // );
-          // Logger.setDebugLevel(options.debug);
+          // CdLogg.setDebugLevel(options.debug);
           // Set the log level dynamically (optional)
           // setLogLevel('debug'); // This will enable debug, info, warn, and error messages
           console.log(
-            'CdCliProfileModel: Logger.debugLevel:',
-            Logger.getDebugLevel(),
+            'CdCliProfileModel: CdLogg.debugLevel:',
+            CdLogg.getDebugLevel(),
           );
           const cdCliProfileController = new CdCliProfileController();
           await cdCliProfileController.createProfile(options.file);

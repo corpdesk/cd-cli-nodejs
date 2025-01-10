@@ -2,7 +2,7 @@ import type { ICdRequest } from '../../base/IBase';
 import { DEFAULT_ARGS, DEFAULT_DAT, SYS_CTX } from '../../base/IBase';
 import { UserController } from '../controllers/user.controller';
 
-export const SESSION_FILE_STORE = 'session.json';
+// export const SESSION_FILE_STORE = 'session.json';
 
 export interface IUserModel {
   userId?: number;
