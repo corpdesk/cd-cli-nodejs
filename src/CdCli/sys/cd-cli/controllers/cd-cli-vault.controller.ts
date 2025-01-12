@@ -1,55 +1,23 @@
+/* eslint-disable style/indent */
+/* eslint-disable unused-imports/no-unused-vars */
 /* eslint-disable antfu/if-newline */
 /* eslint-disable style/operator-linebreak */
 /* eslint-disable style/brace-style */
 /* eslint-disable node/prefer-global/buffer */
 /* eslint-disable node/prefer-global/process */
 
+import type { ProfileModel } from '../models/cd-cli-profile.model';
+import type { CdVault, EncryptionMeta } from '../models/cd-cli-vault.model';
 import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
+import { loadCdCliConfig } from '@/config';
 import axios from 'axios';
-import CdLogg from '../cd-comm/controllers/cd-logger.controller';
-
-export const VAULT_DIRECTORY = path.join(process.env.HOME || '~/', '.cd-cli');
-
-// Interfaces
-export interface CdVault {
-  name: string; // Unique identifier for the vault entry
-  description: string; // Description of the vault entry
-  value: string | null; // Value if not encrypted
-  encryptedValue: string | null; // Encrypted data
-  isEncrypted: boolean; // Indicates if the data is encrypted
-  encryptionMeta: EncryptionMeta; // Metadata for the encryption
-}
-
-export interface EncryptionMeta {
-  name: string; // Identifier for the encryption configuration
-  algorithm: string; // Encryption algorithm (e.g., 'aes-256-cbc')
-  encoding: BufferEncoding; // Encoding format (e.g., 'hex', 'base64')
-  ivLength: number; // Length of the initialization vector
-  iv?: string; // Add 'iv' as an optional property
-  keyDerivationMethod?: string; // Optional: Method used to derive the key
-  keySalt?: string; // Optional: Salt used for key derivation
-  additionalAuthenticatedData?: string; // Optional: For AEAD algorithms
-  encryptedAt?: string; // Optional: Timestamp when encryption occurred
-}
-
-// Encryption configurations
-export const ENCRYPTION_CONFIGS: EncryptionMeta[] = [
-  {
-    name: 'default',
-    algorithm: 'aes-256-cbc',
-    encoding: 'hex',
-    ivLength: 16,
-  },
-  {
-    name: 'optional-aes-gcm',
-    algorithm: 'aes-256-gcm',
-    encoding: 'base64',
-    ivLength: 12,
-    additionalAuthenticatedData: 'auth-data',
-  },
-];
+import CdLogg from '../../cd-comm/controllers/cd-logger.controller';
+import {
+  ENCRYPTION_CONFIGS,
+  VAULT_DIRECTORY,
+} from '../models/cd-cli-vault.model';
 
 // Ensure the vault directory exists
 if (!fs.existsSync(VAULT_DIRECTORY)) {
@@ -57,15 +25,85 @@ if (!fs.existsSync(VAULT_DIRECTORY)) {
 }
 
 class CdCliVaultController {
+  /**
+   * Retrieves the encryption key from the environment variables.
+   * If the key is missing, it triggers the creation of a new key.
+   * @returns {Buffer} - The encryption key as a Buffer.
+   */
   private static getEncryptionKey(): Buffer {
-    const encryptionKey = process.env.CD_CLI_ENCRYPT_KEY;
+    let encryptionKey = process.env.CD_CLI_ENCRYPT_KEY;
+
     if (!encryptionKey) {
+      CdLogg.warning(
+        'Encryption key not found in environment variables. Generating a new key...',
+      );
+      encryptionKey = this.createEncryptionKey();
+    }
+
+    // Validate the key length
+    if (encryptionKey.length !== 64) {
       throw new Error(
-        'CD_CLI_ENCRYPT_KEY is not defined in environment variables.',
+        `Invalid encryption key length: ${encryptionKey.length}. Expected a 64-character hex string.`,
       );
     }
+
     return Buffer.from(encryptionKey, 'hex');
   }
+
+  /**
+   * Creates a new encryption key and saves it using `saveEncryptionKey`.
+   * @returns {string} - The newly generated encryption key.
+   */
+  private static createEncryptionKey(): string {
+    const newKey = crypto.randomBytes(32).toString('hex');
+    this.saveEncryptionKey(newKey);
+    CdLogg.success('New encryption key created and saved.');
+    return newKey;
+  }
+
+  /**
+   * Saves the encryption key to a secure location.
+   * Current implementation saves to the `.env` file.
+   * Future implementations may include Web3 and cloud-based options.
+   * @param {string} encryptionKey - The encryption key to save.
+   */
+  private static saveEncryptionKey(encryptionKey: string): void {
+    const envFilePath = path.join(VAULT_DIRECTORY, '.env');
+
+    // Ensure the .env file exists or create it
+    if (!fs.existsSync(envFilePath)) {
+      CdLogg.info('Creating .env file for storing the encryption key...');
+      fs.writeFileSync(envFilePath, '');
+    }
+
+    // Append or update the encryption key in the .env file
+    const envFileContent = fs.readFileSync(envFilePath, 'utf-8');
+    const updatedContent = envFileContent.includes('CD_CLI_ENCRYPT_KEY=')
+      ? envFileContent.replace(
+          /CD_CLI_ENCRYPT_KEY=.*/,
+          `CD_CLI_ENCRYPT_KEY=${encryptionKey}`,
+        )
+      : `${envFileContent}\nCD_CLI_ENCRYPT_KEY=${encryptionKey}`.trim();
+
+    fs.writeFileSync(envFilePath, updatedContent, 'utf-8');
+    CdLogg.success('Encryption key saved to .env file.');
+  }
+
+  /**
+   * Example usage of getEncryptionKey().
+   */
+  static exampleUsage(): void {
+    try {
+      const encryptionKeyBuffer = this.getEncryptionKey();
+      console.log('Encryption Key Buffer:', encryptionKeyBuffer);
+    } catch (error) {
+      CdLogg.error(
+        `Error fetching encryption key: ${(error as Error).message}`,
+      );
+    }
+  }
+
+  // export default CdCliVaultController;
 
   private static getEncryptionMetaByName(name: string): EncryptionMeta {
     const config = ENCRYPTION_CONFIGS.find((config) => config.name === name);
@@ -75,34 +113,6 @@ class CdCliVaultController {
     return config;
   }
 
-  // private static encrypt(text: string, metaName: string): CdVault {
-  //   const meta = this.getEncryptionMetaByName(metaName);
-  //   const iv = crypto.randomBytes(meta.ivLength);
-  //   const cipher = crypto.createCipheriv(
-  //     meta.algorithm,
-  //     this.getEncryptionKey(),
-  //     iv,
-  //   );
-
-  //   let encrypted = cipher.update(
-  //     text,
-  //     'utf8',
-  //     meta.encoding as BufferEncoding,
-  //   );
-  //   encrypted += cipher.final(meta.encoding as BufferEncoding);
-
-  //   return {
-  //     name: 'encrypted-data',
-  //     description: 'Encrypted data',
-  //     encryptedValue: encrypted,
-  //     isEncrypted: true,
-  //     encryptionMeta: {
-  //       ...meta,
-  //       iv: iv.toString(meta.encoding), // Add 'iv' dynamically
-  //       encryptedAt: new Date().toISOString(),
-  //     } as EncryptionMeta & { iv: string; encryptedAt: string }, // Extend metadata
-  //   };
-  // }
   private static encrypt(text: string, metaName: string): CdVault {
     const meta = this.getEncryptionMetaByName(metaName);
     const iv = crypto.randomBytes(meta.ivLength);
@@ -172,7 +182,7 @@ class CdCliVaultController {
     };
   }
 
-  private static decrypt(
+  static decrypt(
     encryptionMeta: EncryptionMeta & { iv: string },
     encryptedValue: string,
   ): string {
@@ -209,33 +219,6 @@ class CdCliVaultController {
     fs.writeFileSync(filePath, JSON.stringify(vault, null, 2));
   }
 
-  // static getSensitiveData(vault: CdVault): string {
-  //   if (!vault.isEncrypted) {
-  //     throw new Error(`Vault entry '${vault.name}' is not encrypted.`);
-  //   }
-
-  //   if (!vault.encryptedValue || !vault.encryptionMeta) {
-  //     throw new Error(
-  //       `Vault entry '${vault.name}' is missing required encryption data.`,
-  //     );
-  //   }
-
-  //   const encryptionMeta = vault.encryptionMeta;
-
-  //   if (!encryptionMeta.iv) {
-  //     throw new Error(
-  //       `Vault entry '${vault.name}' is missing the 'iv' property in its encryption metadata.`,
-  //     );
-  //   }
-
-  //   // Assert that encryptionMeta includes iv as a required field
-  //   return this.decrypt(
-  //     { ...encryptionMeta, iv: encryptionMeta.iv } as EncryptionMeta & {
-  //       iv: string;
-  //     },
-  //     vault.encryptedValue,
-  //   );
-  // }
   /**
    * Usage:
    * Retrieve encrypted data:
@@ -326,6 +309,69 @@ class CdCliVaultController {
       CdLogg.error('Error fetching profiles:', {
         error: (error as Error).message,
       });
+    }
+  }
+
+  async encryptionKeyWizard(): Promise<void> {
+    const encryptionKey = process.env.CD_CLI_ENCRYPT_KEY;
+    if (!encryptionKey) {
+      console.log('Encryption key not found. Generating a new key...');
+      const newKey = crypto.randomBytes(32).toString('hex');
+      process.env.CD_CLI_ENCRYPT_KEY = newKey;
+      console.log('New encryption key generated.');
+    } else {
+      console.log('Encryption key exists. Validating...');
+      // Add validation logic here.
+    }
+
+    // Add backup logic
+    console.log('Checking backup configurations...');
+    // Report backup status and suggestions.
+  }
+
+  async encryptionValidator(
+    profileName: string | null = null,
+    jPath: string | null = null,
+  ): Promise<void> {
+    const cdCliConfig = loadCdCliConfig();
+
+    if (!profileName && !jPath) {
+      console.log('Validating all profiles...');
+      for (const profile of cdCliConfig.items) {
+        await this.validateCdVaultEntries(profile);
+      }
+    } else if (profileName) {
+      const profile = cdCliConfig.items.find(
+        (p) => p.cdCliProfileName === profileName,
+      );
+      if (!profile) {
+        console.error(`Profile '${profileName}' not found.`);
+        return;
+      }
+      await this.validateCdVaultEntries(profile);
+    } else if (jPath) {
+      console.log(`Validating field at path '${jPath}'...`);
+      // Add logic to validate specific field.
+    }
+  }
+
+  private async validateCdVaultEntries(profile: ProfileModel): Promise<void> {
+    const { cdVault, details } = profile.cdCliProfileData || {};
+    if (!cdVault) {
+      console.log(
+        `No cdVault entries for profile: ${profile.cdCliProfileName}`,
+      );
+      return;
+    }
+
+    for (const vaultItem of cdVault) {
+      if (!vaultItem.isEncrypted) {
+        console.log(`Encrypting and adding '${vaultItem.name}' to cdVault...`);
+        // Encrypt and update vaultItem.
+      } else {
+        console.log(`Validating encrypted entry '${vaultItem.name}'...`);
+        // Validate encryption metadata and re-encrypt if necessary.
+      }
     }
   }
 }

@@ -11,11 +11,10 @@ import config, {
   loadCdCliConfig,
 } from '../../../../config';
 import { environment } from '../../../../environments/environment'; // Import the environment config
-import CdCliVaultController, {
-  VAULT_DIRECTORY,
-} from '../../base/cd-cli-vault.controller';
 import { HttpService } from '../../base/http.service';
 import { CdCliProfileController } from '../../cd-cli/controllers/cd-cli-profile.cointroller';
+import CdCliVaultController from '../../cd-cli/controllers/cd-cli-vault.controller';
+import { VAULT_DIRECTORY } from '../../cd-cli/models/cd-cli-vault.model';
 import CdLogg from '../../cd-comm/controllers/cd-logger.controller';
 import { logg, logger } from '../../cd-comm/controllers/cd-winston';
 import { DEFAULT_ENVELOPE_LOGIN } from '../models/user.model';
@@ -34,67 +33,6 @@ export class UserController {
   /**
    * Authenticate the user and manage session.
    */
-  // async auth(userName: string, password: string): Promise<void> {
-  //   const consumerGuid = environment.clientContext.consumerToken;
-
-  //   // If password is not provided, prompt for it
-  //   if (!password) {
-  //     const answers = await inquirer.prompt([
-  //       {
-  //         type: 'password',
-  //         name: 'password',
-  //         message: 'Please enter your password:',
-  //         mask: '*', // Mask the input
-  //       },
-  //     ]);
-  //     password = answers.password;
-  //   }
-
-  //   // Use DEFAULT_ENVELOPE_LOGIN to setup payload
-  //   const payload = DEFAULT_ENVELOPE_LOGIN;
-  //   payload.dat.f_vals[0].data.userName = userName;
-  //   payload.dat.f_vals[0].data.password = password;
-  //   payload.dat.f_vals[0].data.consumerGuid = consumerGuid;
-
-  //   try {
-  //     CdLogg.info('Authenticating...');
-  //     CdLogg.info('Payload:', payload); // Simplified logging of the payload
-
-  //     // Send the request to the server
-  //     const response: ICdResponse = await this.svServer.proc(payload);
-
-  //     CdLogg.info('Response:', response);
-
-  //     // Check if the login is successful
-  //     if (response.app_state?.success) {
-  //       // If successful, save session data
-  //       if (response.app_state?.sess) {
-  //         // CdLogg.info('Session data:', response.app_state.sess);
-  //         this.saveSession(response.app_state.sess);
-
-  //         // Fetch and save profiles after successful login
-  //         const cdToken = response.app_state.sess.cd_token;
-  //         const profileController = new CdCliProfileController();
-  //         if (cdToken) {
-  //           await profileController.fetchAndSaveProfiles(cdToken); // Fetch and save profiles
-  //         } else {
-  //           CdLogg.error('could not save the profile due to invalid session');
-  //         }
-  //       }
-  //     } else {
-  //       // If not successful, log an error and stop the process
-  //       CdLogg.error(
-  //         'Login failed:',
-  //         response.app_state?.info || { error: 'Unknown error' },
-  //       );
-  //       throw new Error(
-  //         'Login failed. Please check your credentials and try again.',
-  //       );
-  //     }
-  //   } catch (error: any) {
-  //     CdLogg.error('Error during login:', error.message);
-  //   }
-  // }
   async auth(userName: string, password: string): Promise<void> {
     try {
       // Load the configuration file
@@ -291,15 +229,6 @@ export class UserController {
   /**
    * Log out by clearing the session.
    */
-  // logout(): void {
-  //   if (fs.existsSync(SESSION_FILE_STORE)) {
-  //     fs.unlinkSync(SESSION_FILE_STORE);
-  //     CdLogg.info('Logged out successfully.');
-  //   } else {
-  //     CdLogg.info('No active session found.');
-  //   }
-  // }
-  // Method to log out by clearing session from config file
   logout(): void {
     try {
       if (fs.existsSync(CONFIG_FILE_PATH)) {
@@ -319,29 +248,8 @@ export class UserController {
   }
 
   /**
-   * Get the current session.
-   */
-  // getSession(): ISessResp | null {
-  //   // if (config.cdSession.cd_token) {
-  //   //   return config.cdSession;
-  //   // }
-  //   if (fs.existsSync(SESSION_FILE_STORE)) {
-  //     return JSON.parse(fs.readFileSync(SESSION_FILE_STORE, 'utf-8'));
-  //   }
-  //   return null;
-  // }
-
-  /**
    * Check if the session is valid.
    */
-  // isSessionValid(): boolean {
-  //   const session = this.getSession();
-  //   if (session) {
-  //     const now = Math.floor(Date.now() / 1000);
-  //     return now < session.ttl;
-  //   }
-  //   return false;
-  // }
   // Method to check if session is valid
   isSessionValid(): boolean {
     try {

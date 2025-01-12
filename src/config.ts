@@ -10,7 +10,7 @@ import {
 } from './CdCli/sys/moduleman/models/mod-craft.model';
 import { LOGIN_CMD, LOGOUT_CMD } from './CdCli/sys/user/models/user.model';
 
-export const VAULT_DIRECTORY = path.join(process.env.HOME || '~/', '.cd-cli');
+// export const VAULT_DIRECTORY = path.join(process.env.HOME || '~/', '.cd-cli');
 export const CONFIG_FILE_PATH = path.join(
   process.env.HOME || '~/',
   '.cd-cli/cd-cli.config.json',
@@ -28,6 +28,20 @@ export default {
     version: '1.0.0',
     description: 'Your description here',
     showHelpAfterError: true,
+  },
+  preferences: {
+    encryption: {
+      encryptionKey: process.env.CD_CLI_ENCRYPT_KEY,
+    },
+    backUp: [
+      {
+        profileName: 'cd-git-config',
+        field: 'details.gitAccess.gitHubToken',
+        useLocal: { state: false, storePath: '~/.cd-cli/' },
+        useWeb3: { state: false }, // yet to be defined
+        useCloud: { state: false }, // yet to be defined
+      },
+    ],
   },
 };
 

@@ -125,69 +125,9 @@ export class CdCliProfileController {
     }
   }
 
-  /**
-   * Fetch profiles after successful login and save them to profiles.json
-   */
-  // async fetchAndSaveProfiles(cdToken: string): Promise<void> {
-  //   if (!cdToken) {
-  //     CdLogg.error('No valid cdToken found. Cannot fetch profiles.');
-  //     return;
-  //   }
-
-  //   // Prepare the query object to fetch profiles
-  //   const q = {
-  //     where: { userId: -1 }, // userId of -1 signals backend to use the cdToken to derive the userId
-  //   };
-
-  //   try {
-  //     CdLogg.info('Fetching profiles from backend...');
-  //     const response: ICdResponse = await this.svCdCliProfile.getCdCliProfile(
-  //       q,
-  //       cdToken,
-  //     );
-  //     // CdLogg.info('Response from backend:', response);
-
-  //     // Check if the response indicates success
-  //     if (response.app_state?.success) {
-  //       // Check if profiles are returned in the response data
-  //       const profiles = response.data;
-
-  //       // If no profiles exist, create the default empty profile structure
-  //       if (!profiles || profiles.items.length === 0) {
-  //         const emptyProfileData = {
-  //           items: [],
-  //           count: 0,
-  //         };
-
-  //         // Write the default empty profile structure to profile.json
-  //         fs.writeFileSync(
-  //           PROFILE_FILE_STORE,
-  //           JSON.stringify(emptyProfileData, null, 2),
-  //         );
-  //         CdLogg.info(
-  //           `No profiles found. Created empty profile file: ${PROFILE_FILE_STORE}`,
-  //         );
-  //       } else {
-  //         // If profiles exist, save them to profile.json
-  //         fs.writeFileSync(
-  //           PROFILE_FILE_STORE,
-  //           JSON.stringify(profiles, null, 2),
-  //         );
-  //         CdLogg.success(
-  //           `Profiles saved successfully to ${PROFILE_FILE_STORE}.`,
-  //         );
-  //       }
-  //     } else {
-  //       CdLogg.error(
-  //         `Failed to fetch profiles: ${response.app_state?.info?.app_msg || 'Unknown error'}`,
-  //       );
-  //     }
-  //   } catch (error: any) {
-  //     CdLogg.error('Error fetching profiles:', error.message);
-  //   }
-  // }
   async fetchAndSaveProfiles(cdToken: string): Promise<void> {
     CdLogg.debug('starting fetchAndSaveProfiles():', { token: cdToken });
+
     if (!cdToken) {
       CdLogg.error('No valid cdToken found. Cannot fetch profiles.');
       return;
@@ -205,44 +145,35 @@ export class CdCliProfileController {
         cdToken,
       );
 
-      // Check if the response indicates success
       if (response.app_state?.success) {
-        // Check if profiles are returned in the response data
-        const profiles: ProfileContainer = response.data;
-
-        // Read the existing config file or create a new one if it doesn't exist
-        let configData: any = {};
+        // Fetch existing configuration or create a new structure
+        let configData: any = {
+          items: [],
+          count: 0,
+        };
 
         if (fs.existsSync(CONFIG_FILE_PATH)) {
           configData = JSON.parse(fs.readFileSync(CONFIG_FILE_PATH, 'utf-8'));
         }
 
-        // Ensure the profiles section exists in the config file
-        if (!configData.profiles) {
-          configData.profiles = {};
-        }
+        // Overwrite the entire profiles section in the config file
+        const profiles: ProfileContainer = response.data;
 
-        // If no profiles exist in the backend response, create an empty profiles structure
         if (!profiles || profiles.items.length === 0) {
-          configData.profiles = {
-            items: [],
-            count: 0,
-          };
-          CdLogg.info('No profiles found. Created empty profile structure.');
+          CdLogg.info('No profiles found. Writing empty profiles section.');
+          configData.items = [];
+          configData.count = 0;
         } else {
-          // If profiles exist in the response, add them to the profiles section of the config file
-          configData.profiles = {
-            items: profiles.items.map((profile: ProfileModel) => ({
-              cdCliProfileName: profile.cdCliProfileName,
-              cdCliProfileData: profile.cdCliProfileData,
-              cdCliProfileTypeId: profile.cdCliProfileTypeId,
-              cdCliProfileGuid: profile.cdCliProfileGuid,
-              userId: profile.userId,
-              cdCliProfileEnabled: profile.cdCliProfileEnabled,
-            })),
-            count: profiles.count,
-          };
-          CdLogg.success(`Profiles fetched and saved successfully.`);
+          CdLogg.info(`Fetched ${profiles.count} profiles.`);
+          configData.items = profiles.items.map((profile: ProfileModel) => ({
+            cdCliProfileName: profile.cdCliProfileName,
+            cdCliProfileData: profile.cdCliProfileData,
+            cdCliProfileTypeId: profile.cdCliProfileTypeId,
+            cdCliProfileGuid: profile.cdCliProfileGuid,
+            userId: profile.userId,
+            cdCliProfileEnabled: profile.cdCliProfileEnabled,
+          }));
+          configData.count = profiles.count;
         }
 
         // Write the updated config data to cd-cli.config.json
@@ -259,9 +190,46 @@ export class CdCliProfileController {
   }
 
   // Check for profile existence and initiate login if necessary
+  // async checkProfileAndLogin(): Promise<void> {
+  //   try {
+  //     const configFilePath = path.resolve('./cd-cli.config.json');
+  //     if (!fs.existsSync(configFilePath)) {
+  //       CdLogg.warning(
+  //         'Configuration file not found. Initiating login process...',
+  //       );
+
+  //       const userController = new UserController();
+  //       await userController.loginWithRetry();
+
+  //       // Verify if profiles have been saved after login
+  //       if (!fs.existsSync(configFilePath)) {
+  //         throw new Error('Configuration file not found after login attempt.');
+  //       }
+  //     }
+
+  //     const config = JSON.parse(fs.readFileSync(configFilePath, 'utf-8'));
+  //     if (
+  //       !config.profiles ||
+  //       !config.profiles.items ||
+  //       config.profiles.items.length === 0
+  //     ) {
+  //       CdLogg.warning(
+  //         'No profiles available in the configuration. Consider creating one.',
+  //       );
+  //     }
+  //   } catch (error) {
+  //     CdLogg.error(
+  //       `Error during profile check or login: ${(error as Error).message}`,
+  //     );
+  //     throw error;
+  //   }
+  // }
   async checkProfileAndLogin(): Promise<void> {
     try {
-      const configFilePath = path.resolve('./cd-cli.config.json');
+      // Resolve the path to the configuration file
+      const configFilePath = CONFIG_FILE_PATH; // Assuming this constant points to ~/.cd-cli/cd-cli.config.json
+
+      // Step 1: Check if the configuration file exists
       if (!fs.existsSync(configFilePath)) {
         CdLogg.warning(
           'Configuration file not found. Initiating login process...',
@@ -270,21 +238,72 @@ export class CdCliProfileController {
         const userController = new UserController();
         await userController.loginWithRetry();
 
-        // Verify if profiles have been saved after login
+        // Verify if the configuration file was created after login
         if (!fs.existsSync(configFilePath)) {
           throw new Error('Configuration file not found after login attempt.');
         }
       }
 
-      const config = JSON.parse(fs.readFileSync(configFilePath, 'utf-8'));
+      // Step 2: Load and parse the configuration file
+      const cdCliConfig = JSON.parse(fs.readFileSync(configFilePath, 'utf-8'));
+
+      // Step 3: Validate profiles section
       if (
-        !config.profiles ||
-        !config.profiles.items ||
-        config.profiles.items.length === 0
+        !cdCliConfig.profiles ||
+        !cdCliConfig.profiles.items ||
+        cdCliConfig.profiles.items.length === 0
       ) {
         CdLogg.warning(
           'No profiles available in the configuration. Consider creating one.',
         );
+        throw new Error('No profiles available in the configuration.');
+      }
+
+      // Step 4: Look for the "cd-api-local" profile
+      const cdApiProfile = cdCliConfig.profiles.items.find(
+        (profile: any) => profile.cdCliProfileName === 'cd-api-local',
+      );
+
+      if (!cdApiProfile || !cdApiProfile.cdCliProfileData) {
+        throw new Error(
+          'Profile "cd-api-local" is missing or invalid. Please log in to create the profile.',
+        );
+      }
+
+      // Step 5: Check for a valid session token in the "cd-api-local" profile
+      const session = cdApiProfile.cdCliProfileData.details?.session;
+      if (
+        !session ||
+        !session.token ||
+        new Date(session.expiry) <= new Date()
+      ) {
+        CdLogg.info(
+          'Session token is missing or expired. Initiating login process...',
+        );
+
+        const userController = new UserController();
+        await userController.loginWithRetry();
+
+        // Re-check the profile after login
+        const updatedConfig = JSON.parse(
+          fs.readFileSync(configFilePath, 'utf-8'),
+        );
+        const updatedProfile = updatedConfig.profiles.items.find(
+          (profile: any) => profile.cdCliProfileName === 'cd-api-local',
+        );
+
+        if (
+          !updatedProfile ||
+          !updatedProfile.cdCliProfileData?.details?.session
+        ) {
+          throw new Error(
+            'Session token is still missing after login. Please check your login credentials.',
+          );
+        }
+
+        CdLogg.success('Session token renewed successfully.');
+      } else {
+        CdLogg.info('Valid session token found. Proceeding...');
       }
     } catch (error) {
       CdLogg.error(

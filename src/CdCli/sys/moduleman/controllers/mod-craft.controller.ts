@@ -1,5 +1,6 @@
 /* eslint-disable style/operator-linebreak */
 import type {
+  ProfileContainer,
   ProfileData,
   ProfileModel,
 } from '../../cd-cli/models/cd-cli-profile.model';
@@ -12,12 +13,13 @@ import { fileURLToPath } from 'node:url';
 import util from 'node:util';
 import { CONFIG_FILE_PATH } from '@/config';
 import inquirer from 'inquirer';
-import CdCliVaultController from '../../base/cd-cli-vault.controller';
 import { CdCliProfileController } from '../../cd-cli/controllers/cd-cli-profile.cointroller';
+import CdCliVaultController from '../../cd-cli/controllers/cd-cli-vault.controller';
 import CdLogg from '../../cd-comm/controllers/cd-logger.controller';
 import {
   DEFAULT_PROMPT_DATA,
   InitModuleFromRepoPromptData,
+  SSH_TO_DEV_PROMPT_DATA,
 } from '../models/mod-craft.model';
 
 const execPromise = util.promisify(exec);
@@ -131,6 +133,11 @@ export class ModCraftController {
   // import { checkProfileAndLogin } from '../../utils/profileHelper'; // Assuming the helper is in utils
 
   async initModuleFromRepo(gitRepo: string, profileName?: string) {
+    CdLogg.debug('starting initModuleFromRepo():', {
+      repo: gitRepo,
+      pName: profileName,
+      configPath: CONFIG_FILE_PATH,
+    });
     try {
       // Step 1: Load configurations from ~/.cd-cli.config.json
       if (!fs.existsSync(CONFIG_FILE_PATH)) {
@@ -139,9 +146,12 @@ export class ModCraftController {
         );
       }
 
-      const config = JSON.parse(fs.readFileSync(CONFIG_FILE_PATH, 'utf-8'));
+      const config: ProfileContainer = JSON.parse(
+        fs.readFileSync(CONFIG_FILE_PATH, 'utf-8'),
+      );
+      const profiles: ProfileModel[] = config.items;
 
-      if (!config.profiles || config.profiles.count === 0) {
+      if (!profiles || config.count === 0) {
         throw new Error('No profiles found. Please create a profile first.');
       }
 
@@ -149,13 +159,14 @@ export class ModCraftController {
       let profileDetails: any = null;
 
       if (profileName) {
-        const profile = config.profiles.items.find(
+        const profile = config.items.find(
           (p: any) => p.cdCliProfileName === profileName,
         );
         if (!profile) {
           throw new Error(`Profile '${profileName}' not found.`);
         }
         profileDetails = profile.cdCliProfileData?.details;
+        CdLogg.debug('profileDetails:', profileDetails);
 
         // Decrypt sensitive data using CdCliVaultController
         if (profileDetails?.['cd-vault']) {
@@ -166,34 +177,10 @@ export class ModCraftController {
         CdLogg.info(`Using profile: ${profileName}`);
       }
 
+      CdLogg.debug(`profileDetails: ${JSON.stringify(profileDetails)}`);
       // If no profile or details found, prompt the user
       if (!profileDetails) {
-        const answers = await inquirer.prompt([
-          {
-            type: 'input',
-            name: 'remoteServer',
-            message: 'Enter development server address:',
-            default: '192.168.1.70',
-          },
-          {
-            type: 'input',
-            name: 'remoteUser',
-            message: 'Enter remote SSH user (default: devops):',
-            default: 'devops',
-          },
-          {
-            type: 'input',
-            name: 'sshKey',
-            message: 'Enter path to your SSH key:',
-            default: '~/path/to/sshKey',
-          },
-          {
-            type: 'input',
-            name: 'cdApiDir',
-            message: 'Enter directory on the server (e.g., ~/cd-api):',
-            default: '~/cd-api',
-          },
-        ]);
+        const answers = await inquirer.prompt(SSH_TO_DEV_PROMPT_DATA);
 
         profileDetails = {
           remoteServer: answers.remoteServer,
@@ -205,6 +192,7 @@ export class ModCraftController {
 
       // Step 3: Construct SSH command
       const { remoteUser, sshKey, remoteServer, cdApiDir } = profileDetails;
+      CdLogg.debug(`remoteUser: ${remoteUser}, remoteServer: ${remoteServer}`);
 
       const command = sshKey
         ? `ssh -i "${sshKey}" "${remoteUser}@${remoteServer}" "sudo -H -u ${remoteUser} bash -c 'git clone ${gitRepo} ${cdApiDir}/src/CdApi/app/cd-geo'"`
