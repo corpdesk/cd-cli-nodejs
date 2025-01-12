@@ -66,22 +66,26 @@
             }
           ],
           "gitAccess": {
-            "cd-vault": {
-              "name": "gitHubToken",
-              "description": "github access token",
-              "isEncrypted:": true,
-              "encryptedVaue": "<encrypted-token>",
-              "EncryptionMeta": {
-                "iv": "1a94d8c6b7e8...901f",
-                "encoding": "hex",
-                "algorithm": "aes-256-cbc",
-                "encryptedToken": "3a94d8c6b7...e04a"
-              }
-            },
-            "username": "georemo",
+            "gitHubToken": "#cdVault['gitHubToken']",
+            "gitHubUser": "georemo",
             "baseRepoUrl": "https:/github.com"
           }
         },
+        "cdVault": [
+          {
+            "name": "gitHubToken",
+            "description": "github access token",
+            "isEncrypted:": true,
+            "value": null,
+            "encryptedVaue": "<encrypted-token>",
+            "EncryptionMeta": {
+              "iv": "1a94d8c6b7e8...901f",
+              "encoding": "hex",
+              "algorithm": "aes-256-cbc",
+              "encryptedToken": "3a94d8c6b7...e04a"
+            }
+          }
+        ],
         "permissions": {
           "userPermissions": [
             {

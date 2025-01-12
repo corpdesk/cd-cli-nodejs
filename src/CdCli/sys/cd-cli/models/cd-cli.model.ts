@@ -1,3 +1,4 @@
+import { CD_AUTO_GIT_CMD } from '@/CdCli/app/cd-auto-git/models/cd-auto-git.model';
 import {
   MODULE_CMD,
   TEMPLATE_CMD,
@@ -12,5 +13,6 @@ export const CdCli = {
     PROFILE_CMD,
     MODULE_CMD,
     TEMPLATE_CMD,
+    CD_AUTO_GIT_CMD,
   ] as any,
 };

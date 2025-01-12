@@ -1,3 +1,4 @@
+import type { CdVault } from './cd-cli-vault.model';
 /* eslint-disable style/brace-style */
 import { fileURLToPath } from 'node:url';
 import CdLogg from '../../cd-comm/controllers/cd-logger.controller';
@@ -29,6 +30,7 @@ export interface ProfileModel {
 export interface ProfileData {
   owner: ProfileOwner; // Profile owner details (userId, groupId)
   details: any; // Can be any. For example SSH connection details
+  cdVault: CdVault[]; // for managing encrypted fields
   permissions: ProfilePermissions; // Permissions associated with this profile
 }
 
@@ -123,41 +125,6 @@ export const sshProfileTemplate = {
     cdApiDir: '~/cd-api',
   },
 };
-
-// const sshProfileTemplate = {
-//   owner: {
-//     userId: 1010, // Example user ID, could be dynamic based on the logged-in user
-//     groupId: 0, // Group ID, like "_public"
-//   },
-//   permissions: {
-//     userPermissions: [
-//       {
-//         userId: 1000, // Permissions for a user
-//         field: 'sshKey',
-//         hidden: false,
-//         read: true,
-//         write: true,
-//         execute: false,
-//       },
-//     ],
-//     groupPermissions: [
-//       {
-//         groupId: 0, // Public group
-//         field: 'sshKey',
-//         hidden: false,
-//         read: true,
-//         write: false,
-//         execute: false,
-//       },
-//     ],
-//   },
-//   details: {
-//     sshKey: answers.sshKey,
-//     remoteUser: answers.remoteUser,
-//     devServer: answers.remoteServer,
-//     cdApiDir: answers.cdApiDir,
-//   },
-// };
 
 // Default profile prompt data template
 export function createProfilePromptData(profileType: string): any {
@@ -281,45 +248,6 @@ const cdEnvelope = {
   },
   args: null,
 };
-
-// export const CreateSshProfilePromptData: any = [
-//   {
-//     type: 'input',
-//     name: 'profileName',
-//     message: 'Enter profile name (e.g., devServer-ssh-profile):',
-//     default: 'devServer-ssh-profile',
-//   },
-//   {
-//     type: 'input',
-//     name: 'description',
-//     message: 'Enter profile description:',
-//     default: 'SSH profile for development server connection',
-//   },
-//   {
-//     type: 'input',
-//     name: 'remoteServer',
-//     message: 'Enter development server address (e.g., server.example.com):',
-//     default: '192.168.1.70',
-//   },
-//   {
-//     type: 'input',
-//     name: 'remoteUser',
-//     message: 'Enter remote SSH user (default: devops):',
-//     default: 'devops',
-//   },
-//   {
-//     type: 'input',
-//     name: 'sshKey',
-//     message: 'Enter path to your SSH key:',
-//     default: '~/path/to/sshKey',
-//   },
-//   {
-//     type: 'input',
-//     name: 'cdApiDir',
-//     message: 'Enter directory on the server (e.g., ~/cd-api):',
-//     default: '~/cd-api',
-//   },
-// ];
 
 export const PROFILE_CMD = {
   name: 'profile',
