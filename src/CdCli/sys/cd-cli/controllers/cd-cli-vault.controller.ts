@@ -9,8 +9,8 @@
 import type { ProfileModel } from '../models/cd-cli-profile.model';
 import type { CdVault, EncryptionMeta } from '../models/cd-cli-vault.model';
 import crypto from 'node:crypto';
-import fs from 'node:fs';
-import path from 'node:path';
+import fs, { existsSync, mkdirSync } from 'node:fs';
+import path, { join } from 'node:path';
 import { loadCdCliConfig } from '@/config';
 import axios from 'axios';
 import CdLogg from '../../cd-comm/controllers/cd-logger.controller';
@@ -20,8 +20,8 @@ import {
 } from '../models/cd-cli-vault.model';
 
 // Ensure the vault directory exists
-if (!fs.existsSync(VAULT_DIRECTORY)) {
-  fs.mkdirSync(VAULT_DIRECTORY, { recursive: true });
+if (!existsSync(VAULT_DIRECTORY)) {
+  mkdirSync(VAULT_DIRECTORY, { recursive: true });
 }
 
 class CdCliVaultController {
@@ -30,7 +30,7 @@ class CdCliVaultController {
    * If the key is missing, it triggers the creation of a new key.
    * @returns {Buffer} - The encryption key as a Buffer.
    */
-  private static getEncryptionKey(): Buffer {
+  static getEncryptionKey(): Buffer {
     let encryptionKey = process.env.CD_CLI_ENCRYPT_KEY;
 
     if (!encryptionKey) {
@@ -54,7 +54,7 @@ class CdCliVaultController {
    * Creates a new encryption key and saves it using `saveEncryptionKey`.
    * @returns {string} - The newly generated encryption key.
    */
-  private static createEncryptionKey(): string {
+  static createEncryptionKey(): string {
     const newKey = crypto.randomBytes(32).toString('hex');
     this.saveEncryptionKey(newKey);
     CdLogg.success('New encryption key created and saved.');
@@ -67,11 +67,11 @@ class CdCliVaultController {
    * Future implementations may include Web3 and cloud-based options.
    * @param {string} encryptionKey - The encryption key to save.
    */
-  private static saveEncryptionKey(encryptionKey: string): void {
-    const envFilePath = path.join(VAULT_DIRECTORY, '.env');
+  static saveEncryptionKey(encryptionKey: string): void {
+    const envFilePath = join(VAULT_DIRECTORY, '.env');
 
     // Ensure the .env file exists or create it
-    if (!fs.existsSync(envFilePath)) {
+    if (!existsSync(envFilePath)) {
       CdLogg.info('Creating .env file for storing the encryption key...');
       fs.writeFileSync(envFilePath, '');
     }
@@ -263,12 +263,12 @@ class CdCliVaultController {
         'default',
       );
     }
-    const configFilePath = path.join(VAULT_DIRECTORY, 'cd-cli.config.json');
+    const configFilePath = join(VAULT_DIRECTORY, 'cd-cli.config.json');
     fs.writeFileSync(configFilePath, JSON.stringify(profileData, null, 2));
   }
 
   public static readProfileData(): any {
-    const configFilePath = path.join(VAULT_DIRECTORY, 'cd-cli.config.json');
+    const configFilePath = join(VAULT_DIRECTORY, 'cd-cli.config.json');
     const profileData = JSON.parse(fs.readFileSync(configFilePath, 'utf-8'));
 
     if (
@@ -299,7 +299,7 @@ class CdCliVaultController {
 
       if (response.data.success) {
         const profiles = response.data.profiles || { items: [], count: 0 };
-        const profilesPath = path.join(VAULT_DIRECTORY, 'profile.json');
+        const profilesPath = join(VAULT_DIRECTORY, 'profile.json');
         this.storeSensitiveData(profilesPath, JSON.stringify(profiles));
         CdLogg.success('Profiles saved successfully.');
       } else {

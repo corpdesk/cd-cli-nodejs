@@ -7,21 +7,17 @@ import type {
   ProfileModel,
 } from '../models/cd-cli-profile.model';
 import { fileURLToPath } from 'node:url';
-import { promisify } from 'node:util';
 /* eslint-disable style/brace-style */
 import inquirer from 'inquirer';
 // import config, { PROFILE_FILE_STORE } from '../../../../config';
-import { logg, logger } from '../../cd-comm/controllers/cd-winston';
 import { UserController } from '../../user/controllers/user.controller';
-import {
-  createProfilePromptData,
-  sshProfileTemplate,
-} from '../models/cd-cli-profile.model';
+import { createProfilePromptData } from '../models/cd-cli-profile.model';
 import { CdCliProfileService } from '../services/cd-cli-profile.service';
 
 // const fsAccess = promisify(fs.access);
 
-import fs from 'node:fs';
+import fs, { existsSync } from 'node:fs';
+import { join } from 'node:path';
 import { CONFIG_FILE_PATH } from '@/config';
 import { printTable } from '../../base/cli-table';
 import CdLogg from '../../cd-comm/controllers/cd-logger.controller';
@@ -30,7 +26,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const homeDirectory =
   process.env.HOME || process.env.USERPROFILE || '/home/username'; // Fallback if HOME is undefined
-const PROFILE_DIRECTORY = path.join(homeDirectory, '.cd-cli');
+const PROFILE_DIRECTORY = join(homeDirectory, '.cd-cli');
 // import { CdLogg } from './logger'; // Adjust this import as per your project structure
 
 // const PROFILE_FILE_STORE = './profile.json'; // Adjust the file path as necessary
@@ -39,7 +35,7 @@ const PROFILE_DIRECTORY = path.join(homeDirectory, '.cd-cli');
 export class CdCliProfileController {
   svUser = new UserController();
   svCdCliProfile = new CdCliProfileService();
-  // private profilesFilePath = path.join(__dirname, PROFILE_FILE_STORE);
+  // private profilesFilePath = join(__dirname, PROFILE_FILE_STORE);
 
   constructor() {}
 
@@ -59,10 +55,7 @@ export class CdCliProfileController {
       const profileType = profileTemplate.type; // Get the profile type (ssh, api, etc.)
 
       // Step 2: Read sensitive details from the respective JSON file
-      const detailsFilePath = path.join(
-        PROFILE_DIRECTORY,
-        `${profileType}.json`,
-      );
+      const detailsFilePath = join(PROFILE_DIRECTORY, `${profileType}.json`);
       const profileDetails = this.loadProfileDetails(detailsFilePath);
 
       // Step 3: Prompt user for profile details based on the template (generic for any profile)
@@ -111,7 +104,7 @@ export class CdCliProfileController {
 
   private loadProfileDetails(filePath: string): any {
     try {
-      if (!fs.existsSync(filePath)) {
+      if (!existsSync(filePath)) {
         CdLogg.warning(`Profile details file not found: ${filePath}`);
         return {};
       }
@@ -152,7 +145,7 @@ export class CdCliProfileController {
           count: 0,
         };
 
-        if (fs.existsSync(CONFIG_FILE_PATH)) {
+        if (existsSync(CONFIG_FILE_PATH)) {
           configData = JSON.parse(fs.readFileSync(CONFIG_FILE_PATH, 'utf-8'));
         }
 
@@ -193,7 +186,7 @@ export class CdCliProfileController {
   // async checkProfileAndLogin(): Promise<void> {
   //   try {
   //     const configFilePath = path.resolve('./cd-cli.config.json');
-  //     if (!fs.existsSync(configFilePath)) {
+  //     if (!existsSync(configFilePath)) {
   //       CdLogg.warning(
   //         'Configuration file not found. Initiating login process...',
   //       );
@@ -202,7 +195,7 @@ export class CdCliProfileController {
   //       await userController.loginWithRetry();
 
   //       // Verify if profiles have been saved after login
-  //       if (!fs.existsSync(configFilePath)) {
+  //       if (!existsSync(configFilePath)) {
   //         throw new Error('Configuration file not found after login attempt.');
   //       }
   //     }
@@ -230,7 +223,7 @@ export class CdCliProfileController {
       const configFilePath = CONFIG_FILE_PATH; // Assuming this constant points to ~/.cd-cli/cd-cli.config.json
 
       // Step 1: Check if the configuration file exists
-      if (!fs.existsSync(configFilePath)) {
+      if (!existsSync(configFilePath)) {
         CdLogg.warning(
           'Configuration file not found. Initiating login process...',
         );
@@ -239,7 +232,7 @@ export class CdCliProfileController {
         await userController.loginWithRetry();
 
         // Verify if the configuration file was created after login
-        if (!fs.existsSync(configFilePath)) {
+        if (!existsSync(configFilePath)) {
           throw new Error('Configuration file not found after login attempt.');
         }
       }
@@ -347,7 +340,7 @@ export class CdCliProfileController {
   async removeProfile(profileName: string): Promise<void> {
     try {
       const configFilePath = path.resolve('./cd-cli.config.json');
-      if (!fs.existsSync(configFilePath)) {
+      if (!existsSync(configFilePath)) {
         CdLogg.error('Configuration file not found.');
         return;
       }
@@ -381,7 +374,7 @@ export class CdCliProfileController {
   async showProfile(profileName: string): Promise<void> {
     try {
       const configFilePath = path.resolve('./cd-cli.config.json');
-      if (!fs.existsSync(configFilePath)) {
+      if (!existsSync(configFilePath)) {
         CdLogg.error('Configuration file not found.');
         return;
       }

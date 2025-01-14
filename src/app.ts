@@ -5,11 +5,9 @@ import nodeCleanup from 'node-cleanup';
 import updateNotifier from 'update-notifier';
 import config from './config';
 // import { CdCli } from './CdCli/sys/cd-cli/models/cd-cli-profile.model';
-import { description, name, version } from '../package.json';
+import { name, version } from '../package.json';
 import 'zx/globals';
 import {
-  logg,
-  logger,
   setLogLevel,
 } from './CdCli/sys/cd-comm/controllers/cd-winston';
 import CdLogg from './CdCli/sys/cd-comm/controllers/cd-logger.controller';

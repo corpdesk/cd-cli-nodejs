@@ -1,4 +1,4 @@
-# Cli Template
+# cd-cli
 This is a modern Command-Line-Tool template repository base on Node.js. You can quickly set up your cli apps with this project.
 
 ## Quick Start

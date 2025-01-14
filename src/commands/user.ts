@@ -16,8 +16,8 @@ const axiosInstance = axios.create({
 });
 
 export class CdUser {
-  //   private sessionFilePath = path.join(process.cwd(), 'session.json');
-  private sessionFilePath = path.join(__dirname, 'session.json');
+  //   private sessionFilePath = join(process.cwd(), 'session.json');
+  private sessionFilePath = join(__dirname, 'session.json');
 
   /**
    * Authenticate the user and manage session.
@@ -65,7 +65,7 @@ export class CdUser {
    * Log out by clearing the session.
    */
   logout(): void {
-    if (fs.existsSync(this.sessionFilePath)) {
+    if (existsSync(this.sessionFilePath)) {
       fs.unlinkSync(this.sessionFilePath);
       console.log('Logged out successfully.');
     } else {
@@ -77,7 +77,7 @@ export class CdUser {
    * Get the current session.
    */
   getSession(): any {
-    if (fs.existsSync(this.sessionFilePath)) {
+    if (existsSync(this.sessionFilePath)) {
       return JSON.parse(fs.readFileSync(this.sessionFilePath, 'utf-8'));
     }
     return null;

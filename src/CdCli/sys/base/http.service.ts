@@ -2,7 +2,7 @@
 /* eslint-disable ts/consistent-type-imports */
 import https from 'node:https';
 import axios from 'axios';
-import config, { CONFIG_FILE_PATH, loadCdCliConfig } from '../../../config';
+import { loadCdCliConfig } from '../../../config';
 import CdLogg from '../cd-comm/controllers/cd-logger.controller';
 import { ICdRequest } from './IBase'; // Assuming this is imported correctly from your core module
 
