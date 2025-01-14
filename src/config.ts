@@ -4,6 +4,7 @@ import type { ISessResp } from './CdCli/sys/base/IBase';
 import { existsSync } from 'node:fs';
 /* eslint-disable node/prefer-global/process */
 import path, { join } from 'node:path';
+import CdLogg from './CdCli/sys/cd-comm/controllers/cd-logger.controller';
 
 export const CONFIG_FILE_PATH = join(
   process.env.HOME || '~/',
@@ -43,6 +44,7 @@ export default {
  * Load the configuration file from the VAULT_DIRECTORY.
  */
 export function loadCdCliConfig(): any {
+  CdLogg.debug('starting getGitHubProfile()');
   try {
     if (!existsSync(CONFIG_FILE_PATH)) {
       throw new Error(`Configuration file not found at ${CONFIG_FILE_PATH}.`);

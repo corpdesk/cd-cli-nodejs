@@ -7,9 +7,11 @@ import type {
 /* eslint-disable style/brace-style */
 import { exec } from 'node:child_process';
 import * as fs from 'node:fs';
+import { existsSync, mkdirSync } from 'node:fs';
 import * as path from 'node:path';
+import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import util from 'node:util';
+import util, { promisify } from 'node:util';
 import { CONFIG_FILE_PATH } from '@/config';
 import inquirer from 'inquirer';
 import CdCliVaultController from '../../cd-cli/controllers/cd-cli-vault.controller';
