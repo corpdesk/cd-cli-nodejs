@@ -1,8 +1,5 @@
 /* eslint-disable style/operator-linebreak */
-import type {
-  ProfileData,
-  ProfileModel,
-} from '../../cd-cli/models/cd-cli-profile.model';
+import type { ProfileModel } from '../../cd-cli/models/cd-cli-profile.model';
 
 /* eslint-disable style/brace-style */
 import { exec } from 'node:child_process';
@@ -13,13 +10,12 @@ import util from 'node:util';
 import inquirer from 'inquirer';
 import { CdCliProfileController } from '../../cd-cli/controllers/cd-cli-profile.cointroller';
 import { PROFILE_FILE_STORE } from '../../cd-cli/models/cd-cli-profile.model';
-import { logger } from '../../cd-comm/controllers/cd-winston';
 import {
   DEFAULT_PROMPT_DATA,
   InitModuleFromRepoPromptData,
 } from '../models/mod-craft.model';
 
-const execPromise = util.promisify(exec);
+const execPromise = promisify(exec);
 // Construct __dirname for ES Modules
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -54,12 +50,12 @@ export class ModCraftController {
       const targetDir = path.resolve(templatesDir, moduleName);
 
       // Ensure the template directory exists
-      if (!fs.existsSync(templatesDir)) {
-        fs.mkdirSync(templatesDir, { recursive: true });
+      if (!existsSync(templatesDir)) {
+        mkdirSync(templatesDir, { recursive: true });
       }
 
       // Check if the target directory already exists
-      if (fs.existsSync(targetDir)) {
+      if (existsSync(targetDir)) {
         throw new Error(`Module directory ${moduleName} already exists.`);
       }
 
@@ -102,8 +98,8 @@ export class ModCraftController {
     // Example: Replace placeholders in the template with the module name
     const filesToUpdate = ['README.md', 'package.json'];
     for (const fileName of filesToUpdate) {
-      const filePath = path.join(targetDir, fileName);
-      if (fs.existsSync(filePath)) {
+      const filePath = join(targetDir, fileName);
+      if (existsSync(filePath)) {
         let content = fs.readFileSync(filePath, 'utf8');
         content = content.replace(/\{\{moduleName\}\}/g, moduleName);
         fs.writeFileSync(filePath, content, 'utf8');

@@ -1,5 +1,7 @@
 /* eslint-disable node/prefer-global/process */
-export const VAULT_DIRECTORY = path.join(process.env.HOME || '~/', '.cd-cli');
+import { join } from 'node:path';
+
+export const VAULT_DIRECTORY = join(process.env.HOME || '~/', '.cd-cli');
 
 // Interfaces
 export interface CdVault {

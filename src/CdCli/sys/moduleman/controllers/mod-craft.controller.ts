@@ -1,7 +1,6 @@
 /* eslint-disable style/operator-linebreak */
 import type {
   ProfileContainer,
-  ProfileData,
   ProfileModel,
 } from '../../cd-cli/models/cd-cli-profile.model';
 
@@ -13,16 +12,11 @@ import { fileURLToPath } from 'node:url';
 import util from 'node:util';
 import { CONFIG_FILE_PATH } from '@/config';
 import inquirer from 'inquirer';
-import { CdCliProfileController } from '../../cd-cli/controllers/cd-cli-profile.cointroller';
 import CdCliVaultController from '../../cd-cli/controllers/cd-cli-vault.controller';
 import CdLogg from '../../cd-comm/controllers/cd-logger.controller';
-import {
-  DEFAULT_PROMPT_DATA,
-  InitModuleFromRepoPromptData,
-  SSH_TO_DEV_PROMPT_DATA,
-} from '../models/mod-craft.model';
+import { SSH_TO_DEV_PROMPT_DATA } from '../models/mod-craft.model';
 
-const execPromise = util.promisify(exec);
+const execPromise = promisify(exec);
 // Construct __dirname for ES Modules
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -57,12 +51,12 @@ export class ModCraftController {
       const targetDir = path.resolve(templatesDir, moduleName);
 
       // Ensure the template directory exists
-      if (!fs.existsSync(templatesDir)) {
-        fs.mkdirSync(templatesDir, { recursive: true });
+      if (!existsSync(templatesDir)) {
+        mkdirSync(templatesDir, { recursive: true });
       }
 
       // Check if the target directory already exists
-      if (fs.existsSync(targetDir)) {
+      if (existsSync(targetDir)) {
         throw new Error(`Module directory ${moduleName} already exists.`);
       }
 
@@ -105,8 +99,8 @@ export class ModCraftController {
     // Example: Replace placeholders in the template with the module name
     const filesToUpdate = ['README.md', 'package.json'];
     for (const fileName of filesToUpdate) {
-      const filePath = path.join(targetDir, fileName);
-      if (fs.existsSync(filePath)) {
+      const filePath = join(targetDir, fileName);
+      if (existsSync(filePath)) {
         let content = fs.readFileSync(filePath, 'utf8');
         content = content.replace(/\{\{moduleName\}\}/g, moduleName);
         fs.writeFileSync(filePath, content, 'utf8');
@@ -140,7 +134,7 @@ export class ModCraftController {
     });
     try {
       // Step 1: Load configurations from ~/.cd-cli.config.json
-      if (!fs.existsSync(CONFIG_FILE_PATH)) {
+      if (!existsSync(CONFIG_FILE_PATH)) {
         throw new Error(
           'Configuration file not found. Please set up your CLI.',
         );

@@ -1,24 +1,32 @@
 {
   "compilerOptions": {
-    "target": "esnext",
-    "lib": ["esnext"],
+    "incremental": true,
+    "target": "ES2021", // Align with modern features
+    "lib": ["ES2021"], // Include modern libraries
+    "emitDecoratorMetadata": true, // Enable if using decorators
+    "experimentalDecorators": true,
     "baseUrl": ".",
     "rootDir": "src",
-    "module": "esnext",
+    "module": "esnext", // Ensure ESM for compatibility
     "moduleResolution": "node",
     "paths": {
       "@/*": ["./src/*"]
     },
     "resolveJsonModule": true,
-    "types": ["node"],
-    "allowJs": true,
     "strict": true,
+    "strictNullChecks": true,
     "noImplicitAny": false,
+    "declaration": true,
     "outDir": "dist",
+    "sourceMap": true,
     "allowSyntheticDefaultImports": true,
-    "skipDefaultLibCheck": true,
+    "esModuleInterop": true, // Ensure compatibility with ESM imports
+    "forceConsistentCasingInFileNames": true,
     "skipLibCheck": true
   },
-  "include": ["src"],
-  "exclude": ["node_modules"]
+  "include": ["src/**/*", "src/**/*.spec.ts"],
+  "exclude": ["node_modules", "dist"],
+  "ts-node": {
+    "esm": true
+  }
 }

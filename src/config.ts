@@ -1,17 +1,11 @@
 /* eslint-disable style/brace-style */
 
-/* eslint-disable node/prefer-global/process */
-// /* eslint-disable ts/consistent-type-imports */
 import type { ISessResp } from './CdCli/sys/base/IBase';
-import { PROFILE_CMD } from './CdCli/sys/cd-cli/models/cd-cli-profile.model';
-import {
-  MODULE_CMD,
-  TEMPLATE_CMD,
-} from './CdCli/sys/moduleman/models/mod-craft.model';
-import { LOGIN_CMD, LOGOUT_CMD } from './CdCli/sys/user/models/user.model';
+import { existsSync } from 'node:fs';
+/* eslint-disable node/prefer-global/process */
+import path, { join } from 'node:path';
 
-// export const VAULT_DIRECTORY = path.join(process.env.HOME || '~/', '.cd-cli');
-export const CONFIG_FILE_PATH = path.join(
+export const CONFIG_FILE_PATH = join(
   process.env.HOME || '~/',
   '.cd-cli/cd-cli.config.json',
 );
@@ -50,7 +44,7 @@ export default {
  */
 export function loadCdCliConfig(): any {
   try {
-    if (!fs.existsSync(CONFIG_FILE_PATH)) {
+    if (!existsSync(CONFIG_FILE_PATH)) {
       throw new Error(`Configuration file not found at ${CONFIG_FILE_PATH}.`);
     }
 

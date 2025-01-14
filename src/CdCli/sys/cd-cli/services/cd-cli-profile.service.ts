@@ -16,7 +16,6 @@
 // import { MemberMeta } from '../coops.model';
 
 import type { ICdRequest, IQuery } from '../../base/IBase';
-import { fileURLToPath } from 'node:url';
 import { HttpService } from '../../base/http.service';
 import { DEFAULT_ENVELOPE_CREATE } from '../../base/IBase';
 import CdLogg from '../../cd-comm/controllers/cd-logger.controller';
@@ -28,7 +27,8 @@ export class CdCliProfileService {
 
   /**
    *
-   * @param newModule
+   * @param newCdCliProfile
+   * @param cdToken
    * {
         "ctx": "Sys",
         "m": "Moduleman",

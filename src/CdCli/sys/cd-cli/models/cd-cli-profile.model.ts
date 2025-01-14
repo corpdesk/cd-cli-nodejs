@@ -2,7 +2,6 @@ import type { CdVault } from './cd-cli-vault.model';
 /* eslint-disable style/brace-style */
 import { fileURLToPath } from 'node:url';
 import CdLogg from '../../cd-comm/controllers/cd-logger.controller';
-import { logger, setLogLevel } from '../../cd-comm/controllers/cd-winston';
 import { CdCliProfileController } from '../controllers/cd-cli-profile.cointroller';
 
 const __filename = fileURLToPath(import.meta.url);

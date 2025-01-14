@@ -1,5 +1,9 @@
 #!/bin/bash
 
+# This script is for initializing the profiles manually for development purpose.
+# This is iportant just for devloping initialization process
+# Thereafter it will be depricated
+
 # Define directory and file paths
 CD_CLI_DIR="$HOME/.cd-cli" # Ensure this resolves correctly
 CONFIG_FILE="$CD_CLI_DIR/cd-cli.config.json"

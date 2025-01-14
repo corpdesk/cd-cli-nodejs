@@ -5,18 +5,17 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import inquirer from 'inquirer';
-import config, {
+import {
   CONFIG_FILE_PATH,
   DEFAULT_SESS,
   loadCdCliConfig,
 } from '../../../../config';
-import { environment } from '../../../../environments/environment'; // Import the environment config
+// Import the environment config
 import { HttpService } from '../../base/http.service';
 import { CdCliProfileController } from '../../cd-cli/controllers/cd-cli-profile.cointroller';
 import CdCliVaultController from '../../cd-cli/controllers/cd-cli-vault.controller';
 import { VAULT_DIRECTORY } from '../../cd-cli/models/cd-cli-vault.model';
 import CdLogg from '../../cd-comm/controllers/cd-logger.controller';
-import { logg, logger } from '../../cd-comm/controllers/cd-winston';
 import { DEFAULT_ENVELOPE_LOGIN } from '../models/user.model';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -24,7 +23,7 @@ const __dirname = path.dirname(__filename);
 
 export class UserController {
   svServer = new HttpService();
-  // private SESSION_FILE_STORE = path.join(__dirname, SESSION_FILE_STORE);
+  // private SESSION_FILE_STORE = join(__dirname, SESSION_FILE_STORE);
 
   init(debugLevel) {
     CdLogg.setDebugLevel(debugLevel);
@@ -189,7 +188,7 @@ export class UserController {
   public saveSession(session: any): void {
     const sessionData = JSON.stringify(session);
     CdCliVaultController.storeSensitiveData(
-      path.join(VAULT_DIRECTORY, 'session.json'),
+      join(VAULT_DIRECTORY, 'session.json'),
       sessionData,
     );
     CdLogg.success('Session saved.');
@@ -201,7 +200,7 @@ export class UserController {
   public getSession(): ISessResp | null {
     try {
       // Check if the config file exists
-      if (!fs.existsSync(CONFIG_FILE_PATH)) {
+      if (!existsSync(CONFIG_FILE_PATH)) {
         throw new Error(`Config file not found at: ${CONFIG_FILE_PATH}`);
       }
 
@@ -231,7 +230,7 @@ export class UserController {
    */
   logout(): void {
     try {
-      if (fs.existsSync(CONFIG_FILE_PATH)) {
+      if (existsSync(CONFIG_FILE_PATH)) {
         const config = JSON.parse(fs.readFileSync(CONFIG_FILE_PATH, 'utf-8'));
         // Clear session section from config
         config.session = { ...DEFAULT_SESS }; // Set session to default
@@ -253,7 +252,7 @@ export class UserController {
   // Method to check if session is valid
   isSessionValid(): boolean {
     try {
-      if (fs.existsSync(CONFIG_FILE_PATH)) {
+      if (existsSync(CONFIG_FILE_PATH)) {
         const config = JSON.parse(fs.readFileSync(CONFIG_FILE_PATH, 'utf-8'));
         const session = config.session || DEFAULT_SESS;
 

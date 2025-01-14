@@ -1,4 +1,3 @@
-import { CdCliProfileController } from '../../cd-cli/controllers/cd-cli-profile.cointroller';
 import { ModCraftController } from '../controllers/mod-craft.controller';
 
 export const InitModuleFromRepoPromptData: any = [

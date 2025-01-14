@@ -1,11 +1,13 @@
-// 配置可参考 https://prettier.io/en/configuration.html
+// Configuration reference: https://prettier.io/en/configuration.html
 module.exports = {
-  // Windows 用户和 macOS/Linux 用户的换行符不同会导致保存时触发 diff，这里遵循官方建议使用 'lf'
+  // Different line endings between Windows and macOS/Linux users can cause diffs when saving files.
+  // Following the official recommendation, use 'lf' for line endings.
   endOfLine: 'lf',
 
-  // 单引号代替双引号
+  // Use single quotes instead of double quotes
   singleQuote: true,
 
-  // 对于 ES5 而言, 尾逗号不能用于函数参数，因此使用它们只能用于数组
+  // For ES5, trailing commas cannot be used for function parameters.
+  // Therefore, use them only for arrays and objects.
   trailingComma: 'all',
 };

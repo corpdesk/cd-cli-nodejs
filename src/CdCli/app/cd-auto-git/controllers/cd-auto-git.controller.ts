@@ -16,16 +16,15 @@
 import type { ProfileModel } from '@/CdCli/sys/cd-cli/models/cd-cli-profile.model';
 import type { GitAccess } from '../models/cd-auto-git.model';
 import { exec } from 'node:child_process';
-import fs from 'node:fs';
 import util from 'node:util';
 import CdCliVaultController from '@/CdCli/sys/cd-cli/controllers/cd-cli-vault.controller';
 import CdLogg from '@/CdCli/sys/cd-comm/controllers/cd-logger.controller';
-import config, { CONFIG_FILE_PATH, loadCdCliConfig } from '@/config';
+import { loadCdCliConfig } from '@/config';
 import axios from 'axios';
 import inquirer from 'inquirer';
 import { GitHubRepoCreatePromptData } from '../models/cd-auto-git.model';
 
-const execPromise = util.promisify(exec);
+const execPromise = promisify(exec);
 
 export class CdAutoGitController {
   // Method to fetch the GitHub profile from cd-cli.config.json
