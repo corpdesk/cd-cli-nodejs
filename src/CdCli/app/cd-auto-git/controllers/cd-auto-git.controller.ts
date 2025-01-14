@@ -16,7 +16,7 @@
 import type { ProfileModel } from '@/CdCli/sys/cd-cli/models/cd-cli-profile.model';
 import type { GitAccess } from '../models/cd-auto-git.model';
 import { exec } from 'node:child_process';
-import util from 'node:util';
+import util, { promisify } from 'node:util';
 import CdCliVaultController from '@/CdCli/sys/cd-cli/controllers/cd-cli-vault.controller';
 import CdLogg from '@/CdCli/sys/cd-comm/controllers/cd-logger.controller';
 import { loadCdCliConfig } from '@/config';
@@ -29,7 +29,12 @@ const execPromise = promisify(exec);
 export class CdAutoGitController {
   // Method to fetch the GitHub profile from cd-cli.config.json
   async getGitHubProfile(): Promise<GitAccess | null> {
+    CdLogg.debug('starting getGitHubProfile()');
     const cdCliConfig = loadCdCliConfig();
+    CdLogg.debug(
+      'CdAutoGitController::getGitHubProfile()/cdCliConfig:',
+      cdCliConfig,
+    );
 
     // Find the GitHub profile dynamically based on profile name
     const profile = cdCliConfig.items.find(

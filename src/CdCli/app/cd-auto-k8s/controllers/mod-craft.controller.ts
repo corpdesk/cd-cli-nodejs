@@ -1,15 +1,21 @@
 /* eslint-disable style/operator-linebreak */
-import type { ProfileModel } from '../../cd-cli/models/cd-cli-profile.model';
+// import type { ProfileModel } from '../../cd-cli/models/cd-cli-profile.model';
 
+import type { ProfileModel } from '@/CdCli/sys/cd-cli/models/cd-cli-profile.model';
 /* eslint-disable style/brace-style */
 import { exec } from 'node:child_process';
 import * as fs from 'node:fs';
+import { existsSync, mkdirSync } from 'node:fs';
 import * as path from 'node:path';
+import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import util from 'node:util';
+import util, { promisify } from 'node:util';
+import { CdCliProfileController } from '@/CdCli/sys/cd-cli/controllers/cd-cli-profile.cointroller';
+import CdLogg from '@/CdCli/sys/cd-comm/controllers/cd-logger.controller';
+import { CONFIG_FILE_PATH } from '@/config';
 import inquirer from 'inquirer';
-import { CdCliProfileController } from '../../cd-cli/controllers/cd-cli-profile.cointroller';
-import { PROFILE_FILE_STORE } from '../../cd-cli/models/cd-cli-profile.model';
+// import { CdCliProfileController } from '../../cd-cli/controllers/cd-cli-profile.cointroller';
+// import { PROFILE_FILE_STORE } from '../../cd-cli/models/cd-cli-profile.model';
 import {
   DEFAULT_PROMPT_DATA,
   InitModuleFromRepoPromptData,
@@ -137,7 +143,7 @@ export class ModCraftController {
 
       if (profileName) {
         const profiles = JSON.parse(
-          fs.readFileSync(PROFILE_FILE_STORE, 'utf-8'),
+          fs.readFileSync(CONFIG_FILE_PATH, 'utf-8'),
         ).items;
         profileData = profiles.find(
           (profile: any) => profile.cdCliProfileName === profileName,
