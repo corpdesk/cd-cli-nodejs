@@ -48,3 +48,4 @@ PR welcome if you have any constructive suggestions. Please polish your code and
 # testAutoGit2
 # testAutoGit3
 # testAutoGit3
+# testAutoGit
