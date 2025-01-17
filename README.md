@@ -50,3 +50,4 @@ PR welcome if you have any constructive suggestions. Please polish your code and
 # testAutoGit3
 # testAutoGit
 # testAutoGit4
+# testAutoGit
