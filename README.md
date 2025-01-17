@@ -45,3 +45,4 @@ Here are some [command-line-apps](https://github.com/sindresorhus/awesome-nodejs
 ## Contribution
 
 PR welcome if you have any constructive suggestions. Please polish your code and  describe you commit msg concisely and detailedly.
+# testAutoGit2
