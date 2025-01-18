@@ -1,8 +1,8 @@
 /* eslint-disable style/operator-linebreak */
 /* eslint-disable style/brace-style */
 import type { ICdResponse, ISessResp } from '../../base/IBase';
-import fs from 'node:fs';
-import path from 'node:path';
+import { existsSync, readFileSync, writeFileSync } from 'node:fs';
+import path, { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import inquirer from 'inquirer';
 import {
@@ -17,12 +17,14 @@ import CdCliVaultController from '../../cd-cli/controllers/cd-cli-vault.controll
 import { VAULT_DIRECTORY } from '../../cd-cli/models/cd-cli-vault.model';
 import CdLogg from '../../cd-comm/controllers/cd-logger.controller';
 import { DEFAULT_ENVELOPE_LOGIN } from '../models/user.model';
+import { SessonController } from './session.controller';
 
 const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+const __dirname = dirname(__filename);
 
 export class UserController {
   svServer = new HttpService();
+  ctlSession = new SessonController();
   // private SESSION_FILE_STORE = join(__dirname, SESSION_FILE_STORE);
 
   init(debugLevel) {
@@ -32,6 +34,133 @@ export class UserController {
   /**
    * Authenticate the user and manage session.
    */
+  // async auth(userName: string, password: string): Promise<void> {
+  //   try {
+  //     // Load the configuration file
+  //     const cdCliConfig = loadCdCliConfig();
+
+  //     // Find the profile named 'cd-api-local'
+  //     const profile = cdCliConfig.items.find(
+  //       (item: any) => item.cdCliProfileName === 'cd-api-local',
+  //     );
+
+  //     CdLogg.debug('UserController::auth()/profile:', profile);
+
+  //     if (!profile || !profile.cdCliProfileData?.details?.consumerToken) {
+  //       throw new Error(
+  //         `Profile 'cd-api-local' with 'consumerToken' not found in configuration.`,
+  //       );
+  //     }
+
+  //     // Handle deferred value in consumerToken
+  //     let consumerGuid = profile.cdCliProfileData.details.consumerToken;
+  //     CdLogg.debug('UserController::auth()/consumerGuid:', {
+  //       ct: consumerGuid,
+  //     });
+  //     if (
+  //       typeof consumerGuid === 'string' &&
+  //       consumerGuid.startsWith('#cdVault[')
+  //     ) {
+  //       const vaultName = consumerGuid.match(/#cdVault\['(.+)'\]/)?.[1];
+  //       if (!vaultName) {
+  //         throw new Error(
+  //           `Invalid cdVault reference in consumerToken: ${consumerGuid}`,
+  //         );
+  //       }
+
+  //       // Find the matching cdVault item
+  //       const cdVaultItem = profile.cdCliProfileData.cdVault?.find(
+  //         (vault: any) => vault.name === vaultName,
+  //       );
+
+  //       CdLogg.debug('UserController::auth()/cdVaultItem:', cdVaultItem);
+
+  //       if (!cdVaultItem) {
+  //         throw new Error(`cdVault item '${vaultName}' not found.`);
+  //       }
+
+  //       // Extract value or decrypt if encrypted
+  //       if (cdVaultItem.isEncrypted && cdVaultItem.encryptedValue) {
+  //         consumerGuid = CdCliVaultController.getSensitiveData(cdVaultItem);
+  //       } else {
+  //         consumerGuid = cdVaultItem.value;
+  //       }
+
+  //       if (!consumerGuid) {
+  //         throw new Error(
+  //           `ConsumerToken could not be resolved for '${vaultName}'.`,
+  //         );
+  //       }
+  //     }
+
+  //     // Prompt for password if not provided
+  //     if (!password) {
+  //       const answers = await inquirer.prompt([
+  //         {
+  //           type: 'password',
+  //           name: 'password',
+  //           message: 'Please enter your password:',
+  //           mask: '*',
+  //         },
+  //       ]);
+  //       password = answers.password;
+  //     }
+
+  //     // Prepare payload using DEFAULT_ENVELOPE_LOGIN
+  //     const payload = DEFAULT_ENVELOPE_LOGIN;
+  //     payload.dat.f_vals[0].data.userName = userName;
+  //     payload.dat.f_vals[0].data.password = password;
+  //     payload.dat.f_vals[0].data.consumerGuid = consumerGuid;
+
+  //     CdLogg.info('Authenticating...');
+  //     CdLogg.info('Payload:', payload);
+
+  //     // Ensure HttpService is properly initialized before making requests
+  //     const httpService = new HttpService(true);
+  //     // await httpService.init('cd-api-local'); // Ensure axiosInstance is set with preferred profile
+  //     const baseUrl = await httpService.getCdApiUrl('cd-api-local');
+  //     CdLogg.debug('UserController::auth()/baseUrl:', { bu: baseUrl });
+  //     if (baseUrl) {
+  //       await httpService.init(baseUrl);
+  //       const response: ICdResponse = await httpService.proc(payload);
+
+  //       CdLogg.info('Response:', response);
+
+  //       if (response.app_state?.success) {
+  //         if (response.app_state?.sess) {
+  //           this.ctlSession.saveSession(
+  //             response.app_state.sess,
+  //             'cd-api-local',
+  //           );
+
+  //           const cdToken = response.app_state.sess.cd_token;
+  //           const profileController = new CdCliProfileController();
+  //           CdLogg.debug('cdToken:', { token: cdToken });
+  //           if (cdToken) {
+  //             await profileController.fetchAndSaveProfiles(cdToken);
+  //           } else {
+  //             CdLogg.error(
+  //               'Could not save profiles due to an invalid session.',
+  //             );
+  //           }
+  //         }
+  //       } else {
+  //         CdLogg.error(
+  //           'Login failed:',
+  //           response.app_state?.info || { error: 'Unknown error' },
+  //         );
+  //         throw new Error(
+  //           'Login failed. Please check your credentials and try again.',
+  //         );
+  //       }
+  //     } else {
+  //       CdLogg.error('Could not get base url for http connection');
+  //     }
+  //   } catch (error: any) {
+  //     CdLogg.error('Error during login:', error.message);
+  //   }
+  // }
+
   async auth(userName: string, password: string): Promise<void> {
     try {
       // Load the configuration file
@@ -42,6 +171,8 @@ export class UserController {
         (item: any) => item.cdCliProfileName === 'cd-api-local',
       );
 
+      CdLogg.debug('UserController::auth()/profile:', profile);
+
       if (!profile || !profile.cdCliProfileData?.details?.consumerToken) {
         throw new Error(
           `Profile 'cd-api-local' with 'consumerToken' not found in configuration.`,
@@ -50,11 +181,15 @@ export class UserController {
 
       // Handle deferred value in consumerToken
       let consumerGuid = profile.cdCliProfileData.details.consumerToken;
+      CdLogg.debug('UserController::auth()/consumerGuid:', {
+        ct: consumerGuid,
+      });
+
       if (
         typeof consumerGuid === 'string' &&
         consumerGuid.startsWith('#cdVault[')
       ) {
-        const vaultName = consumerGuid.match(/#cdVault\['(.+)'\]/)?.[1];
+        const vaultName = consumerGuid.match(/#cdVault\['(.+?)'\]/)?.[1];
         if (!vaultName) {
           throw new Error(
             `Invalid cdVault reference in consumerToken: ${consumerGuid}`,
@@ -62,9 +197,11 @@ export class UserController {
         }
 
         // Find the matching cdVault item
-        const cdVaultItem = profile.cdCliProfileData.details.cdVault?.find(
+        const cdVaultItem = profile.cdCliProfileData.cdVault?.find(
           (vault: any) => vault.name === vaultName,
         );
+
+        CdLogg.debug('UserController::auth()/cdVaultItem:', cdVaultItem);
 
         if (!cdVaultItem) {
           throw new Error(`cdVault item '${vaultName}' not found.`);
@@ -98,7 +235,7 @@ export class UserController {
       }
 
       // Prepare payload using DEFAULT_ENVELOPE_LOGIN
-      const payload = DEFAULT_ENVELOPE_LOGIN;
+      const payload = { ...DEFAULT_ENVELOPE_LOGIN };
       payload.dat.f_vals[0].data.userName = userName;
       payload.dat.f_vals[0].data.password = password;
       payload.dat.f_vals[0].data.consumerGuid = consumerGuid;
@@ -106,35 +243,49 @@ export class UserController {
       CdLogg.info('Authenticating...');
       CdLogg.info('Payload:', payload);
 
-      // Ensure HttpService is properly initialized before making requests
-      const httpService = new HttpService();
-      await httpService.init('cd-api-local'); // Ensure axiosInstance is set with preferred profile
+      // Initialize HttpService
+      const httpService = new HttpService(true); // Enable debug mode
+      const baseUrl = await httpService.getCdApiUrl('cd-api-local');
 
-      const response: ICdResponse = await httpService.proc(payload);
+      if (baseUrl) {
+        await httpService.init(baseUrl);
+        const response: ICdResponse = await httpService.proc2({
+          method: 'POST',
+          url: '/',
+          data: payload,
+        });
 
-      CdLogg.info('Response:', response);
+        CdLogg.info('Response:', response);
 
-      if (response.app_state?.success) {
-        if (response.app_state?.sess) {
-          this.saveSession(response.app_state.sess);
+        if (response.app_state?.success) {
+          if (response.app_state?.sess) {
+            this.ctlSession.saveSession(
+              response.app_state.sess,
+              'cd-api-local',
+            );
 
-          const cdToken = response.app_state.sess.cd_token;
-          const profileController = new CdCliProfileController();
-          CdLogg.debug('cdToken:', { token: cdToken });
-          if (cdToken) {
-            await profileController.fetchAndSaveProfiles(cdToken);
-          } else {
-            CdLogg.error('Could not save profiles due to an invalid session.');
+            const cdToken = response.app_state.sess.cd_token;
+            const profileController = new CdCliProfileController();
+
+            if (cdToken) {
+              await profileController.fetchAndSaveProfiles(cdToken);
+            } else {
+              CdLogg.error(
+                'Could not save profiles due to an invalid session.',
+              );
+            }
           }
+        } else {
+          CdLogg.error(
+            'Login failed:',
+            response.app_state?.info || { error: 'Unknown error' },
+          );
+          throw new Error(
+            'Login failed. Please check your credentials and try again.',
+          );
         }
       } else {
-        CdLogg.error(
-          'Login failed:',
-          response.app_state?.info || { error: 'Unknown error' },
-        );
-        throw new Error(
-          'Login failed. Please check your credentials and try again.',
-        );
+        CdLogg.error('Could not get base url for HTTP connection.');
       }
     } catch (error: any) {
       CdLogg.error('Error during login:', error.message);
@@ -163,7 +314,7 @@ export class UserController {
         await this.auth(usernameAnswer.userName, '');
 
         // Check if login was successful by verifying session
-        if (this.getSession()) {
+        if (this.ctlSession.getSession('cd-api-local')) {
           CdLogg.success('Login successful!');
           return; // Exit login retry loop if successful
         } else {
@@ -182,92 +333,23 @@ export class UserController {
   }
 
   /**
-   * Save session details to a file.
-   */
-  // Save the session data
-  public saveSession(session: any): void {
-    const sessionData = JSON.stringify(session);
-    CdCliVaultController.storeSensitiveData(
-      join(VAULT_DIRECTORY, 'session.json'),
-      sessionData,
-    );
-    CdLogg.success('Session saved.');
-  }
-
-  /**
-   * Get the current session.
-   */
-  public getSession(): ISessResp | null {
-    try {
-      // Check if the config file exists
-      if (!existsSync(CONFIG_FILE_PATH)) {
-        throw new Error(`Config file not found at: ${CONFIG_FILE_PATH}`);
-      }
-
-      // Read the content of the config file
-      const configData = JSON.parse(fs.readFileSync(CONFIG_FILE_PATH, 'utf-8'));
-
-      // Extract session data from the config file
-      const sessionData = configData.session;
-
-      // Optionally, decrypt the session token or any other sensitive data if required
-      if (sessionData) {
-        // Decrypt the session token if it's sensitive (uncomment if necessary)
-        // sessionData.token = CdCliVaultController.decrypt(sessionData.token);
-
-        return sessionData;
-      } else {
-        throw new Error('Session data not found in the config file.');
-      }
-    } catch (error) {
-      console.error(`Error retrieving session: ${(error as Error).message}`);
-      return null;
-    }
-  }
-
-  /**
    * Log out by clearing the session.
    */
   logout(): void {
     try {
       if (existsSync(CONFIG_FILE_PATH)) {
-        const config = JSON.parse(fs.readFileSync(CONFIG_FILE_PATH, 'utf-8'));
+        const config = JSON.parse(readFileSync(CONFIG_FILE_PATH, 'utf-8'));
         // Clear session section from config
         config.session = { ...DEFAULT_SESS }; // Set session to default
 
         // Write updated config to file
-        fs.writeFileSync(CONFIG_FILE_PATH, JSON.stringify(config, null, 2));
+        writeFileSync(CONFIG_FILE_PATH, JSON.stringify(config, null, 2));
         CdLogg.info('Logged out successfully and session cleared.');
       } else {
         CdLogg.error('Config file not found.');
       }
     } catch (error) {
       CdLogg.error(`Error during logout: ${(error as Error).message}`);
-    }
-  }
-
-  /**
-   * Check if the session is valid.
-   */
-  // Method to check if session is valid
-  isSessionValid(): boolean {
-    try {
-      if (existsSync(CONFIG_FILE_PATH)) {
-        const config = JSON.parse(fs.readFileSync(CONFIG_FILE_PATH, 'utf-8'));
-        const session = config.session || DEFAULT_SESS;
-
-        // Validate session based on cd_token and expiration time (ttl)
-        if (session && session.cd_token) {
-          const now = Math.floor(Date.now() / 1000); // Current time in seconds
-          return session.ttl && now < session.ttl;
-        }
-      }
-      return false;
-    } catch (error) {
-      CdLogg.error(
-        `Error checking session validity: ${(error as Error).message}`,
-      );
-      return false;
     }
   }
 }

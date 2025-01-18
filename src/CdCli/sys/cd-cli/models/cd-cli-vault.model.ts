@@ -6,11 +6,11 @@ export const VAULT_DIRECTORY = join(process.env.HOME || '~/', '.cd-cli');
 // Interfaces
 export interface CdVault {
   name: string; // Unique identifier for the vault entry
-  description: string; // Description of the vault entry
+  description?: string; // Description of the vault entry
   value: string | null; // Value if not encrypted
-  encryptedValue: string | null; // Encrypted data
+  encryptedValue?: string | null; // Encrypted data
   isEncrypted: boolean; // Indicates if the data is encrypted
-  encryptionMeta: EncryptionMeta; // Metadata for the encryption
+  encryptionMeta?: EncryptionMeta; // Metadata for the encryption
 }
 
 export interface EncryptionMeta {

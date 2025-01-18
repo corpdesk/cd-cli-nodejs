@@ -5,7 +5,7 @@
     "cd-vault": {
       "name": "gitHubToken",
       "description": "github access token",
-      "encryptedVaue": "<encrypted-token>",
+      "encryptedValue": "<encrypted-token>",
       "isEncrypted:": true,
       "EncryptionMeta": {
         "encryptedToken": "3a94d8c6b7...e04a",

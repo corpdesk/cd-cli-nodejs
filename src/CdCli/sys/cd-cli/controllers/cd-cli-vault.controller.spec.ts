@@ -56,7 +56,7 @@ describe('cdCliVaultController - Encryption Key Management', () => {
     process.env.CD_CLI_ENCRYPT_KEY = testKey;
 
     const retrievedKey = CdCliVaultController.getEncryptionKey();
-    expect(retrievedKey.toString('hex')).toBe(testKey);
+    expect(retrievedKey.toString()).toBe(testKey);
   });
 
   it('should update an existing encryption key in the .env file', () => {
