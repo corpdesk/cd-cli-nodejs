@@ -59,23 +59,32 @@ export const CD_AUTO_GIT_CMD = {
   description: 'Automate GitHub repository operations.',
   subcommands: [
     {
+      /**
+       * Usage example:
+       * cd-cli auto-git create --name abcXyz --desc "project for testing auto-git" --priv false --gitHost corpdesk --debug 4
+       */
       name: 'create',
       description: 'Create a new GitHub repository.',
       options: [
         {
-          flags: '--repo-name <repoName>',
+          flags: '--name <repoName>',
           description: 'Name of the repository to create.',
           defaultValue: 'new-repo',
         },
         {
-          flags: '--description <repoDescription>',
+          flags: '--desc <repoDescription>',
           description: 'Description of the repository.',
           defaultValue: 'A new repo created via cd-auto-git.',
         },
         {
-          flags: '--private',
+          flags: '--priv <private>',
           description: 'Set the repository as private.',
-          defaultValue: true,
+          defaultValue: false,
+        },
+        {
+          flags: '--gitHost <gitHost>',
+          description: 'Set account name or git organization.',
+          defaultValue: 'corpdesk',
         },
       ],
       action: {
@@ -83,9 +92,10 @@ export const CD_AUTO_GIT_CMD = {
           CdLogg.info('Executing auto-git create command...', options);
           const cdAutoGitController = new CdAutoGitController();
           await cdAutoGitController.createGitHubRepo(
-            options.repoName,
-            options.repoDescription,
-            options.private,
+            options.name,
+            options.desc,
+            options.priv,
+            options.gitHost,
           );
         },
       },
@@ -162,6 +172,7 @@ export const CD_AUTO_GIT_CMD = {
             options.repoName,
             options.repoDescription,
             options.private,
+            options.gitHost,
           );
           await cdAutoGitController.cloneRepoToLocal(
             options.repoName,

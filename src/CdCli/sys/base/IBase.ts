@@ -287,6 +287,13 @@ export interface IModelRules {
   remove: object;
 }
 
+// custom json update
+export interface IJsonUpdate {
+  modelField?; // name of the json column. Capacity to update multiple json columns in a given row
+  path: any; // path to a target item in JSON data
+  value: any; // value to apply to a tarteg item
+}
+
 // cd request format
 export interface ICdRequest {
   ctx: string;
@@ -567,7 +574,7 @@ export interface IAclCtx {
 
 export interface IQuery {
   select?: string[];
-  update?: object;
+  update?: object | null;
   where: object;
   take?: number;
   skip?: number;

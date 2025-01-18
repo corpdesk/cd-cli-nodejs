@@ -68,17 +68,18 @@
           "gitAccess": {
             "gitHubToken": "#cdVault['gitHubToken']",
             "gitHubUser": "georemo",
-            "baseRepoUrl": "https:/github.com"
+            "baseRepoUrl": "https://github.com",
+            "apiRepoUrl": "https://api.github.com"
           }
         },
         "cdVault": [
           {
             "name": "gitHubToken",
             "description": "github access token",
-            "isEncrypted:": true,
+            "isEncrypted": true,
             "value": null,
-            "encryptedVaue": "<encrypted-token>",
-            "EncryptionMeta": {
+            "encryptedValue": "<encrypted-token>",
+            "encryptionMeta": {
               "iv": "1a94d8c6b7e8...901f",
               "encoding": "hex",
               "algorithm": "aes-256-cbc",
@@ -168,29 +169,30 @@
           "userId": 1010,
           "groupId": 0
         },
+        "cdVault": [
+          {
+            "name": "cd_token",
+            "value": "d33bb2d3-f4d5-42b4-8e31-44fed3e29826",
+            "description": "cd-api token",
+            "isEncrypted": false,
+            "encryptedValue": null,
+            "encryptionMeta": null
+          },
+          {
+            "name": "consumerToken",
+            "value": "B0B3DA99-1859-A499-90F6-1E3F69575DCD",
+            "description": "cd-api consumerToken",
+            "isEncrypted": false,
+            "encryptedValue": null,
+            "encryptionMeta": null
+          }
+        ],
         "details": {
-          "cdVault": [
-            {
-              "name": "token",
-              "value": "d33bb2d3-f4d5-42b4-8e31-44fed3e29826",
-              "description": "cd-api token",
-              "isEncrypted": false,
-              "encryptedValue": null,
-              "encryptionMeta": null
-            },
-            {
-              "name": "consumerToken",
-              "value": "B0B3DA99-1859-A499-90F6-1E3F69575DCD",
-              "description": "cd-api consumerToken",
-              "isEncrypted": false,
-              "encryptedValue": null,
-              "encryptionMeta": null
-            }
-          ],
           "session": {
-            "token": "#cdVault['token']",
-            "expiry": "2025-01-06T10:00:00Z",
-            "userId": 1010
+            "cd_token": "#cdVault['cd_token']",
+            "userId": 1010,
+            "jwt": null,
+            "ttl": 600
           },
           "cdEndpoint": "https://localhost:3001/api",
           "permissions": {
