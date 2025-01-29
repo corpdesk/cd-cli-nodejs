@@ -4,6 +4,7 @@ import {
   TEMPLATE_CMD,
 } from '../../moduleman/models/mod-craft.model';
 import { LOGIN_CMD, LOGOUT_CMD } from '../../user/models/user.model';
+import { DEV_MODE_COMMANDS } from './/dev-mode.model';
 import { PROFILE_CMD } from './cd-cli-profile.model';
 
 export const CdCli = {
@@ -14,5 +15,6 @@ export const CdCli = {
     MODULE_CMD,
     TEMPLATE_CMD,
     CD_AUTO_GIT_CMD,
+    DEV_MODE_COMMANDS,
   ] as any,
 };
