@@ -1,3 +1,4 @@
+/* eslint-disable antfu/if-newline */
 /* eslint-disable style/brace-style */
 import chalk from 'chalk';
 import dayjs from 'dayjs';
@@ -70,6 +71,14 @@ class CdLogg {
   }
 
   // Debug level
+  // static debug(message: string, context?: object) {
+  //   if (CdLogg.debugLevel >= CdLogg.LOG_LEVELS.DEBUG) {
+  //     const formattedMessage = context
+  //       ? `${message} | Context: ${JSON.stringify(context)}`
+  //       : message;
+  //     console.log(this.formatMessage(chalk.cyan('🛠️'), formattedMessage));
+  //   }
+  // }
   static debug(message: string, context?: object) {
     if (CdLogg.debugLevel >= CdLogg.LOG_LEVELS.DEBUG) {
       const formattedMessage = context
@@ -103,6 +112,21 @@ class CdLogg {
 
   static getDebugLevel(): number {
     return CdLogg.debugLevel;
+  }
+
+  static safeStringify(obj: any, space = 2) {
+    const seen = new WeakSet();
+    return JSON.stringify(
+      obj,
+      (key, value) => {
+        if (typeof value === 'object' && value !== null) {
+          if (seen.has(value)) return '[Circular]';
+          seen.add(value);
+        }
+        return value;
+      },
+      space,
+    );
   }
 }
 

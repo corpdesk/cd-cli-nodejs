@@ -1,48 +1,72 @@
-import { exec } from 'node:child_process';
-import util from 'node:util';
+// cd request format
+export interface ICdRequest {
+  ctx: string;
+  m: string;
+  c: string;
+  a: string;
+  dat: EnvelopDat;
+  args: any | null;
+}
 
-// import { Observable } from 'rxjs';
+export interface EnvelopDat {
+  f_vals: EnvelopFValItem[];
+  token: string | null;
+}
 
-// import { Validators } from "@angular/forms";
+export interface EnvelopFValItem {
+  query?: IQuery | null;
+  data?: any;
+  extData?: any;
+  jsonUpdate?: any;
+}
 
-/**
- * @path // the path of the controller relative to the BaseService file
- * @clsName // class name
- * @action // class method to invoke
- */
+export interface IQuery {
+  select?: string[];
+  update?: object | null;
+  where: object;
+  take?: number;
+  skip?: number;
+}
 
-// export interface EnvConfig {
-//   clientAppGuid: string;
-//   appId: string;
-//   production: boolean;
-//   apiEndpoint: string;
-//   sioEndpoint: string;
-//   wsEndpoint: string;
-//   wsMode: string;
-//   pushConfig: any;
-//   consumerToken?: string; // current company consumer. To depricate in favour of clientContext which will include consumerToken, entity:eg company name or project name eg ASDAP, MPEP etc
-//   clientContext: any;
-//   USER_RESOURCES: string;
-//   apiHost: string;
-//   shellHost: string;
-//   sioHost: string;
-//   CD_PORT?: number; // optional setting for apiEndpoint
-//   consumer: string;
-//   clientAppId: number; // this client application identifies itself to the server with this id
-//   SOCKET_IO_PORT: number; // push server port
-//   defaultauth?: string;
-//   mfManifestPath?: string;
-//   apiOptions?: any;
-//   sioOptions?: any;
-//   wsOptions?: any;
-//   initialPage?: string;
-//   firebaseConfig?: any;
-// }
-/**
- * @path // the path of the controller relative to the BaseService file
- * @clsName // class name
- * @action // class method to invoke
- */
+export interface ICdResponse {
+  app_state: IAppState;
+  data: any;
+}
+
+export interface IAppState {
+  success: boolean;
+  info: IRespInfo | null;
+  sess: ISessResp | null;
+  cache: object | null;
+  sConfig?: IServerConfig;
+}
+
+export interface IServerConfig {
+  usePush: boolean;
+  usePolling: boolean;
+  useCacheStore: boolean;
+}
+
+export interface IRespInfo {
+  messages: string[];
+  code: string | null;
+  app_msg: string | null;
+}
+
+export interface ISessResp {
+  cd_token?: string;
+  userId?: number | string | null;
+  jwt: {
+    jwtToken: string | null;
+    checked: boolean;
+    checkTime: number | null;
+    authorized: boolean;
+    ttl: number | null;
+  } | null;
+  ttl: number;
+  initUuid?: string;
+  initTime?: string;
+}
 
 export interface EnvConfig {
   clientAppGuid: string;
@@ -71,34 +95,6 @@ export interface EnvConfig {
   initialPage?: string;
   firebaseConfig?: any;
 }
-
-// export interface CdResponse {
-//     app_state: {
-//         success: number;
-//         info: {
-//             messages: string;
-//             code: number;
-//             app_msg: any;
-//         };
-//         sess: {
-//             cd_token: string;
-//             jwt: string;
-//             p_sid: string;
-//             ttl: number;
-//         };
-//         cache: object;
-//     };
-//     data: [];
-// }
-
-// {
-//     f_vals: [
-//         {
-//             data: {}
-//         }
-//     ],
-//     token: ''
-// }
 
 export const SYS_CTX = 'Sys';
 export const DEFAULT_DAT: EnvelopDat = {
@@ -172,42 +168,6 @@ export interface CdResponse {
   data: any[];
 }
 
-export interface ICdResponse {
-  app_state: IAppState;
-  data: any;
-}
-
-/////////////////////
-// export interface ICdResponse {
-//     app_state: {
-//         success: boolean;
-//         info: IRespInfo;
-//         sess: ISessResp;
-//         cache: object;
-//         sConfig?:IServerConfig;
-//     };
-//     data: object;
-// }
-
-// export interface ISessResp {
-//     cd_token?: string;
-//     userId?: number | string | null;
-//     jwt?: string;
-//     ttl: number;
-// }
-
-// export interface IRespInfo {
-//     messages: string[];
-//     code: string;
-//     app_msg: any;
-// }
-
-export interface IServerConfig {
-  usePush: boolean;
-  usePolling: boolean;
-  useCacheStore: boolean;
-}
-
 ////////////////////
 
 export const DEFAULT_CD_RESPONSE: ICdResponse = {
@@ -237,14 +197,6 @@ export const DEFAULT_CD_REQUEST: ICdRequest = {
   args: DEFAULT_ARGS,
 };
 
-export interface IAppState {
-  success: boolean;
-  info: IRespInfo | null;
-  sess: ISessResp | null;
-  cache: object | null;
-  sConfig?: IServerConfig;
-}
-
 // cd request format
 export interface CdRequest {
   ctx: string;
@@ -254,26 +206,6 @@ export interface CdRequest {
   dat: object;
   args: object;
 }
-
-// cd response format
-// export interface CdResponse {
-//     app_state: {
-//         success: number;
-//         info: {
-//             messages: string;
-//             code: number;
-//             app_msg: any;
-//         };
-//         sess: {
-//             cd_token: string;
-//             jwt: string;
-//             p_sid: string;
-//             ttl: number;
-//         };
-//         cache: object;
-//     };
-//     data: [];
-// }
 
 export interface IControllerContext {
   path: string;
@@ -294,85 +226,11 @@ export interface IJsonUpdate {
   value: any; // value to apply to a tarteg item
 }
 
-// cd request format
-export interface ICdRequest {
-  ctx: string;
-  m: string;
-  c: string;
-  a: string;
-  dat: EnvelopDat;
-  args: any | null;
-}
-
-export interface EnvelopDat {
-  f_vals: EnvelopFValItem[];
-  token: string | null;
-}
-
-export interface EnvelopFValItem {
-  query?: IQuery | null;
-  data?: any;
-  extData?: any;
-  jsonUpdate?: any;
-}
-
 export enum ModuleScope {
   Sys = 0,
   App = 1,
 }
 
-// export interface ISessResp {
-//     cd_token?: string | null;
-//     jwt?: string | null;
-//     ttl: number;
-// }
-
-export interface ISessResp {
-  cd_token?: string;
-  userId?: number | string | null;
-  jwt: {
-    jwtToken: string | null;
-    checked: boolean;
-    checkTime: number | null;
-    authorized: boolean;
-    ttl: number | null;
-  } | null;
-  ttl: number;
-  initUuid?: string;
-  initTime?: string;
-}
-
-export interface IRespInfo {
-  messages: string[];
-  code: string | null;
-  app_msg: string | null;
-}
-
-// export interface ICdPushEnvelop {
-//     pushRecepients: any;
-//     triggerEvent: string;
-//     emittEvent: string;
-//     req: ICdRequest;
-//     resp: ICdResponse;
-//     pushData?: any;
-// }
-
-// export interface ICdPushEnvelop {
-//     pushData: {
-//         appId: string;
-//         socketScope: string;
-//         pushGuid: string;
-//         m?: string,
-//         pushRecepients: ICommConversationSub[];
-//         triggerEvent: string;
-//         emittEvent: string;
-//         token: string;
-//         commTrack: CommTrack;
-//         isNotification: boolean | null;
-//     },
-//     req: ICdRequest | null,
-//     resp: ICdResponse | null
-// };
 export interface ICdPushEnvelop {
   pushData: {
     appId?: string;
@@ -571,14 +429,6 @@ export interface IAclCtx {
 //   password: ['', [Validators.required, Validators.minLength(6)]],
 //   confirmpwd: ['', Validators.required],
 // };
-
-export interface IQuery {
-  select?: string[];
-  update?: object | null;
-  where: object;
-  take?: number;
-  skip?: number;
-}
 
 export enum FieldType {
   number = 0,

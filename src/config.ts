@@ -17,6 +17,7 @@ export const DEFAULT_SESS: ISessResp = {
 };
 
 export default {
+  cdApiLocal: 'cd-api-local',
   cdSession: DEFAULT_SESS,
   meta: {
     name: 'cd-cli',

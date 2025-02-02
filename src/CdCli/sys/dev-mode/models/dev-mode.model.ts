@@ -1,3 +1,19 @@
+/* eslint-disable style/operator-linebreak */
+/**
+ * dev-mode.model.ts main role is to manage the interactive commands that are applicable after executes the command
+ * > cd-cli dev
+ * Simiar to sql inteructive session, you have the following commands:
+ * > show <recource>
+ * > use <recource-name>
+ * > sync <resource>
+ *
+ * List of resources:
+ * - apps
+ * - modules
+ * - descriptors
+ *
+ */
+
 /* eslint-disable style/brace-style */
 /* eslint-disable node/prefer-global/process */
 /* eslint-disable unused-imports/no-unused-vars */
@@ -7,6 +23,7 @@ import chalk from 'chalk';
 import minimist from 'minimist';
 import { CdCli } from '../../cd-cli/models/cd-cli.model';
 import CdLogg from '../../cd-comm/controllers/cd-logger.controller';
+import { DevDescriptorController } from '../../dev-descriptor/controllers/dev-descriptor.controller';
 import { DevModeController } from '../controllers/dev-mode.controller';
 
 // Branding utility for reusable prompt designs
@@ -64,16 +81,29 @@ export const DEV_MODE_COMMANDS = {
             CdLogg.debug(`DevModeModel::eval()/commands:${commands}`);
             inputBuffer = '';
 
-            for (const fullCommand of commands) {
+            // **Create an array of promises** to track command execution
+            const executionPromises = commands.map(async (fullCommand) => {
               CdLogg.debug(`DevModeModel::eval()/fullCommand:${fullCommand}`);
-              handleInput(`${fullCommand.trim()};`);
-              callback(null, `Executed ${fullCommand} successfully.`);
-            }
+              return handleInput(`${fullCommand.trim()};`);
+            });
+
+            // **Wait for all commands to complete**
+            await Promise.all(executionPromises);
+
+            // **Now call callback, ensuring the REPL is notified only after execution is finished**
+            callback(
+              null,
+              `Executed ${commands.length} commands successfully.`,
+            );
+
+            // **Manually trigger REPL prompt after execution is complete**
+            replServer.displayPrompt();
           } catch (error) {
             callback(
               error instanceof Error ? error : new Error(String(error)),
               undefined,
             );
+            replServer.displayPrompt();
           }
         },
       });
@@ -115,26 +145,81 @@ export const DEV_MODE_COMMANDS = {
           flags: '--controllers',
           description: 'List all controllers within the current module.',
         },
+        { flags: '--json', description: 'Display output in JSON format.' },
+        { flags: '--pretty', description: 'Pretty-print JSON output.' },
       ],
       action: {
         execute: async (options) => {
-          const devController = new DevModeController();
+          const ctlDevMode = new DevModeController();
+          const ctlDevDescriptor = new DevDescriptorController();
           CdLogg.debug(
             `DevModeModel::eval()/subcommands/options:${JSON.stringify(options)}`,
           );
-          if (options.apps || options._[0] === 'apps') {
-            console.log('Showing registered apps...');
-            await devController.showApps();
-          } else if (options.modules) {
-            console.log('Showing modules...');
-            await devController.showModules();
-          } else if (options.controllers) {
-            console.log('Showing controllers...');
-            await devController.showControllers();
-          } else {
-            throw new Error(
-              'Specify a valid option: apps, modules, or controllers.',
-            );
+
+          const command =
+            options._[0] || Object.keys(options).find((key) => options[key]);
+
+          switch (command) {
+            case 'apps':
+              console.log('Showing registered apps...');
+              await ctlDevMode.showApps();
+              break;
+            case 'modules':
+              console.log('Showing modules...');
+              await ctlDevMode.showModules();
+              break;
+            case 'controllers':
+              console.log('Showing controllers...');
+              await ctlDevMode.showControllers();
+              break;
+            case 'descriptors':
+              console.log('Showing descriptors...');
+              await ctlDevDescriptor.showSrcDescriptors({
+                json: options.json,
+                pretty: options.pretty,
+              });
+              break;
+            default:
+              throw new Error(
+                'Specify a valid option: apps, modules, controllers, or descriptors.',
+              );
+          }
+        },
+      },
+    },
+    {
+      name: 'sync',
+      description: 'Synchronize different resources.',
+      options: ['descriptors', 'apps', 'modules'],
+      action: {
+        execute: async (options: any) => {
+          const args = options._; // minimist places positional args in `_`
+          if (!args.length) {
+            console.log(chalk.red('Error: Please specify a resource to sync.'));
+            return;
+          }
+
+          const resource = args[0].toLowerCase();
+          CdLogg.debug(`DevModeModel::syncCommand()/resource:${resource}`);
+
+          const devDescriptor = new DevDescriptorController();
+
+          switch (resource) {
+            case 'descriptors':
+              await devDescriptor.syncDescriptors();
+              console.log(chalk.green('✔ Synced descriptors successfully.'));
+              break;
+            case 'apps':
+              await devDescriptor.syncApps();
+              console.log(chalk.green('✔ Synced apps successfully.'));
+              break;
+            case 'modules':
+              await devDescriptor.syncModules();
+              console.log(chalk.green('✔ Synced modules successfully.'));
+              break;
+            default:
+              console.log(chalk.red(`Unknown sync resource: ${resource}`));
+              break;
           }
         },
       },
@@ -151,6 +236,104 @@ export const DEV_MODE_COMMANDS = {
     },
   ],
 };
+// export const DEV_MODE_COMMANDS_NEW = {
+//   name: 'dev',
+//   description: 'Enter development mode to manage applications.',
+//   action: {
+//     execute: async () => {
+//       console.log('Entering development mode...');
+//       const currentMode: 'default' | 'py' | 'js' = 'default';
+
+//       const replServer = repl.start({
+//         prompt: Branding.getPrompt(currentMode),
+//         eval: async (input, context, filename, callback) => {
+//           try {
+//             CdLogg.debug(`DevModeModel::eval()/input:${input}`);
+//             input = input.trim();
+//             inputBuffer += input;
+//             CdLogg.debug(`DevModeModel::eval()/inputBuffer:${inputBuffer}`);
+
+//             const hasDelimiterAtEnd = inputBuffer.endsWith(';');
+//             const lastPart = inputBuffer.split(';').pop();
+//             const hasTextAfterLastDelimiter = lastPart
+//               ? lastPart.trim().length > 0
+//               : false;
+
+//             if (!hasDelimiterAtEnd || hasTextAfterLastDelimiter) {
+//               callback(null, '...'); // Show continuation prompt
+//               return;
+//             }
+
+//             const commands = inputBuffer.split(';').filter((cmd) => cmd.trim());
+//             CdLogg.debug(`DevModeModel::eval()/commands:${commands}`);
+//             inputBuffer = '';
+
+//             const executionPromises = commands.map(async (fullCommand) => {
+//               CdLogg.debug(`DevModeModel::eval()/fullCommand:${fullCommand}`);
+//               return handleInput(`${fullCommand.trim()};`);
+//             });
+
+//             await Promise.all(executionPromises);
+
+//             callback(
+//               null,
+//               `Executed ${commands.length} commands successfully.`,
+//             );
+
+//             replServer.displayPrompt();
+//           } catch (error) {
+//             callback(
+//               error instanceof Error ? error : new Error(String(error)),
+//               undefined,
+//             );
+//             replServer.displayPrompt();
+//           }
+//         },
+//       });
+
+//       replServer.on('exit', () => {
+//         console.log(chalk.yellow('Exited development mode.'));
+//         process.exit(0);
+//       });
+//     },
+//   },
+//   subcommands: [
+//     {
+//       name: 'sync',
+//       description: 'Synchronize different resources.',
+//       options: ['descriptors', 'apps', 'modules'],
+//       action: async (args: string[]) => {
+//         const ctlDevDescriptor = new DevDescriptorController();
+
+//         if (args.length === 0) {
+//           console.log(chalk.red('Error: Please specify a resource to sync.'));
+//           return;
+//         }
+
+//         const resource = args[0].toLowerCase();
+//         CdLogg.debug(`DevModeModel::syncCommand()/resource:${resource}`);
+
+//         switch (resource) {
+//           case 'descriptors':
+//             await ctlDevDescriptor.syncDescriptors();
+//             console.log(chalk.green('✔ Synced descriptors successfully.'));
+//             break;
+//           case 'apps':
+//             await ctlDevDescriptor.syncApps();
+//             console.log(chalk.green('✔ Synced apps successfully.'));
+//             break;
+//           case 'modules':
+//             await ctlDevDescriptor.syncModules();
+//             console.log(chalk.green('✔ Synced modules successfully.'));
+//             break;
+//           default:
+//             console.log(chalk.red(`Unknown sync resource: ${resource}`));
+//             break;
+//         }
+//       },
+//     },
+//   ],
+// };
 
 // Function to handle input
 export function handleInput(input: string) {

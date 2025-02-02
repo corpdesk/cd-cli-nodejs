@@ -17,9 +17,10 @@ import { CdCliProfileService } from '../services/cd-cli-profile.service';
 
 // const fsAccess = promisify(fs.access);
 
+import type { CdVault } from '../models/cd-cli-vault.model';
 import fs, { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { CONFIG_FILE_PATH } from '@/config';
+import { CONFIG_FILE_PATH, loadCdCliConfig } from '@/config';
 import { printTable } from '../../base/cli-table';
 import { HttpService } from '../../base/http.service';
 import CdLogg from '../../cd-comm/controllers/cd-logger.controller';
@@ -39,9 +40,12 @@ export class CdCliProfileController {
   svUser = new UserController();
   ctlSession = new SessonController();
   svCdCliProfile = new CdCliProfileService();
+  private config: ProfileContainer;
   // private profilesFilePath = join(__dirname, PROFILE_FILE_STORE);
 
-  constructor() {}
+  constructor() {
+    this.config = loadCdCliConfig();
+  }
 
   async createProfile(profileFilePath: string): Promise<void> {
     console.log(
@@ -186,87 +190,6 @@ export class CdCliProfileController {
       CdLogg.error('Error fetching profiles:', error.message);
     }
   }
-  // async fetchAndSaveProfiles(cdToken: string): Promise<void> {
-  //   CdLogg.debug('starting fetchAndSaveProfiles():', { token: cdToken });
-
-  //   if (!cdToken) {
-  //     CdLogg.error('No valid cdToken found. Cannot fetch profiles.');
-  //     return;
-  //   }
-
-  //   // Prepare the query object to fetch profiles
-  //   const q = {
-  //     where: { userId: -1 }, // userId of -1 signals backend to use the cdToken to derive the userId
-  //   };
-
-  //   try {
-  //     CdLogg.info('Fetching profiles from backend...');
-
-  //     // Initialize HttpService and get the base URL
-  //     const httpService = new HttpService(true); // Enable debug mode
-  //     const baseUrl = await httpService.getCdApiUrl('cd-api-local');
-
-  //     if (!baseUrl) {
-  //       CdLogg.error('Failed to retrieve API base URL. Cannot fetch profiles.');
-  //       return;
-  //     }
-
-  //     await httpService.init(baseUrl);
-
-  //     // Make the HTTP request using proc2()
-  //     const response: ICdResponse = await httpService.proc2({
-  //       method: 'POST',
-  //       url: '/profiles', // Adjust the endpoint as per your API
-  //       data: q,
-  //       headers: {
-  //         Authorization: `Bearer ${cdToken}`,
-  //         Accept: 'application/json',
-  //       },
-  //     });
-
-  //     if (response.app_state?.success) {
-  //       // Fetch existing configuration or create a new structure
-  //       let configData: any = {
-  //         items: [],
-  //         count: 0,
-  //       };
-
-  //       if (existsSync(CONFIG_FILE_PATH)) {
-  //         configData = JSON.parse(fs.readFileSync(CONFIG_FILE_PATH, 'utf-8'));
-  //       }
-
-  //       // Overwrite the entire profiles section in the config file
-  //       const profiles: ProfileContainer = response.data;
-
-  //       if (!profiles || profiles.items.length === 0) {
-  //         CdLogg.info('No profiles found. Writing empty profiles section.');
-  //         configData.items = [];
-  //         configData.count = 0;
-  //       } else {
-  //         CdLogg.info(`Fetched ${profiles.count} profiles.`);
-  //         configData.items = profiles.items.map((profile: ProfileModel) => ({
-  //           cdCliProfileName: profile.cdCliProfileName,
-  //           cdCliProfileData: profile.cdCliProfileData,
-  //           cdCliProfileTypeId: profile.cdCliProfileTypeId,
-  //           cdCliProfileGuid: profile.cdCliProfileGuid,
-  //           userId: profile.userId,
-  //           cdCliProfileEnabled: profile.cdCliProfileEnabled,
-  //         }));
-  //         configData.count = profiles.count;
-  //       }
-
-  //       // Write the updated config data to cd-cli.config.json
-  //       fs.writeFileSync(CONFIG_FILE_PATH, JSON.stringify(configData, null, 2));
-  //       CdLogg.success(`Profiles saved successfully to ${CONFIG_FILE_PATH}`);
-  //     } else {
-  //       CdLogg.error(
-  //         `Failed to fetch profiles: ${response.app_state?.info?.app_msg || 'Unknown error'}`,
-  //       );
-  //     }
-  //   } catch (error: any) {
-  //     CdLogg.error('Error fetching profiles:', error.message);
-  //   }
-  // }
 
   async checkProfileAndLogin(): Promise<void> {
     try {
@@ -508,5 +431,77 @@ export class CdCliProfileController {
       CdLogg.error(`Failed to save profile: ${(error as Error).message}`);
       return false;
     }
+  }
+
+  /**
+   * Get a profile by its name.
+   * @param profileName The name of the profile to fetch.
+   * @returns The ProfileModel if found, otherwise throws an error.
+   */
+  async getProfileByName(profileName: string): Promise<ProfileModel> {
+    const profile = this.config.items.find(
+      (item) => item.cdCliProfileName === profileName,
+    );
+
+    if (!profile) {
+      throw new Error(`Profile '${profileName}' not found.`);
+    }
+
+    return profile;
+  }
+
+  /**
+   * Extracts the session token from the profile.
+   * @param profileName The name of the profile.
+   * @returns The session token if found, otherwise null.
+   */
+  async getSessionData(profileName: string): Promise<string | null> {
+    const profile = await this.getProfileByName(profileName);
+    return this.extractVaultValue(profile, 'cd_token');
+  }
+
+  /**
+   * Extracts the consumer token from the profile.
+   * @param profileName The name of the profile.
+   * @returns The consumer token if found, otherwise null.
+   */
+  async getConsumerToken(profileName: string): Promise<string | null> {
+    const profile = await this.getProfileByName(profileName);
+    return this.extractVaultValue(profile, 'consumerToken');
+  }
+
+  /**
+   * Extracts the API endpoint from the profile.
+   * @param profileName The name of the profile.
+   * @returns The API endpoint if available.
+   */
+  async getEndPoint(profileName: string): Promise<string | null> {
+    const profile = await this.getProfileByName(profileName);
+    return profile.cdCliProfileData?.details?.cdEndpoint || null;
+  }
+
+  /**
+   * Extracts user permissions from the profile.
+   * @param profileName The name of the profile.
+   * @returns The user permissions object if found.
+   */
+  async getUserPermissions(profileName: string) {
+    const profile = await this.getProfileByName(profileName);
+    return (
+      profile.cdCliProfileData?.details?.permissions?.userPermissions || []
+    );
+  }
+
+  /**
+   * Helper method to extract a value from cdVault by name.
+   * @param profile The profile model.
+   * @param key The key to extract.
+   * @returns The corresponding value if found, otherwise null.
+   */
+  private extractVaultValue(profile: ProfileModel, key: string): string | null {
+    const vaultItem = profile.cdCliProfileData?.cdVault.find(
+      (item: CdVault) => item.name === key,
+    );
+    return vaultItem ? vaultItem.value : null;
   }
 }
