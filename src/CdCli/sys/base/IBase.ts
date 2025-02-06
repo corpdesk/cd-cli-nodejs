@@ -1,3 +1,20 @@
+/**
+ * This is an effort to standardize corpdesk return by a function or method.
+ * All corpdesk functions and methods are expected to implement CdFxReturn (progressively)
+ * - Consistency Across All Corpdesk Applications
+ * - Safer Type Handling
+ * - Improved Error Handling
+ * interface as a return type.
+ * Proposed: 6th Feb 2025
+ * Adoption is meant to be progressive over time.
+ * The principle if borrowed from Go's tuple returns
+ */
+export interface CdFxReturn<T> {
+  data: T | null;
+  state: boolean;
+  message?: string; // Optional error/success message
+}
+
 // cd request format
 export interface ICdRequest {
   ctx: string;

@@ -456,6 +456,7 @@ export class CdCliProfileController {
    * @returns The session token if found, otherwise null.
    */
   async getSessionData(profileName: string): Promise<string | null> {
+    CdLogg.debug('CdCliProfileController::getSessionData()/starting...');
     const profile = await this.getProfileByName(profileName);
     return this.extractVaultValue(profile, 'cd_token');
   }

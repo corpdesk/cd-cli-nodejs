@@ -1,6 +1,6 @@
 /* eslint-disable brace-style */
 /* eslint-disable node/prefer-global/process */
-import type { ICdResponse, ISessResp } from '../../base/IBase';
+import type { CdFxReturn, ICdResponse, ISessResp } from '../../base/IBase';
 import type {
   CdDescriptors,
   TypeDescriptor,
@@ -41,40 +41,101 @@ export class DevDescriptorController {
     this.modelsDir = join(__dirname, '../src/CdCli/sys/dev-descriptor/models');
   }
 
-  async getSrcDescriptors(): Promise<CdDescriptors[]> {
-    // new descriptors will need id reference so we pull existing ones from database:
-    this.savedDescriptors = await this.fetchSavedDescriptors();
-    const srcDescriptors: CdDescriptors[] = [];
-    const files = fs
-      .readdirSync(this.modelsDir)
-      .filter((file) => file.endsWith('.ts'));
+  // async getSrcDescriptors(): Promise<CdDescriptors[] | boolean> {
+  //   CdLogg.debug('DevDescriptorController::getSrcDescriptors()/starting...');
+  //   // new descriptors will need id reference so we pull existing ones from database:
+  //   try {
+  //     this.savedDescriptors = await this.fetchSavedDescriptors();
+  //     CdLogg.debug(
+  //       `DevDescriptorController::getSrcDescriptors()/this.savedDescriptors.length:${this.savedDescriptors.length}`,
+  //     );
+  //     const srcDescriptors: CdDescriptors[] = [];
+  //     const files = fs
+  //       .readdirSync(this.modelsDir)
+  //       .filter((file) => file.endsWith('.ts'));
 
-    for (const file of files) {
-      const filePath = join(this.modelsDir, file);
-      const sourceFile = ts.createSourceFile(
-        file,
-        fs.readFileSync(filePath, 'utf8'),
-        ts.ScriptTarget.ESNext,
-        true,
+  //     for (const file of files) {
+  //       const filePath = join(this.modelsDir, file);
+  //       const sourceFile = ts.createSourceFile(
+  //         file,
+  //         fs.readFileSync(filePath, 'utf8'),
+  //         ts.ScriptTarget.ESNext,
+  //         true,
+  //       );
+
+  //       ts.forEachChild(sourceFile, (node) => {
+  //         if (ts.isInterfaceDeclaration(node) || ts.isEnumDeclaration(node)) {
+  //           const cdObjName = node.name.text;
+  //           const cdObjId = this.getCdObjIdByName(
+  //             cdObjName,
+  //             this.savedDescriptors,
+  //           );
+
+  //           const jDetails: TypeDescriptor[] = this.extractTypeDetails(
+  //             node,
+  //             // descriptors,
+  //           );
+  //           srcDescriptors.push({ cdObjId, cdObjName, jDetails });
+  //         }
+  //       });
+  //     }
+  //     CdLogg.debug(
+  //       `DevDescriptorController::getSrcDescriptors()/srcDescriptors.length:${srcDescriptors.length}`,
+  //     );
+  //     return srcDescriptors;
+  //   } catch (e) {
+  //     CdLogg.error(
+  //       `Encountered and error while compiling descriptors. Error:${(e as Error).message}`,
+  //     );
+  //     return false;
+  //   }
+  // }
+  async getSrcDescriptors(): Promise<CdFxReturn<CdDescriptors[]>> {
+    CdLogg.debug('DevDescriptorController::getSrcDescriptors()/starting...');
+    try {
+      this.savedDescriptors = await this.fetchSavedDescriptors();
+      CdLogg.debug(
+        `DevDescriptorController::getSrcDescriptors()/this.savedDescriptors.length:${this.savedDescriptors.length}`,
       );
 
-      ts.forEachChild(sourceFile, (node) => {
-        if (ts.isInterfaceDeclaration(node) || ts.isEnumDeclaration(node)) {
-          const cdObjName = node.name.text;
-          const cdObjId = this.getCdObjIdByName(
-            cdObjName,
-            this.savedDescriptors,
-          );
+      const srcDescriptors: CdDescriptors[] = [];
+      const files = fs
+        .readdirSync(this.modelsDir)
+        .filter((file) => file.endsWith('.ts'));
 
-          const jDetails: TypeDescriptor[] = this.extractTypeDetails(
-            node,
-            // descriptors,
-          );
-          srcDescriptors.push({ cdObjId, cdObjName, jDetails });
-        }
-      });
+      for (const file of files) {
+        const filePath = join(this.modelsDir, file);
+        const sourceFile = ts.createSourceFile(
+          file,
+          fs.readFileSync(filePath, 'utf8'),
+          ts.ScriptTarget.ESNext,
+          true,
+        );
+
+        ts.forEachChild(sourceFile, (node) => {
+          if (ts.isInterfaceDeclaration(node) || ts.isEnumDeclaration(node)) {
+            const cdObjName = node.name.text;
+            const cdObjId = this.getCdObjIdByName(
+              cdObjName,
+              this.savedDescriptors,
+            );
+
+            const jDetails: TypeDescriptor[] = this.extractTypeDetails(node);
+            srcDescriptors.push({ cdObjId, cdObjName, jDetails });
+          }
+        });
+      }
+
+      CdLogg.debug(
+        `DevDescriptorController::getSrcDescriptors()/srcDescriptors.length:${srcDescriptors.length}`,
+      );
+      return { data: srcDescriptors, state: true }; // Standardized return object
+    } catch (e) {
+      CdLogg.error(
+        `Encountered an error while compiling descriptors. Error: ${(e as Error).message}`,
+      );
+      return { data: null, state: false }; // On failure, return null
     }
-    return srcDescriptors;
   }
 
   private extractTypeDetails(
@@ -165,16 +226,163 @@ export class DevDescriptorController {
     return found ? found.cdObjId : -1;
   }
 
-  async showSrcDescriptors(options?: { json?: boolean; pretty?: boolean }) {
-    const srcDescriptors = await this.getSrcDescriptors();
+  // async showSrcDescriptorsOld(options?: {
+  //   name?: string;
+  //   json?: boolean;
+  //   pretty?: boolean;
+  // }) {
+  //   const srcDescriptors: CdDescriptors[] | boolean =
+  //     await this.getSrcDescriptors();
+  //   if (options?.json) {
+  //     // Handle JSON output
+  //     if (options.pretty) {
+  //       console.log(JSON.stringify(srcDescriptors, null, 2)); // Pretty-print JSON
+  //     } else {
+  //       console.log(JSON.stringify(srcDescriptors)); // Compact JSON
+  //     }
+  //     return;
+  //   }
 
+  //   // Default: Tabular output
+  //   const table = new Table({
+  //     head: [chalk.blue('ID'), chalk.blue('Name'), chalk.blue('GUID')],
+  //     colWidths: [10, 30, 40],
+  //   });
+
+  //   if (srcDescriptors) {
+  //     srcDescriptors.forEach((desc) => {
+  //       table.push([desc.cdObjId, desc.cdObjName, desc.cdObjGuid || 'N/A']);
+  //     });
+
+  //     console.log(table.toString());
+  //   }
+  // }
+
+  // async showSrcDescriptors(options?: {
+  //   name?: string;
+  //   json?: boolean;
+  //   pretty?: boolean;
+  // }) {
+  //   const result = await this.getSrcDescriptors();
+
+  //   if (!result.state) {
+  //     console.error('Failed to fetch descriptors.');
+  //     return;
+  //   }
+
+  //   if (!result.data || result.data.length === 0) {
+  //     console.log('No descriptors found.');
+  //     return;
+  //   }
+
+  //   const srcDescriptors: CdDescriptors[] = result.data;
+  //   if (options?.json) {
+  //     // Handle JSON output
+  //     if (options.pretty) {
+  //       console.log(JSON.stringify(srcDescriptors, null, 2)); // Pretty-print JSON
+  //     } else {
+  //       console.log(JSON.stringify(srcDescriptors)); // Compact JSON
+  //     }
+  //     return;
+  //   }
+
+  //   // Default: Tabular output
+  //   const table = new Table({
+  //     head: [chalk.blue('ID'), chalk.blue('Name'), chalk.blue('GUID')],
+  //     colWidths: [10, 30, 40],
+  //   });
+
+  //   if (srcDescriptors) {
+  //     srcDescriptors.forEach((desc) => {
+  //       table.push([desc.cdObjId, desc.cdObjName, desc.cdObjGuid || 'N/A']);
+  //     });
+
+  //     console.log(table.toString());
+  //   }
+  // }
+  // async showSrcDescriptors(options?: {
+  //   names?: string;
+  //   json?: boolean;
+  //   pretty?: boolean;
+  // }) {
+  //   let result: CdFxReturn<CdDescriptors[]>;
+
+  //   // Fetch descriptors based on whether a name is provided
+  //   if (options?.name) {
+  //     result = await this.getDescriptorByName(options.name);
+  //   } else {
+  //     result = await this.getAllDescriptors();
+  //   }
+
+  //   // Handle errors
+  //   if (!result.state) {
+  //     console.error(result.message || 'Failed to fetch descriptors.');
+  //     return;
+  //   }
+
+  //   if (!result.data || result.data.length === 0) {
+  //     console.log('No descriptors found.');
+  //     return;
+  //   }
+
+  //   const srcDescriptors: CdDescriptors[] = result.data;
+
+  //   // Handle JSON output
+  //   if (options?.json) {
+  //     console.log(
+  //       options.pretty
+  //         ? JSON.stringify(srcDescriptors, null, 2) // Pretty JSON
+  //         : JSON.stringify(srcDescriptors),
+  //     ); // Compact JSON
+  //     return;
+  //   }
+
+  //   // Default: Tabular output
+  //   const table = new Table({
+  //     head: [chalk.blue('ID'), chalk.blue('Name'), chalk.blue('GUID')],
+  //     colWidths: [10, 30, 40],
+  //   });
+
+  //   srcDescriptors.forEach((desc) => {
+  //     table.push([desc.cdObjId, desc.cdObjName, desc.cdObjGuid || 'N/A']);
+  //   });
+
+  //   console.log(table.toString());
+  // }
+  async showSrcDescriptors(options?: {
+    names?: string[]; // Updated to accept multiple names
+    json?: boolean;
+    pretty?: boolean;
+  }) {
+    let result: CdFxReturn<CdDescriptors[]>;
+
+    // Fetch descriptors based on whether names are provided
+    if (options?.names && options.names.length > 0) {
+      result = await this.getDescriptorsByNames(options.names);
+    } else {
+      result = await this.getAllDescriptors();
+    }
+
+    // Handle errors
+    if (!result.state) {
+      console.error(result.message || 'Failed to fetch descriptors.');
+      return;
+    }
+
+    if (!result.data || result.data.length === 0) {
+      console.log('No descriptors found.');
+      return;
+    }
+
+    const srcDescriptors: CdDescriptors[] = result.data;
+
+    // Handle JSON output
     if (options?.json) {
-      // Handle JSON output
-      if (options.pretty) {
-        console.log(JSON.stringify(srcDescriptors, null, 2)); // Pretty-print JSON
-      } else {
-        console.log(JSON.stringify(srcDescriptors)); // Compact JSON
-      }
+      console.log(
+        options.pretty
+          ? JSON.stringify(srcDescriptors, null, 2) // Pretty JSON
+          : JSON.stringify(srcDescriptors),
+      ); // Compact JSON
       return;
     }
 
@@ -189,6 +397,101 @@ export class DevDescriptorController {
     });
 
     console.log(table.toString());
+  }
+
+  // async getDescriptorsByNames(
+  //   name: string,
+  // ): Promise<CdFxReturn<CdDescriptors[]>> {
+  //   if (!name || typeof name !== 'string') {
+  //     return {
+  //       data: null,
+  //       state: false,
+  //       message: 'Invalid descriptor name provided.',
+  //     };
+  //   }
+
+  //   const result = await this.getSrcDescriptors();
+
+  //   if (!result.state) {
+  //     return {
+  //       data: null,
+  //       state: false,
+  //       message: 'Failed to retrieve source descriptors.',
+  //     };
+  //   }
+
+  //   if (!result.data || result.data.length === 0) {
+  //     return { data: null, state: false, message: 'No descriptors available.' };
+  //   }
+
+  //   const matchingDescriptors = result.data.filter(
+  //     (descriptor) => descriptor.cdObjName === name,
+  //   );
+
+  //   if (matchingDescriptors.length === 0) {
+  //     return {
+  //       data: null,
+  //       state: false,
+  //       message: `No descriptor found with name: ${name}`,
+  //     };
+  //   }
+
+  //   return {
+  //     data: matchingDescriptors,
+  //     state: true,
+  //     message: 'Descriptor(s) found successfully.',
+  //   };
+  // }
+
+  async getDescriptorsByNames(
+    names: string[],
+  ): Promise<CdFxReturn<CdDescriptors[]>> {
+    const result = await this.getAllDescriptors();
+
+    if (!result.state) {
+      return {
+        data: null,
+        state: false,
+        message: 'Failed to fetch descriptors.',
+      };
+    }
+
+    const filteredDescriptors =
+      result.data?.filter((desc) => names.includes(desc.cdObjName)) || [];
+
+    return { data: filteredDescriptors, state: true };
+  }
+
+  async getAllDescriptors(): Promise<CdFxReturn<CdDescriptors[]>> {
+    const result = await this.getSrcDescriptors();
+
+    if (!result.state) {
+      return {
+        data: null,
+        state: false,
+        message: 'Failed to retrieve source descriptors.',
+      };
+    }
+
+    if (!result.data || result.data.length === 0) {
+      return { data: null, state: false, message: 'No descriptors available.' };
+    }
+
+    const matchingDescriptors = result.data;
+
+    if (matchingDescriptors.length === 0) {
+      return {
+        data: null,
+        state: false,
+        message: `No descriptor found`,
+      };
+    }
+
+    return {
+      data: matchingDescriptors,
+      state: true,
+      message: 'Descriptor(s) found successfully.',
+    };
   }
 
   async fetchSavedDescriptors(): Promise<CdDescriptors[]> {
@@ -968,33 +1271,122 @@ export class DevDescriptorController {
 
   //   async getDescriptors() {}
 
-  async syncDescriptors(): Promise<void> {
+  // async syncDescriptors(): Promise<void> {
+  //   try {
+  //     CdLogg.debug('DevDescriptorController::syncDescritors()/starting...');
+  //     const localDescriptorsData: CdDescriptors[] =
+  //       await this.getSrcDescriptors();
+  //     CdLogg.debug(
+  //       `DevDescriptorController::syncDescritors()/localDescriptorsData.length:${localDescriptorsData.length}`,
+  //     );
+  //     // await this.svDevDescriptor.init();
+  //     const response =
+  //       await this.svDevDescriptor.syncDescriptors(localDescriptorsData);
+  //     CdLogg.debug(
+  //       'DevDescriptorController::syncDescritors()/response:',
+  //       response,
+  //     );
+  //     if (response.app_state?.success) {
+  //       CdLogg.success('src-descriptors successfully synced.');
+  //     } else {
+  //       CdLogg.error(
+  //         'Login failed:',
+  //         response.app_state?.info || { error: 'Unknown error' },
+  //       );
+  //       throw new Error(
+  //         'Login failed. Please check your credentials and try again.',
+  //       );
+  //     }
+  //   } catch (error: any) {
+  //     CdLogg.error('Error during descriptors syncing:', error.message);
+  //   }
+  // }
+  // async syncDescriptors(): Promise<void> {
+  //   try {
+  //     CdLogg.debug('DevDescriptorController::syncDescritors()/starting...');
+  //     const localDescriptorsData: CdDescriptors[] =
+  //       await this.getSrcDescriptors(); // Ensure this is awaited
+  //     CdLogg.debug(
+  //       `DevDescriptorController::syncDescritors()/localDescriptorsData.length:${localDescriptorsData.length}`,
+  //     );
+
+  //     // Ensure this is awaited
+  //     const response =
+  //       await this.svDevDescriptor.syncDescriptors(localDescriptorsData);
+  //     CdLogg.debug(
+  //       'DevDescriptorController::syncDescritors()/response:',
+  //       response,
+  //     );
+
+  //     if (response.app_state?.success) {
+  //       CdLogg.success('src-descriptors successfully synced.');
+  //     } else {
+  //       CdLogg.error(
+  //         'Login failed:',
+  //         response.app_state?.info || { error: 'Unknown error' },
+  //       );
+  //       throw new Error(
+  //         'Login failed. Please check your credentials and try again.',
+  //       );
+  //     }
+  //   } catch (error: any) {
+  //     CdLogg.error('Error during descriptors syncing:', error.message);
+  //     throw error; // Propagate the error to the eval function
+  //   }
+  // }
+  async syncDescriptors(names?: string[]): Promise<void> {
     try {
-      const localDescriptorsData: CdDescriptors[] =
-        await this.getSrcDescriptors();
-      const response =
-        await this.svDevDescriptor.syncDescriptors(localDescriptorsData);
       CdLogg.debug(
-        'DevDescriptorController::syncDescritors()/response:',
+        `DevDescriptorController::syncDescriptors()/starting... names: ${JSON.stringify(names)}`,
+      );
+
+      let result: CdFxReturn<CdDescriptors[]>;
+
+      if (names && names.length > 0) {
+        result = await this.getDescriptorsByNames(names);
+      } else {
+        result = await this.getSrcDescriptors();
+      }
+
+      if (!result.state) {
+        const e = result.message || 'Unknown error';
+        CdLogg.error(`Failed to fetch descriptors:${e}`);
+        throw new Error(result.message || 'Failed to fetch descriptors.');
+      }
+
+      CdLogg.debug(
+        `DevDescriptorController::syncDescriptors()/Fetched ${result.data?.length} descriptors`,
+      );
+
+      const response = await this.svDevDescriptor.syncDescriptors(
+        result.data || [],
+      );
+
+      CdLogg.debug(
+        'DevDescriptorController::syncDescriptors()/response:',
         response,
       );
+
       if (response.app_state?.success) {
-        //
+        CdLogg.success('✔ Descriptors successfully synced.');
       } else {
         CdLogg.error(
-          'Login failed:',
+          'Sync failed:',
           response.app_state?.info || { error: 'Unknown error' },
         );
-        throw new Error(
-          'Login failed. Please check your credentials and try again.',
-        );
+        throw new Error('Sync failed. Please check and try again.');
       }
     } catch (error: any) {
-      CdLogg.error('Error during login:', error.message);
+      CdLogg.error('Error during descriptor syncing:', error.message);
+      throw error;
     }
   }
 
-  async syncApps(): Promise<void> {}
+  async syncApps(names: string[]): Promise<void> {
+    CdLogg.debug('names:', names);
+  }
 
-  async syncModules(): Promise<void> {}
+  async syncModules(names: string[]): Promise<void> {
+    CdLogg.debug('names:', names);
+  }
 }

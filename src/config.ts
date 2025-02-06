@@ -45,7 +45,7 @@ export default {
  * Load the configuration file from the VAULT_DIRECTORY.
  */
 export function loadCdCliConfig(): any {
-  CdLogg.debug('starting getGitHubProfile()');
+  CdLogg.debug('starting loadCdCliConfig()');
   try {
     if (!existsSync(CONFIG_FILE_PATH)) {
       throw new Error(`Configuration file not found at ${CONFIG_FILE_PATH}.`);

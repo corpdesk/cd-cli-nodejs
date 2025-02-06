@@ -78,8 +78,9 @@ import https from 'node:https';
 /* eslint-disable style/brace-style */
 import type { AxiosRequestConfig } from 'axios';
 import type { ICdRequest } from './IBase';
-import { loadCdCliConfig } from '@/config';
+import config, { loadCdCliConfig } from '@/config';
 import axios from 'axios';
+import { CdCliProfileController } from '../cd-cli/controllers/cd-cli-profile.cointroller';
 import CdLogg from '../cd-comm/controllers/cd-logger.controller';
 
 export class HttpService {
@@ -87,14 +88,20 @@ export class HttpService {
 
   constructor(private debugMode: boolean = false) {}
 
-  async init(baseURL: string): Promise<void> {
+  async init(): Promise<void> {
     try {
-      this.axiosInstance = axios.create({
-        baseURL,
-        httpsAgent: new https.Agent({
-          rejectUnauthorized: false,
-        }),
-      });
+      const ctlCdCliProfile = new CdCliProfileController();
+      const baseURL = await ctlCdCliProfile.getEndPoint(config.cdApiLocal);
+      if (baseURL) {
+        this.axiosInstance = axios.create({
+          baseURL,
+          httpsAgent: new https.Agent({
+            rejectUnauthorized: false,
+          }),
+        });
+      } else {
+        CdLogg.error('Could not get baseUrl!');
+      }
 
       CdLogg.info(`HttpService initialized with endpoint: ${baseURL}`);
     } catch (error) {
@@ -141,16 +148,16 @@ export class HttpService {
     // 'cd-api-local'
 
     try {
-      const url = await this.getCdApiUrl('cd-api-local');
-      if (url) {
-        await this.init(url);
-        CdLogg.debug('starting proc():', {
-          p: params,
-        });
-        if (!this.axiosInstance) {
-          throw new Error('HttpService is not initialized.');
-        }
+      // const url = await this.getCdApiUrl('cd-api-local');
+
+      await this.init();
+      CdLogg.debug('starting proc():', {
+        p: params,
+      });
+      if (!this.axiosInstance) {
+        throw new Error('HttpService is not initialized.');
       }
+
       CdLogg.debug('Sending request:', params);
       const response = await this.axiosInstance.post('/', params);
       return response.data;
