@@ -17,6 +17,7 @@ import type { CiCdDescriptor } from './cicd-descriptor.model';
 export interface CdModuleDescriptor {
   name: string;
   description: string;
+  ctx: CdCtx;
   projectGuid: string;
   parentProjectGuid?: string;
   language: LanguageDescriptor; // getLanguageByName(name: string,languages: LanguageDescriptor[],)
@@ -40,4 +41,9 @@ export interface CdModuleTypeDescriptor {
     | 'pwa'
     | 'mobile'
     | 'mechatronic';
+}
+
+export enum CdCtx {
+  Sys = 'system-module', // System module
+  App = 'app-module', // Optional module
 }
