@@ -180,9 +180,15 @@ export const DEV_MODE_COMMANDS = {
               break;
             case 'descriptors':
               console.log('Showing descriptors...');
+              CdLogg.debug(
+                `DEV_MODE_COMMANDS::execute()/show/options?.names:${options.names}`,
+              );
               const descriptorNames = options.names
                 ? options.names.split(',').map((n) => n.trim())
                 : null;
+              CdLogg.debug(
+                `DEV_MODE_COMMANDS::execute()/show/descriptorNames:${descriptorNames}`,
+              );
               await ctlDevDescriptor.showSrcDescriptors({
                 names: descriptorNames,
                 json: options.json,
@@ -197,46 +203,6 @@ export const DEV_MODE_COMMANDS = {
         },
       },
     },
-    // {
-    //   name: 'sync',
-    //   description: 'Synchronize different resources.',
-    //   options: [
-    //     { flags: 'descriptors', description: 'Sync descriptors.' },
-    //     { flags: 'apps', description: 'Sync apps.' },
-    //     { flags: 'modules', description: 'Sync modules.' },
-    //   ],
-    //   action: {
-    //     execute: async (options: any) => {
-    //       const resource = options._[0]; // Use minimist positional args
-    //       if (!resource) {
-    //         console.log(chalk.red('Error: Please specify a resource to sync.'));
-    //         return;
-    //       }
-
-    //       CdLogg.debug(`DevModeModel::syncCommand()/resource:${resource}`);
-
-    //       const devDescriptor = new DevDescriptorController();
-
-    //       switch (resource.toLowerCase()) {
-    //         case 'descriptors':
-    //           await devDescriptor.syncDescriptors();
-    //           console.log(chalk.green('✔ Synced descriptors successfully.'));
-    //           break;
-    //         case 'apps':
-    //           await devDescriptor.syncApps();
-    //           console.log(chalk.green('✔ Synced apps successfully.'));
-    //           break;
-    //         case 'modules':
-    //           await devDescriptor.syncModules();
-    //           console.log(chalk.green('✔ Synced modules successfully.'));
-    //           break;
-    //         default:
-    //           console.log(chalk.red(`Unknown sync resource: ${resource}`));
-    //           break;
-    //       }
-    //     },
-    //   },
-    // },
     {
       name: 'sync',
       description: 'Synchronize different resources.',

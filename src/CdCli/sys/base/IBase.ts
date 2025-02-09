@@ -1,3 +1,10 @@
+export interface BaseServiceInterface<T> {
+  create: (data: T) => Promise<CdFxReturn<null>>;
+  read: (q?: IQuery) => Promise<CdFxReturn<T[]>>; // q is optional. If not providedx, get all the data
+  update: (q: IQuery) => Promise<CdFxReturn<null>>;
+  delete: (q: IQuery) => Promise<CdFxReturn<null>>;
+}
+
 /**
  * This is an effort to standardize corpdesk return by a function or method.
  * All corpdesk functions and methods are expected to implement CdFxReturn (progressively)

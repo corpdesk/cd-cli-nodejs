@@ -33,7 +33,7 @@ export interface WorkstationDescriptor {
 export interface OperatingSystemDescriptor {
   name: string; // Name of the operating system (e.g., Windows, Linux, macOS)
   version: string; // Version of the operating system (e.g., "10.0.19044", "Ubuntu 22.04")
-  architecture: 'x86' | 'x64' | 'ARM' | 'ARM64'; // CPU architecture supported by the OS
+  architecture: 'x86_64' | 'x86' | 'x64' | 'ARM' | 'ARM64'; // CPU architecture supported by the OS
   kernelVersion?: string; // Optional: Specific kernel version (e.g., "5.15.0-79-generic")
   distribution?: string; // Optional: For Linux distros (e.g., "Ubuntu", "Fedora")
   buildNumber?: string; // Optional: Build number for the OS (e.g., Windows-specific)

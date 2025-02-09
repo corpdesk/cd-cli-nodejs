@@ -1,9 +1,77 @@
 /* eslint-disable style/brace-style */
 /* eslint-disable antfu/if-newline */
-import type { IJsonUpdate } from './IBase';
+import type {
+  BaseServiceInterface,
+  CdFxReturn,
+  IJsonUpdate,
+  IQuery,
+} from './IBase';
 
-export class BaseService {
-  err: string[] = []; // error messages
+export abstract class BaseService<T> implements BaseServiceInterface<T> {
+  err: string[] = []; // Store error messages
+
+  async create(data: T): Promise<CdFxReturn<null>> {
+    try {
+      // const typeId = this.getTypeId(); // Internal logic to determine typeId
+      console.log(`Saving ${JSON.stringify(data)} to database with type`);
+
+      return { data: null, state: true, message: 'Created successfully' };
+    } catch (error) {
+      return {
+        data: null,
+        state: false,
+        message: `Creation failed: ${(error as Error).message}`,
+      };
+    }
+  }
+
+  async read(q?: IQuery): Promise<CdFxReturn<T[]>> {
+    try {
+      // If no query is provided, default to pulling all data
+      const query = q ?? { where: {} };
+
+      console.log(`Reading from database with query:`, query);
+      const result: T[] = []; // Replace with actual TypeORM fetch logic
+
+      return { data: result, state: true, message: 'Read successfully' };
+    } catch (error) {
+      return {
+        data: null,
+        state: false,
+        message: `Read failed: ${(error as Error).message}`,
+      };
+    }
+  }
+
+  async update(q: IQuery): Promise<CdFxReturn<null>> {
+    try {
+      console.log(`Updating with ${JSON.stringify(q)}`);
+
+      return { data: null, state: true, message: 'Updated successfully' };
+    } catch (error) {
+      return {
+        data: null,
+        state: false,
+        message: `Update failed: ${(error as Error).message}`,
+      };
+    }
+  }
+
+  async delete(criteria: Record<string, any>): Promise<CdFxReturn<null>> {
+    try {
+      console.log(`Deleting with criteria:`, criteria);
+
+      return { data: null, state: true, message: 'Deleted successfully' };
+    } catch (error) {
+      return {
+        data: null,
+        state: false,
+        message: `Delete failed: ${(error as Error).message}`,
+      };
+    }
+  }
+
+  protected abstract getTypeId(): number; // Ensures each subclass defines a typeId
 
   validateJsonUpdate<T>(
     jsonUpdate: IJsonUpdate[],

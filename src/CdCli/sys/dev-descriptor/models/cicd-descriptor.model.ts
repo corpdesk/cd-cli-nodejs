@@ -1,6 +1,8 @@
 /* eslint-disable antfu/if-newline */
 
 import type { BaseDescriptor } from './base-descriptor.model';
+import type { MigrationDescriptor } from './migration-descriptor.model';
+import type { TestingFrameworkDescriptor } from './testing-framework.model';
 
 // Main CiCdDescriptor Interface
 export interface CiCdDescriptor extends BaseDescriptor {
@@ -11,34 +13,11 @@ export interface CiCdDescriptor extends BaseDescriptor {
   cICdMetadata?: CICdMetadata; // Metadata information
 }
 
-// Interface for Tasks
-export interface CICdTask {
-  name: string; // Name of the task (e.g., "Run Unit Tests", "Install Dependencies")
-  type: 'build' | 'test' | 'deploy' | 'notification' | 'custom'; // Type of task
-  executor: 'script' | 'docker' | 'runner' | 'custom'; // Task executor
-  status?: 'pending' | 'running' | 'success' | 'failed'; // Current status of the task
-  duration?: string; // Duration of the task (e.g., "2m 30s")
-  logs?: string[]; // Logs generated during the task
-}
-
-// Interface for Stages
-export interface CICdStage {
-  name: string; // Name of the stage (e.g., "Build", "Test", "Deploy")
-  description?: string; // Description of the stage
-  tasks: CICdTask[]; // List of tasks in the stage
-}
-
 // Interface for Pipeline
 export interface CICdPipeline {
   name: string; // Name of the pipeline (e.g., "Build and Deploy Pipeline")
   type: 'integration' | 'delivery' | 'deployment'; // Type of pipeline
   stages: CICdStage[]; // List of stages in the pipeline
-}
-
-// Interface for Trigger Conditions
-export interface CICdTriggerConditions {
-  includeTags: boolean; // Whether to include tags in triggers
-  excludeBranches?: string[]; // Branches to exclude
 }
 
 // Interface for Triggers
@@ -55,6 +34,52 @@ export interface CICdEnvironment {
   url: string; // Environment URL
   type: 'staging' | 'production' | 'testing' | 'custom'; // Environment type
   deploymentStrategy: 'blue-green' | 'canary' | 'rolling' | 'recreate'; // Deployment strategy
+}
+
+// Interface for Stages
+export interface CICdStage {
+  name: string; // Name of the stage (e.g., "Build", "Test", "Deploy")
+  description?: string; // Description of the stage
+  tasks: CICdTask[]; // List of tasks in the stage
+}
+
+export interface CICdTask {
+  name: string; // Name of the task (e.g., "Run Unit Tests", "Install Dependencies")
+  type: CICdTaskType | string; // More structured task type
+  executor: 'script' | 'docker' | 'runner' | 'custom'; // Task executor
+  status?: 'pending' | 'running' | 'success' | 'failed'; // Current status of the task
+  duration?: string; // Duration of the task (e.g., "2m 30s")
+  logs?: string[]; // Logs generated during the task
+}
+
+// Task type now allows structured descriptors
+export type CICdTaskType =
+  | BuildDescriptor
+  | TestingFrameworkDescriptor
+  | DeploymentDescriptor
+  | MigrationDescriptor
+  | CICdNotification;
+
+export interface BuildDescriptor {
+  name: 'build';
+  buildTool: 'webpack' | 'babel' | 'vite' | 'other';
+  sourceDirectory: string; // Directory containing the source files
+  outputDirectory: string; // Directory where the build files are stored
+  options?: Record<string, any>; // Optional configurations
+}
+
+export interface DeploymentDescriptor {
+  name: 'deploy';
+  strategy: 'blue-green' | 'rolling' | 'recreate' | 'canary';
+  targetEnvironment: string; // E.g., "staging", "production"
+  rollback?: boolean; // Whether rollback is enabled
+  deploymentScript?: string; // Optional script for deployment
+}
+
+// Interface for Trigger Conditions
+export interface CICdTriggerConditions {
+  includeTags: boolean; // Whether to include tags in triggers
+  excludeBranches?: string[]; // Branches to exclude
 }
 
 // Interface for Notification Channels

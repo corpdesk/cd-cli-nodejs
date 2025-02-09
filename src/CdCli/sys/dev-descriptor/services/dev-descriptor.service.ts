@@ -1,24 +1,26 @@
-import type { CdDescriptors } from '../models/dev-descriptor.model';
+import type { CdRequest, ISessResp } from '../../base/IBase';
+import type { CdDescriptor } from '../models/dev-descriptor.model';
 /* eslint-disable style/brace-style */
 import config from '@/config';
 import { HttpService } from '../../base/http.service';
-import { ISessResp } from '../../base/IBase';
 import { CdCliProfileController } from '../../cd-cli/controllers/cd-cli-profile.cointroller';
 import CdLogg from '../../cd-comm/controllers/cd-logger.controller';
+import { CdObjModel } from '../../moduleman/models/cd-obj.model';
 import { SessonController } from '../../user/controllers/session.controller';
 
 export class DevDescriptorService {
   cdToken = '';
   baseUrl = '';
   httpService;
-  headers: any = {
-    method: 'POST',
-    url: '/',
-    data: null,
-  };
-
+  svSession;
+  sess: ISessResp;
   constructor() {
     this.init();
+    this.svSession = new SessonController();
+    this.sess = this.svSession.getSession(config.cdApiLocal);
+    if (this.sess.cd_token) {
+      this.cdToken = this.sess.cd_token;
+    }
   }
 
   async init() {
@@ -44,46 +46,46 @@ export class DevDescriptorService {
     }
   }
 
-  // async syncDescriptors(localDescriptorsData: CdDescriptors[]) {
-  //   CdLogg.debug('DevDescriptorService::syncDescritors()/starting...');
-  //   const payload = this.setEnvelopeSyncDescriptors(localDescriptorsData);
-  //   this.headers.data = payload;
-  //   // CdLogg.debug(
-  //   //   'DevDescriptorService::syncDescritors()/this.headers:',
-  //   //   this.headers,
-  //   // );
-  //   const httpService = new HttpService();
-  //   await httpService.init();
-  //   return await httpService.proc2(this.headers);
-  // }
-  async syncDescriptors(localDescriptorsData: CdDescriptors[]) {
+  async syncDescriptors(d: CdDescriptor[]) {
     CdLogg.debug('DevDescriptorService::syncDescritors()/starting...');
-    const payload = this.setEnvelopeSyncDescriptors(localDescriptorsData);
-    this.headers.data = payload;
+    // const payload = this.setEnvelopeSyncDescriptors(localDescriptorsData);
+    const payload = this.setEnvelope('SyncDescriptors', { data: d });
+    this.httpService.headers.data = payload;
 
     const httpService = new HttpService();
     await httpService.init(); // Ensure this is awaited
-    return await httpService.proc2(this.headers); // Ensure this is awaited
+    return await httpService.proc2(this.httpService.headers); // Ensure this is awaited
   }
 
-  setEnvelopeSyncDescriptors(d: any) {
-    CdLogg.debug(
-      'DevDescriptorService::setEnvelopeSyncDescriptors()/starting...',
-    );
-    return {
-      ctx: 'Sys',
-      m: 'Moduleman',
-      c: 'CdObj',
-      a: 'SyncDescriptors',
-      dat: {
-        f_vals: [
-          {
-            data: d,
-          },
-        ],
-        token: this.cdToken,
-      },
-      args: {},
-    };
+  // setEnvelopeSyncDescriptors(d: any) {
+  //   CdLogg.debug(
+  //     'DevDescriptorService::setEnvelopeSyncDescriptors()/starting...',
+  //   );
+  //   return {
+  //     ctx: 'Sys',
+  //     m: 'Moduleman',
+  //     c: 'CdObj',
+  //     a: 'SyncDescriptors',
+  //     dat: {
+  //       f_vals: [
+  //         {
+  //           data: d,
+  //         },
+  //       ],
+  //       token: this.cdToken,
+  //     },
+  //     args: {},
+  //   };
+  // }
+
+  setEnvelope(action: string, data: any): CdRequest {
+    CdLogg.debug('CdAppService::setEnvelope()/starting...');
+    // Reset f_vals array to avoid unintended accumulation
+    CdObjModel.env.dat.f_vals = [];
+    // Update the envelope with new action and data
+    CdObjModel.env.a = action;
+    CdObjModel.env.dat.f_vals.push(data);
+    CdObjModel.env.dat.token = this.cdToken;
+    return CdObjModel.env;
   }
 }
