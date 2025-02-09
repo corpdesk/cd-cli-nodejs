@@ -1,9 +1,11 @@
-import type { CiCdDescriptor } from './/cicd-descriptor.model';
-import type { DevelopmentEnvironmentDescriptor } from './/development-environment.model';
-import type { CdModuleDescriptor } from './cd-module-descriptor.model';
-// import type { CdModuleDescriptor } from './cd-module-descriptor.model';
-import type { RuntimeEnvironmentDescriptor } from './/runtime-environment.model';
+import type { CdRequest, ICdRequest } from '../../base/IBase';
 import type { BaseDescriptor } from './base-descriptor.model';
+import type { CdModuleDescriptor } from './cd-module-descriptor.model';
+import type { CiCdDescriptor } from './cicd-descriptor.model';
+import type { DevelopmentEnvironmentDescriptor } from './development-environment.model';
+import CdLogg from '../../cd-comm/controllers/cd-logger.controller';
+// import type { CdModuleDescriptor } from './cd-module-descriptor.model';
+import type { RuntimeEnvironmentDescriptor } from './runtime-environment.model';
 
 // export interface CdAppDescriptor {
 //   $schema?: string; // Optional schema URL for future use. For now versioning will be managed by the host package.json of cd-cli
@@ -17,6 +19,7 @@ import type { BaseDescriptor } from './base-descriptor.model';
 //   cdCi?: CiCdDescriptor; // Coninous Integration / Continous Delivery // getCiCd(names: string[],cIcDs: CiCdDescriptor[],)
 // }
 
+// CdAppDescriptor<T = BaseDescriptor> extends CdDescriptor
 export interface CdAppDescriptor<T extends BaseDescriptor = BaseDescriptor> {
   $schema?: string;
   name: string;
@@ -47,20 +50,6 @@ export enum AppType {
   Plugin = 'plugin', // Plugins or extensions
   Microservice = 'microservice', // Small, modular backend services
 }
-
-// export interface AppFrontendDescriptor extends BaseDescriptor {
-//   backendApp: { name: string; networkAddress: string };
-// }
-
-// export interface AppApiDescriptor extends BaseDescriptor {
-//   apiProtocol: 'REST' | 'GraphQL' | 'gRPC';
-//   database?: { type: string; connectionString: string };
-// }
-
-// export interface AppMobileDescriptor extends BaseDescriptor {
-//   supportedPlatforms: ('iOS' | 'Android')[];
-//   pushNotificationService?: string;
-// }
 
 export interface AppFrontendDescriptor extends BaseDescriptor {
   backendApp: { name: string; networkAddress: string }; // Defines the backend it connects to

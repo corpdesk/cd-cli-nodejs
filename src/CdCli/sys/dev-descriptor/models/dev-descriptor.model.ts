@@ -14,7 +14,7 @@ export interface TypeDetails {
   isPrimitive?: boolean;
 }
 
-export interface CdDescriptors {
+export interface CdDescriptor {
   cdObjId: number;
   cdObjName: string;
   cdObjGuid?: string;
