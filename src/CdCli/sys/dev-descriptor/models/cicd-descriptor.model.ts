@@ -58,6 +58,7 @@ export type CICdTaskType =
   | TestingFrameworkDescriptor
   | DeploymentDescriptor
   | MigrationDescriptor
+  | BashScriptDescriptor // ✅ Added support for Bash scripts
   | CICdNotification;
 
 export interface BuildDescriptor {
@@ -104,53 +105,50 @@ export interface CICdMetadata {
   repository?: string; // Associated repository
 }
 
+export interface BashScriptDescriptor {
+  name: 'bash';
+  scriptPath?: string; // Path to the Bash script
+  inlineScript?: string; // Inline script content
+  environmentVariables?: Record<string, string>; // Env vars to pass to the script
+}
+
 export const knownCiCds: CiCdDescriptor[] = [
   {
     cICdPipeline: {
-      name: 'GitHub Actions - Build and Deploy',
-      type: 'integration',
+      name: 'Corpdesk CI/CD - Bash Deployment',
+      type: 'deployment',
       stages: [
         {
-          name: 'Build',
-          description: 'Build the application',
+          name: 'Deployment',
+          description: 'Deploy Corpdesk using Bash scripts',
           tasks: [
             {
-              name: 'Install Dependencies',
-              type: 'build',
-              executor: 'runner',
-              status: 'success',
-              duration: '2m 15s',
-            },
-            {
-              name: 'Compile Code',
-              type: 'build',
-              executor: 'runner',
-              status: 'success',
-              duration: '1m 45s',
-            },
-          ],
-        },
-        {
-          name: 'Test',
-          description: 'Run tests for the application',
-          tasks: [
-            {
-              name: 'Run Unit Tests',
-              type: 'test',
+              name: 'Stop existing services',
+              type: {
+                name: 'bash',
+                inlineScript:
+                  'systemctl stop corpdesk-api && systemctl stop corpdesk-ui',
+              },
               executor: 'script',
-              status: 'success',
-              duration: '3m 10s',
+              status: 'pending',
             },
-          ],
-        },
-        {
-          name: 'Deploy',
-          description: 'Deploy to production',
-          tasks: [
             {
-              name: 'Deploy to Staging',
-              type: 'deploy',
-              executor: 'docker',
+              name: 'Pull latest code',
+              type: {
+                name: 'bash',
+                inlineScript: 'git pull origin main',
+              },
+              executor: 'script',
+              status: 'pending',
+            },
+            {
+              name: 'Start services',
+              type: {
+                name: 'bash',
+                inlineScript:
+                  'systemctl start corpdesk-api && systemctl start corpdesk-ui',
+              },
+              executor: 'script',
               status: 'pending',
             },
           ],
@@ -163,63 +161,10 @@ export const knownCiCds: CiCdDescriptor[] = [
       conditions: { includeTags: true },
     },
     cICdEnvironment: {
-      name: 'Production',
-      url: 'https://app.example.com',
+      name: 'production',
+      url: 'https://corpdesk.com',
       type: 'production',
-      deploymentStrategy: 'blue-green',
-    },
-  },
-  {
-    cICdPipeline: {
-      name: 'CircleCI - Test and Deploy',
-      type: 'delivery',
-      stages: [
-        {
-          name: 'Test',
-          description: 'Run all automated tests',
-          tasks: [
-            {
-              name: 'Run Integration Tests',
-              type: 'test',
-              executor: 'docker',
-              status: 'running',
-            },
-          ],
-        },
-        {
-          name: 'Deploy',
-          description: 'Deploy to staging environment',
-          tasks: [
-            {
-              name: 'Deploy Docker Image',
-              type: 'deploy',
-              executor: 'docker',
-              status: 'pending',
-            },
-          ],
-        },
-      ],
-    },
-    cICdTriggers: {
-      type: 'pull_request',
-      branchFilters: ['develop'],
-    },
-    cICdEnvironment: {
-      name: 'Staging',
-      url: 'https://staging.example.com',
-      type: 'staging',
       deploymentStrategy: 'rolling',
-    },
-    cICdNotifications: {
-      channels: [
-        {
-          name: 'Slack',
-          type: 'slack',
-          recipients: ['#devops'],
-          messageFormat: 'text',
-        },
-      ],
-      onEvents: ['failure', 'success'],
     },
   },
 ];
