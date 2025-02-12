@@ -2,6 +2,9 @@
 // import type { WorkstationDescriptor } from './dev-descriptor.model';
 // import type { OperatingSystemDescriptor } from './app-descriptor.model';
 import type { DependencyDescriptor } from '../../dev-descriptor/models/dependancy-descriptor.model';
+import type { BaseDescriptor } from './base-descriptor.model';
+import type { ContainerDescriptor } from './container-manager.model.descriptor';
+import type { MetricsQuantity } from './service-provider.model';
 import { defaultOs, getOsByName, operatingSystems } from './oses.model';
 import {
   getPermissionsByName,
@@ -14,20 +17,64 @@ import {
   softwareDataStore,
 } from './software-store.model';
 
-export interface WorkstationDescriptor {
-  id: string; // Unique identifier for the workstation
-  name: string; // Descriptive name of the workstation
-  type: 'local' | 'remote'; // Indicates if the workstation is local or remote
-  os: OperatingSystemDescriptor; // Details of the operating system
-  path: string;
-  timezone: string;
+// export interface WorkstationDescriptor {
+//   id: string; // Unique identifier for the workstation
+//   name: string; // Descriptive name of the workstation
+//   type: 'local' | 'remote'; // Indicates if the workstation is local or remote
+//   os: OperatingSystemDescriptor; // Details of the operating system
+//   path: string;
+//   timezone: string;
+//   enabled?: boolean;
+//   requiredSoftware: DependencyDescriptor[]; // List of installed software
+//   networkAddress: NetworkInterfaceDescriptor;
+//   hardware: HardwareSpecs;
+//   sshCredentials?: SshCredentials;
+//   lastActive?: Date; // Optional: Timestamp of the last activity
+//   isOnline: boolean; // Indicates if the workstation is currently online
+// }
+/**
+ * Questions:
+ * - virtualization and container should be under machine type or machine type should be integrated with a property called host
+ */
+export interface WorkstationDescriptor extends BaseDescriptor {
+  workstationAccess: WorkstationAccessDescriptor;
+  machineType: MachineType;
+  os: OperatingSystemDescriptor;
   enabled?: boolean;
-  requiredSoftware: DependencyDescriptor[]; // List of installed software
-  networkAddress: NetworkConfig;
-  hardware: HardwareSpecs;
-  sshCredentials?: SshCredentials;
-  lastActive?: Date; // Optional: Timestamp of the last activity
-  isOnline: boolean; // Indicates if the workstation is currently online
+  requiredSoftware: DependencyDescriptor[];
+  // networkAddress: NetworkInterfaceDescriptor;
+  // hardware: HardwareSpecs;
+}
+
+///////////////////////////////////////////////////////////////
+// export interface PhysicalWorkstationDescriptor
+//   extends BaseWorkstationDescriptor {
+//   machineType: 'physical';
+// }
+
+// export interface VirtualWorkstationDescriptor
+//   extends BaseWorkstationDescriptor {
+//   machineType: 'virtual';
+//   virtualization: VirtualMachineDescriptor;
+// }
+
+// export interface ContainerWorkstationDescriptor
+//   extends BaseWorkstationDescriptor {
+//   machineType: 'container';
+//   container: ContainerDescriptor;
+// }
+
+// export type WorkstationDescriptor =
+//   | PhysicalWorkstationDescriptor
+//   | VirtualWorkstationDescriptor
+//   | ContainerWorkstationDescriptor;
+
+/////////////////////////////////////////////////////////////////
+
+export interface SystemResources {
+  cpuCores: number; // Number of CPU cores
+  memory: MetricsQuantity; // e.g., "32GB" {units: 'GB',value: 32}
+  storage: MetricsQuantity; // e.g., "1TB"
 }
 
 export interface OperatingSystemDescriptor {
@@ -39,53 +86,103 @@ export interface OperatingSystemDescriptor {
   buildNumber?: string; // Optional: Build number for the OS (e.g., Windows-specific)
   environmentVariables?: { [key: string]: string }; // Optional: Key-value pairs of environment variables
   timezone: string; // Timezone of the environment (e.g., "UTC", "America/New_York")
-  hostname: string; // Hostname of the system
-  ipAddresses: string[]; // List of IP addresses associated with the environment
-  uptime?: number; // Optional: System uptime in seconds
-  isVirtualized: boolean; // Whether the environment is running on a virtual machine
-  virtualMachineType?: string; // Optional: Type of virtualization (e.g., "VMware", "KVM")
+  // hostname: string; // Hostname of the system
+  // ipAddresses: string[]; // List of IP addresses associated with the environment
+  // uptime?: number; // Optional: System uptime in seconds
+  // isVirtualized: boolean; // Whether the environment is running on a virtual machine
+  // virtualMachineType?: string; // Optional: Type of virtualization (e.g., "VMware", "KVM")
 }
 
-export const osPermissions: OperatingSystemPermissionDescriptor = {
-  basePermissions: getPermissionsByRoleNames([], roles),
-  accessControls: [
-    {
-      subject: 'user:john',
-      resource: '/home/john/docs',
-      allowedActions: ['read', 'write'],
-      conditions: [
-        {
-          type: 'time-based',
-          details: { startTime: '09:00', endTime: '17:00' },
-        },
-      ],
-    },
-    {
-      subject: 'group:developers',
-      resource: '/var/app',
-      allowedActions: ['read', 'write', 'execute'],
-    },
-  ],
-  auditConfig: {
-    logChanges: true,
-    lastModifiedBy: 'admin',
-    lastModifiedAt: new Date(),
-    auditTrail: ['Initial setup', 'Added permissions for user:john'],
-  },
-  roles: [
-    {
-      roleName: 'admin',
-      permissions: [
-        {
-          name: 'manage_system',
-          description: 'Allows full control over the operating system',
-          level: 'system',
-          type: 'service',
-        },
-      ],
-    },
-  ],
-};
+// Physical Machine Descriptor
+export interface PhysicalMachineDescriptor {
+  systemResources: SystemResources; // Total physical resources
+  powerState: 'on' | 'off' | 'suspended';
+  networkInterfaces: NetworkInterfaceDescriptor[]; // Physical network interfaces
+}
+
+// export interface VirtualMachineDescriptor {
+//   hypervisor: 'KVM' | 'VMware' | 'VirtualBox' | 'Hyper-V' | 'Xen' | 'Other';
+//   vmId: string; // Unique identifier for the VM
+//   allocatedResources: {
+//     cpuCores: number;
+//     memory: string; // e.g., "8GB"
+//     diskSize: string; // e.g., "100GB"
+//   };
+//   networkMode: 'bridged' | 'nat' | 'host-only'; // Network mode of the VM
+//   storagePath: string; // Path where VM is stored
+//   state: 'running' | 'stopped' | 'paused'; // Current state of the VM
+// }
+// Virtual Machine Descriptor
+export interface VirtualMachineDescriptor {
+  hypervisor: 'KVM' | 'VMware' | 'VirtualBox' | 'Hyper-V' | 'Xen' | 'Other';
+  vmId: string;
+  allocatedResources: SystemResources; // Resources allocated to this VM
+  networkMode: 'bridged' | 'nat' | 'host-only';
+  state: 'running' | 'stopped' | 'paused';
+}
+
+// export type MachineType = 'physical' | 'virtual' | 'container';
+export interface MachineType {
+  name: 'physical' | 'virtual' | 'container';
+  hostMachine:
+    | PhysicalMachineDescriptor
+    | VirtualMachineDescriptor
+    | ContainerDescriptor;
+}
+
+// export interface WorkstationAccess {
+//   accessScope?: 'local' | 'remote' | 'hybrid';
+//   physicalAccess?: 'direct' | 'vpn' | 'tunnel';
+//   transportProtocol?: 'ssh' | 'http' | 'rdp' | 'grpc' | 'other';
+//   interactionType?: 'cli' | 'gui' | 'api' | 'desktop';
+// }
+export interface WorkstationAccessDescriptor {
+  accessScope?: 'local' | 'remote' | 'hybrid';
+  physicalAccess?: 'direct' | 'vpn' | 'tunnel';
+  transport: {
+    protocol: 'ssh' | 'http' | 'rdp' | 'grpc' | 'other';
+    credentials?: TransportCredentials; // Holds authentication details based on protocol
+  };
+  interactionType?: 'cli' | 'gui' | 'api' | 'desktop';
+}
+
+// Define a flexible structure for transport-specific credentials
+export interface TransportCredentials {
+  sshCredentials?: SshCredentials;
+  httpCredentials?: HttpCredentials;
+  rdpCredentials?: RdpCredentials;
+  grpcCredentials?: GrpcCredentials;
+  otherCredentials?: Record<string, unknown>; // Allows future expansion
+}
+
+// Keep SSH credentials definition unchanged
+export interface SshCredentials {
+  username: string;
+  host: string;
+  port: number;
+  privateKey?: string;
+  password?: string;
+}
+
+// Example HTTP authentication credentials
+export interface HttpCredentials {
+  username: string;
+  password: string;
+  token?: string; // Supports bearer tokens for APIs
+}
+
+// Example RDP authentication credentials
+export interface RdpCredentials {
+  username: string;
+  password: string;
+  domain?: string; // Optional for Windows domain logins
+}
+
+// Example gRPC authentication credentials
+export interface GrpcCredentials {
+  apiKey?: string;
+  cert?: string; // Optional certificate for secure connections
+}
 
 // Condition Descriptor
 export interface ConditionDescriptor {
@@ -159,7 +256,7 @@ export interface FileStoreDescriptor {
 }
 
 // Root Interface
-export interface NetworkConfig {
+export interface NetworkInterfaceDescriptor {
   hostname: string; // Hostname of the workstation
   ip4Addresses?: string[]; // List of IPv4 addresses
   ip6Addresses?: string[]; // List of IPv6 addresses
@@ -266,20 +363,6 @@ export interface NetworkPolicy {
   allowedIngress?: IngressConfig[]; // Allowed ingress configurations
   allowedEgress?: EgressConfig[]; // Allowed egress configurations
 }
-
-// Supporting Interfaces
-// export interface DNSRecord {
-//   type: 'A' | 'CNAME' | 'MX' | 'TXT' | 'SRV'; // DNS record type
-//   name: string; // Record name (e.g., "www" or "@")
-//   value: string; // Record value (e.g., IP address or domain name)
-//   ttl: number; // Time-to-live in seconds
-// }
-
-// export interface FirewallRule {
-//   protocol: 'tcp' | 'udp' | 'icmp'; // Protocol type
-//   portRange: string; // Port range (e.g., "80" or "3000-4000")
-//   source: string; // Allowed source IP or CIDR block
-// }
 
 export interface VolumeMapping {
   hostPath: string; // Host machine path
@@ -424,7 +507,7 @@ export interface SshCredentials {
   password?: string; // Optional: Password for SSH authentication
 }
 
-const fileStorages: FileStoreDescriptor[] = [
+export const fileStorages: FileStoreDescriptor[] = [
   {
     name: 'Basic Storage',
     type: 'local',
@@ -509,249 +592,258 @@ export enum FileStorageOption {
 
 export const workstations: WorkstationDescriptor[] = [
   {
-    id: 'ws-001',
-    name: 'Local Development Machine',
-    type: 'local',
+    name: 'ws-001',
+    workstationAccess: {
+      accessScope: 'local',
+      physicalAccess: 'direct',
+      transport: { protocol: 'ssh', credentials: {} },
+      interactionType: 'cli',
+    },
+    machineType: {
+      name: 'physical',
+      hostMachine: {
+        containerId: 'ubuntu-03',
+        image: 'ubuntu22.04',
+        allocatedResources: {
+          cpuCores: 4, // Number of CPU cores
+          memory: { units: 'GB', value: 32 }, // e.g., "32GB"
+          storage: { units: 'TB', value: 1 }, // e.g., "1TB"
+        }, // Resources allocated to this container
+      },
+    },
     os: getOsByName('ubuntu.22.04', operatingSystems)[0],
-    path: '/local/dev',
     enabled: true,
-    timezone: 'UTC',
-    networkAddress: {
-      hostname: 'dev-machine',
-      ip4Addresses: ['192.168.0.2'],
-    },
-    hardware: {
-      cpu: {
-        model: 'Intel Core i7-12700K',
-        cores: 12,
-        threads: 24,
-      },
-      memory: {
-        total: 32768,
-      },
-      fileStorage: getFileStoregeByName(
-        [FileStorageOption.Premium],
-        fileStorages,
-      ),
-      gpu: {
-        model: 'NVIDIA RTX 3080',
-        memory: 10000,
-      },
-    },
+    // networkAddress: {
+    //   hostname: 'dev-machine',
+    //   ip4Addresses: ['192.168.0.2'],
+    // },
+    // hardware: {
+    //   cpu: {
+    //     model: 'Intel Core i7-12700K',
+    //     cores: 12,
+    //     threads: 24,
+    //   },
+    //   memory: {
+    //     total: 32768,
+    //   },
+    //   fileStorage: getFileStoregeByName(
+    //     [FileStorageOption.Premium],
+    //     fileStorages,
+    //   ),
+    //   gpu: {
+    //     model: 'NVIDIA RTX 3080',
+    //     memory: 10000,
+    //   },
+    // },
     requiredSoftware: getSoftwareByName(
       ['npm.9.8.1', 'vscode.1.82.0'],
       softwareDataStore,
     ),
-    sshCredentials: undefined,
-    lastActive: new Date('2025-01-20T10:45:00Z'),
-    isOnline: true,
   },
   {
-    id: 'ws-002',
     name: 'Windows Build Server',
-    type: 'remote',
+    workstationAccess: {
+      accessScope: 'remote',
+      physicalAccess: 'vpn',
+      transport: {
+        protocol: 'ssh',
+        credentials: {
+          sshCredentials: {
+            username: 'admin',
+            privateKey: '/keys/build-server-key',
+            host: '123.456.890',
+            port: 22,
+          },
+        },
+      },
+      interactionType: 'cli',
+    },
+    machineType: {
+      name: 'container',
+      hostMachine: {
+        containerId: 'ubuntu-03',
+        image: 'ubuntu22.04',
+        allocatedResources: {
+          cpuCores: 1, // Number of CPU cores
+          memory: { units: 'GB', value: 4 }, // e.g., "32GB"
+          storage: { units: 'GB', value: 8 }, // e.g., "1TB"
+        }, // Resources allocated to this container
+      },
+    },
+    // container: ContainerDescriptor;
     os: getOsByName('Windows', operatingSystems)[0],
-    path: '\\\\build-server\\shared',
     enabled: true,
-    timezone: 'EST',
-    networkAddress: {
-      hostname: 'build-server',
-      ip4Addresses: ['10.0.0.10'],
-    },
-    hardware: {
-      cpu: {
-        model: 'AMD Ryzen 9 5950X',
-        cores: 16,
-        threads: 32,
-      },
-      memory: {
-        total: 65536,
-      },
-      fileStorage: getFileStoregeByName(
-        [FileStorageOption.Premium],
-        fileStorages,
-      ),
-      gpu: {
-        model: 'NVIDIA RTX A6000',
-        memory: 48000,
-      },
-    },
+    // networkAddress: {
+    //   hostname: 'build-server',
+    //   ip4Addresses: ['10.0.0.10'],
+    // },
+    // hardware: {
+    //   cpu: {
+    //     model: 'AMD Ryzen 9 5950X',
+    //     cores: 16,
+    //     threads: 32,
+    //   },
+    //   memory: {
+    //     total: 65536,
+    //   },
+    //   fileStorage: getFileStoregeByName(
+    //     [FileStorageOption.Premium],
+    //     fileStorages,
+    //   ),
+    //   gpu: {
+    //     model: 'NVIDIA RTX A6000',
+    //     memory: 48000,
+    //   },
+    // },
     requiredSoftware: getSoftwareByName(
       ['pnpm.7.16.0', 'apache.2.4.57', 'mysql-server.8.0.34'],
       softwareDataStore,
     ),
-    sshCredentials: {
-      username: 'admin',
-      privateKey: '/keys/build-server-key',
-      host: '123.456.890',
-      port: 22,
-    },
-    lastActive: new Date('2025-01-19T23:00:00Z'),
-    isOnline: false,
   },
   {
-    id: 'ws-003',
     name: 'macOS Developer Laptop',
-    type: 'local',
+    workstationAccess: {
+      accessScope: 'remote',
+      physicalAccess: 'direct',
+      transport: {
+        protocol: 'ssh',
+        credentials: {
+          sshCredentials: {
+            username: 'admin',
+            privateKey: '/keys/build-server-key',
+            host: '123.456.890',
+            port: 22,
+          },
+        },
+      },
+      interactionType: 'cli',
+    },
+    machineType: {
+      name: 'container',
+      hostMachine: {
+        containerId: 'ubuntu-03',
+        image: 'ubuntu22.04',
+        allocatedResources: {
+          cpuCores: 1, // Number of CPU cores
+          memory: { units: 'GB', value: 4 }, // e.g., "32GB"
+          storage: { units: 'GB', value: 8 }, // e.g., "1TB"
+        }, // Resources allocated to this container
+      },
+    },
     os: getOsByName('macOS', operatingSystems)[0],
-    path: '/Users/dev/code',
     enabled: true,
-    timezone: 'PST',
-    networkAddress: {
-      hostname: 'dev-macbook',
-      ip4Addresses: ['192.168.1.20'],
-    },
-    hardware: {
-      cpu: {
-        model: 'Apple M1 Max',
-        cores: 10,
-        threads: 20,
-      },
-      memory: {
-        total: 65536,
-      },
-      fileStorage: getFileStoregeByName(
-        [FileStorageOption.Premium],
-        fileStorages,
-      ),
-      gpu: {
-        model: 'Integrated',
-        memory: 32000,
-      },
-    },
     requiredSoftware: getSoftwareByName(
       ['vscode.1.82.0', 'npm.9.8.1', 'lxd.5.0'],
       softwareDataStore,
     ),
-    sshCredentials: undefined,
-    lastActive: new Date('2025-01-18T15:30:00Z'),
-    isOnline: true,
   },
   {
-    id: 'ws-004',
     name: 'CentOS Database Server',
-    type: 'remote',
+    workstationAccess: {
+      accessScope: 'remote',
+      physicalAccess: 'direct',
+      transport: {
+        protocol: 'ssh',
+        credentials: {
+          sshCredentials: {
+            username: 'admin',
+            privateKey: '/keys/build-server-key',
+            host: '123.456.890',
+            port: 22,
+          },
+        },
+      },
+      interactionType: 'cli',
+    },
+    machineType: {
+      name: 'container',
+      hostMachine: {
+        containerId: 'ubuntu-03',
+        image: 'ubuntu22.04',
+        allocatedResources: {
+          cpuCores: 1, // Number of CPU cores
+          memory: { units: 'GB', value: 4 }, // e.g., "32GB"
+          storage: { units: 'GB', value: 8 }, // e.g., "1TB"
+        }, // Resources allocated to this container
+      },
+    },
     os: getOsByName('CentOS', operatingSystems)[0],
-    path: '/var/lib/mysql',
     enabled: true,
-    timezone: 'UTC',
-    networkAddress: {
-      hostname: 'db-server',
-      ip4Addresses: ['10.0.1.15'],
-    },
-    hardware: {
-      cpu: {
-        model: 'Intel Xeon Gold 6258R',
-        cores: 28,
-        threads: 56,
-      },
-      memory: {
-        total: 128000,
-      },
-      fileStorage: getFileStoregeByName(
-        [FileStorageOption.Premium],
-        fileStorages,
-      ),
-      gpu: {
-        model: 'None',
-        memory: 0,
-      },
-    },
+    // timezone: 'UTC',
+    // networkAddress: {
+    //   hostname: 'db-server',
+    //   ip4Addresses: ['10.0.1.15'],
+    // },
+    // hardware: {
+    //   cpu: {
+    //     model: 'Intel Xeon Gold 6258R',
+    //     cores: 28,
+    //     threads: 56,
+    //   },
+    //   memory: {
+    //     total: 128000,
+    //   },
+    //   fileStorage: getFileStoregeByName(
+    //     [FileStorageOption.Premium],
+    //     fileStorages,
+    //   ),
+    //   gpu: {
+    //     model: 'None',
+    //     memory: 0,
+    //   },
+    // },
     requiredSoftware: getSoftwareByName(
-      ['mysql-server.8.0.34', 'apache.2.4.57', 'incus.1.2.3'],
+      ['mysql-server.8.0.34'],
       softwareDataStore,
     ),
-    sshCredentials: {
-      username: 'dbadmin',
-      privateKey: '/keys/db-server-key',
-      host: '123.238.101',
-      port: 22,
-    },
-    lastActive: new Date('2025-01-20T09:00:00Z'),
-    isOnline: true,
-  },
-  {
-    id: 'ws-005',
-    name: 'Test Virtual Machine',
-    type: 'remote',
-    os: getOsByName('ubuntu.22.04', operatingSystems)[0],
-    path: '/vm/test',
-    enabled: true,
-    timezone: 'UTC',
-    networkAddress: {
-      hostname: 'test-vm',
-      ip4Addresses: ['172.16.0.5'],
-    },
-    hardware: {
-      cpu: {
-        model: 'Virtual CPU',
-        cores: 4,
-        threads: 8,
-      },
-      memory: {
-        total: 8192,
-      },
-      fileStorage: getFileStoregeByName(
-        [FileStorageOption.Premium],
-        fileStorages,
-      ),
-      gpu: {
-        model: 'Virtual GPU',
-        memory: 2048,
-      },
-    },
-    requiredSoftware: getSoftwareByName(
-      ['npm.9.8.1', 'pnpm.7.16.0', 'vscode.1.82.0'],
-      softwareDataStore,
-    ),
-    sshCredentials: {
-      username: 'vmuser',
-      privateKey: '/keys/test-vm-key',
-      host: '123.122.7',
-      port: 22,
-    },
-    lastActive: new Date('2025-01-15T20:00:00Z'),
-    isOnline: false,
+    // sshCredentials: {
+    //   username: 'dbadmin',
+    //   privateKey: '/keys/db-server-key',
+    //   host: '10.0.1.15',
+    //   port: 22,
+    // },
+    // lastActive: new Date('2025-01-17T08:15:00Z'),
+    // isOnline: true,
   },
 ];
 
 export const defaultWorkstation: WorkstationDescriptor = {
-  id: 'unknown',
   name: 'Local Development Machine',
-  type: 'local',
+  workstationAccess: {
+    accessScope: 'remote',
+    physicalAccess: 'direct',
+    transport: {
+      protocol: 'ssh',
+      credentials: {
+        sshCredentials: {
+          username: 'admin',
+          privateKey: '/keys/build-server-key',
+          host: '123.456.890',
+          port: 22,
+        },
+      },
+    },
+    interactionType: 'cli',
+  },
+  machineType: {
+    name: 'container',
+    hostMachine: {
+      containerId: 'ubuntu-03',
+      image: 'ubuntu22.04',
+      allocatedResources: {
+        cpuCores: 1, // Number of CPU cores
+        memory: { units: 'GB', value: 4 }, // e.g., "32GB"
+        storage: { units: 'GB', value: 8 }, // e.g., "1TB"
+      }, // Resources allocated to this container
+    },
+  },
   os: getOsByName('ubuntu.22.04', operatingSystems)[0],
-  path: '/local/dev',
   enabled: true,
-  timezone: 'UTC',
-  networkAddress: {
-    hostname: 'dev-machine',
-    ip4Addresses: ['192.168.0.2'],
-  },
-  hardware: {
-    cpu: {
-      model: 'Intel Core i7-12700K',
-      cores: 12,
-      threads: 24,
-    },
-    memory: {
-      total: 32768,
-    },
-    fileStorage: getFileStoregeByName(
-      [FileStorageOption.Premium],
-      fileStorages,
-    ),
-    gpu: {
-      model: 'NVIDIA RTX 3080',
-      memory: 10000,
-    },
-  },
+
   requiredSoftware: getSoftwareByName(
     ['npm.9.8.1', 'vscode.1.82.0'],
     softwareDataStore,
   ),
-  sshCredentials: undefined,
-  lastActive: new Date('2025-01-20T10:45:00Z'),
-  isOnline: true,
 };
 
 export const fileStorageOptions = [
@@ -792,3 +884,44 @@ export function getWorkstationByName(
 ): WorkstationDescriptor | undefined {
   return ws.find((workstation) => workstation.name === name);
 }
+
+export const osPermissions: OperatingSystemPermissionDescriptor = {
+  basePermissions: getPermissionsByRoleNames([], roles),
+  accessControls: [
+    {
+      subject: 'user:john',
+      resource: '/home/john/docs',
+      allowedActions: ['read', 'write'],
+      conditions: [
+        {
+          type: 'time-based',
+          details: { startTime: '09:00', endTime: '17:00' },
+        },
+      ],
+    },
+    {
+      subject: 'group:developers',
+      resource: '/var/app',
+      allowedActions: ['read', 'write', 'execute'],
+    },
+  ],
+  auditConfig: {
+    logChanges: true,
+    lastModifiedBy: 'admin',
+    lastModifiedAt: new Date(),
+    auditTrail: ['Initial setup', 'Added permissions for user:john'],
+  },
+  roles: [
+    {
+      roleName: 'admin',
+      permissions: [
+        {
+          name: 'manage_system',
+          description: 'Allows full control over the operating system',
+          level: 'system',
+          type: 'service',
+        },
+      ],
+    },
+  ],
+};

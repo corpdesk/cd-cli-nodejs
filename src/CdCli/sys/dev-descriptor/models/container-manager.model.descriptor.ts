@@ -3,7 +3,10 @@ import type {
   ScalingDescriptor,
   SecurityDescriptor,
 } from './/service-descriptor.model';
-import type { OperatingSystemDescriptor } from './/workstations.model';
+import type {
+  OperatingSystemDescriptor,
+  SystemResources,
+} from './/workstations.model';
 import type { BaseDescriptor } from './base-descriptor.model';
 
 export interface ContainerManagerDescriptor extends BaseDescriptor {
@@ -45,16 +48,25 @@ export interface ContainerManagerTypeDescriptor {
 // }
 
 // Container Descriptor
+// export interface ContainerDescriptor {
+//   containerId: string; // Unique identifier for the container
+//   image: string; // Docker image or equivalent
+//   status: 'running' | 'stopped' | 'paused'; // Current status of the container
+//   ports?: number[]; // Ports exposed by the container
+//   environmentVariables?: Record<string, string>; // Environment variables for the container
+//   resourceUsage?: {
+//     cpuUsage: string; // CPU usage (e.g., "50%")
+//     memoryUsage: string; // Memory usage (e.g., "512MB")
+//   };
+// }
+
+// Container Descriptor
 export interface ContainerDescriptor {
-  containerId: string; // Unique identifier for the container
-  image: string; // Docker image or equivalent
-  status: 'running' | 'stopped' | 'paused'; // Current status of the container
-  ports?: number[]; // Ports exposed by the container
-  environmentVariables?: Record<string, string>; // Environment variables for the container
-  resourceUsage?: {
-    cpuUsage: string; // CPU usage (e.g., "50%")
-    memoryUsage: string; // Memory usage (e.g., "512MB")
-  };
+  containerId: string;
+  image: string;
+  status?: 'running' | 'stopped' | 'paused';
+  allocatedResources: SystemResources; // Resources allocated to this container
+  environmentVariables?: Record<string, string>;
 }
 
 // Container Management Features Descriptor
