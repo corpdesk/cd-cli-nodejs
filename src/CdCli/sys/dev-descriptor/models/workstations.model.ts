@@ -5,7 +5,7 @@ import type { DependencyDescriptor } from '../../dev-descriptor/models/dependanc
 import type { BaseDescriptor } from './base-descriptor.model';
 import type { ContainerDescriptor } from './container-manager.model.descriptor';
 import type { MetricsQuantity } from './service-provider.model';
-import { defaultOs, getOsByName, operatingSystems } from './oses.model';
+import { defaultOs, getOsByName, operatingSystems } from './os.model';
 import {
   getPermissionsByName,
   getPermissionsByRoleNames,
@@ -42,8 +42,6 @@ export interface WorkstationDescriptor extends BaseDescriptor {
   os: OperatingSystemDescriptor;
   enabled?: boolean;
   requiredSoftware: DependencyDescriptor[];
-  // networkAddress: NetworkInterfaceDescriptor;
-  // hardware: HardwareSpecs;
 }
 
 ///////////////////////////////////////////////////////////////
@@ -86,6 +84,7 @@ export interface OperatingSystemDescriptor {
   buildNumber?: string; // Optional: Build number for the OS (e.g., Windows-specific)
   environmentVariables?: { [key: string]: string }; // Optional: Key-value pairs of environment variables
   timezone: string; // Timezone of the environment (e.g., "UTC", "America/New_York")
+  allocatedResources: SystemResources;
   // hostname: string; // Hostname of the system
   // ipAddresses: string[]; // List of IP addresses associated with the environment
   // uptime?: number; // Optional: System uptime in seconds

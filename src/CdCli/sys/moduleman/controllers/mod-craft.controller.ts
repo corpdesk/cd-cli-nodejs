@@ -135,7 +135,7 @@ export class ModCraftController {
       configPath: CONFIG_FILE_PATH,
     });
     try {
-      // Step 1: Load configurations from ~/.cd-cli.config.json
+      // Step 1: Load configurations from ~/.cd-cli.profiles.json
       if (!existsSync(CONFIG_FILE_PATH)) {
         throw new Error(
           'Configuration file not found. Please set up your CLI.',

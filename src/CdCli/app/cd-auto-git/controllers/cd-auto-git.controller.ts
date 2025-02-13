@@ -1,11 +1,18 @@
+import { BaseService } from '@/CdCli/sys/base/base.service';
 /* eslint-disable antfu/if-newline */
-import type { ICdResponse, IJsonUpdate, IQuery } from '@/CdCli/sys/base/IBase';
+import type {
+  CdFxReturn,
+  ICdResponse,
+  IJsonUpdate,
+  IQuery,
+} from '@/CdCli/sys/base/IBase';
 /* eslint-disable style/operator-linebreak */
 /* eslint-disable style/brace-style */
 /* eslint-disable unused-imports/no-unused-vars */
 /* eslint-disable prefer-promise-reject-errors */
 /* eslint-disable no-useless-rename */
 import type {
+  ProfileContainer,
   ProfileData,
   ProfileModel,
 } from '@/CdCli/sys/cd-cli/models/cd-cli-profile.model';
@@ -17,16 +24,15 @@ import type {
 import type { GitAccess } from '../models/cd-auto-git.model';
 import { exec } from 'node:child_process';
 import util, { promisify } from 'node:util';
-import { BaseService } from '@/CdCli/sys/base/base.service';
 import { HttpService } from '@/CdCli/sys/base/http.service';
 import { CdCliProfileController } from '@/CdCli/sys/cd-cli/controllers/cd-cli-profile.cointroller';
 import CdCliVaultController from '@/CdCli/sys/cd-cli/controllers/cd-cli-vault.controller';
 import { CdCliProfileService } from '@/CdCli/sys/cd-cli/services/cd-cli-profile.service';
 import CdLogg from '@/CdCli/sys/cd-comm/controllers/cd-logger.controller';
 import { SessonController } from '@/CdCli/sys/user/controllers/session.controller';
-import { loadCdCliConfig } from '@/config';
-import axios from 'axios';
+import config from '@/config';
 
+import axios from 'axios';
 import inquirer from 'inquirer';
 import { GitHubRepoCreatePromptData } from '../models/cd-auto-git.model';
 
@@ -35,7 +41,7 @@ const execAsync = util.promisify(exec);
 const execPromise = promisify(exec);
 
 export class CdAutoGitController {
-  b = new BaseService();
+  b: BaseService = new BaseService();
   cdToken = '';
   ctlSession = new SessonController();
   ctlCdCliProfile = new CdCliProfileController();
@@ -46,7 +52,14 @@ export class CdAutoGitController {
   }
 
   async init() {
-    const r = await this.ctlSession.getSession('cd-api-local')?.cd_token;
+    this.ctlCdCliProfile = new CdCliProfileController();
+    const profileRet = await this.ctlCdCliProfile.loadProfiles();
+    if (!profileRet.state) {
+      CdLogg.error(`Failed to load profiles: ${profileRet.message}`);
+      return null; // Handle the failure case properly
+    }
+
+    const r = await this.ctlSession.getSession(config.cdApiLocal)?.cd_token;
     if (r) {
       this.cdToken = r;
       CdLogg.info('cdToken has been set');
@@ -57,28 +70,31 @@ export class CdAutoGitController {
 
   async getGitHubProfile(): Promise<ProfileData | null> {
     CdLogg.debug('starting getGitHubProfile()');
-    const cdCliProfile = await loadCdCliConfig();
+    const cdCliProfile = await this.ctlCdCliProfile.loadProfiles();
     CdLogg.debug(
       'CdAutoGitController::getGitHubProfile()/cdCliProfile:',
       cdCliProfile,
     );
 
-    const profile = cdCliProfile.items.find(
+    const gitProfile = cdCliProfile.data?.items.find(
       (item: ProfileModel) => item.cdCliProfileName === 'cd-git-config',
     );
 
-    CdLogg.debug('CdAutoGitController::getGitHubProfile()/profile:', profile);
+    CdLogg.debug(
+      'CdAutoGitController::getGitHubProfile()/gitProfile:',
+      gitProfile,
+    );
 
     if (
-      !profile ||
-      !profile.cdCliProfileData ||
-      !profile.cdCliProfileData.details
+      !gitProfile ||
+      !gitProfile.cdCliProfileData ||
+      !gitProfile.cdCliProfileData.details
     ) {
       CdLogg.error('GitHub profile not found in configuration.');
       return null;
     }
 
-    const gitProfileData: ProfileData = profile.cdCliProfileData;
+    const gitProfileData: ProfileData = gitProfile.cdCliProfileData;
     if (!gitProfileData) {
       CdLogg.error('GitHub access details are missing in the profile.');
       return null;
@@ -90,9 +106,13 @@ export class CdAutoGitController {
     );
 
     // Handle decryption for the access token using cdVault
-    const vaultItem: CdVault = profile.cdCliProfileData.cdVault.find(
+    const vaultItem = gitProfile.cdCliProfileData?.cdVault.find(
       (vault) => vault.name === 'gitHubToken',
     );
+
+    if (!vaultItem) {
+      throw new Error('Vault item "gitHubToken" not found.');
+    }
 
     CdLogg.debug(
       'CdAutoGitController::getGitHubProfile()/vaultItem:',
@@ -220,7 +240,7 @@ export class CdAutoGitController {
       };
 
       const httpService = new HttpService(true);
-      await httpService.init(apiRepoUrl);
+      await httpService.init();
 
       const response = await httpService.proc2({
         method: 'POST',
@@ -371,22 +391,33 @@ export class CdAutoGitController {
         throw new Error(error);
       }
       // Load the configuration file
-      const cdCliProfile = loadCdCliConfig();
-      const profile = cdCliProfile.items.find(
+      const profileRet: CdFxReturn<ProfileContainer> =
+        await this.ctlCdCliProfile.loadProfiles();
+      if (!profileRet.state || !profileRet.data) {
+        CdLogg.error(`Failed to load profiles: ${profileRet.message}`);
+        return null; // Handle the failure case properly
+      }
+
+      // const cdCliProfile = this.ctlCdCliProfile.loadProfiles();
+      const gitProfile = profileRet.data.items.find(
         (item: ProfileModel) => item.cdCliProfileName === 'cd-git-config',
       );
-      CdLogg.debug('CdAutoGitController::updateCdVault()/profile:', profile);
+      CdLogg.debug(
+        'CdAutoGitController::updateCdVault()/gitProfile:',
+        gitProfile,
+      );
 
       // Validate profile existence
-      if (!profile || !profile.cdCliProfileData) {
+      if (!gitProfile || !gitProfile.cdCliProfileData) {
         const error = 'GitHub profile not found in configuration.';
         this.b.err.push(error);
         throw new Error(error);
       }
 
       // Initialize or append to the cdVault array
-      profile.cdCliProfileData.cdVault = profile.cdCliProfileData.cdVault || [];
-      profile.cdCliProfileData.cdVault.push(tokenData);
+      gitProfile.cdCliProfileData.cdVault =
+        gitProfile.cdCliProfileData.cdVault || [];
+      gitProfile.cdCliProfileData.cdVault.push(tokenData);
 
       // Prepare the query and JSON update details
       const q: IQuery = {
@@ -413,7 +444,7 @@ export class CdAutoGitController {
       // Validate the updates
       const result = this.b.validateJsonUpdate(
         jsonUpdate,
-        profile.cdCliProfileData,
+        gitProfile.cdCliProfileData,
       );
 
       if (!result.valid) {
@@ -444,15 +475,15 @@ export class CdAutoGitController {
         // Synchronize local configuration with the updated database profile
         const updatedProfile = apiRes.data?.newProfile[0];
         if (updatedProfile) {
-          const configIndex = cdCliProfile.items.findIndex(
+          const configIndex = profileRet.data.items.findIndex(
             (item: ProfileModel) => item.cdCliProfileName === 'cd-git-config',
           );
 
           if (configIndex !== -1) {
-            cdCliProfile.items[configIndex] = updatedProfile;
+            profileRet.data.items[configIndex] = updatedProfile;
             // saveCdCliProfileLocal(cdCliProfile);
             ret = await this.ctlCdCliProfile.saveCdCliProfileLocal(
-              profile,
+              gitProfile,
               'cd-git-config',
             );
             if (ret) {

@@ -1,3 +1,4 @@
+/* eslint-disable style/operator-linebreak */
 /* eslint-disable style/brace-style */
 import type { CdFxReturn } from '../../base/IBase';
 import type { DependencyDescriptor } from '../models/dependancy-descriptor.model';
@@ -34,10 +35,10 @@ export class DependencyService {
         };
       }
 
-      if (workstation.sshCredentials) {
-        const osResult = await this.svWorkstation.detectOs(
-          workstation.sshCredentials,
-        );
+      const sshCredentials =
+        workstation.workstationAccess.transport.credentials?.sshCredentials;
+      if (sshCredentials) {
+        const osResult = await this.svWorkstation.detectOs(sshCredentials);
         if (!osResult.state || !osResult.data) {
           return {
             data: null,
@@ -58,7 +59,7 @@ export class DependencyService {
         }
 
         const executionResult = await this.svWorkstation.executeScript(
-          workstation.sshCredentials,
+          sshCredentials,
           scriptResult.data,
         );
         if (!executionResult.state) {

@@ -1,8 +1,12 @@
 /* eslint-disable style/operator-linebreak */
 import type { CdFxReturn, CdRequest, IQuery } from '../../base/IBase';
 import type { CdDescriptor } from '../models/dev-descriptor.model';
-import type { DevelopmentEnvironmentDescriptor } from '../models/development-environment.model';
 import CdLogg from '../../cd-comm/controllers/cd-logger.controller';
+import {
+  type DevelopmentEnvironmentDescriptor,
+  developmentEnvironments,
+  getDevEnvironmentByName,
+} from '../models/development-environment.model';
 import { DevelopmentEnvironmentService } from '../services/development-environment.service';
 import { DevDescriptorController } from './dev-descriptor.controller';
 
@@ -14,21 +18,22 @@ export class DevelopmentEnvironmentController {
     this.ctlDevDescriptor = new DevDescriptorController();
   }
 
-  async createEnvironment(name: string) {
-    const descriptorResult: CdFxReturn<CdDescriptor[]> =
-      await getDevelopmentEnvironmentByName(name);
+  async createEnvironment(name: string): Promise<CdFxReturn<null>> {
+    const developmentEnvironment: DevelopmentEnvironmentDescriptor =
+      await getDevEnvironmentByName(name, developmentEnvironments);
 
-    if (!descriptorResult.state || !descriptorResult.data) {
+    if (!developmentEnvironment) {
       return {
         data: null,
         state: false,
         message: `Failed to get descriptor with the name ${name}`,
       };
     }
-    const descriptor = descriptorResult.data;
-    const result =
-      await this.svDevelopmentEnvironment.setupEnvironment(descriptor);
+    const result = await this.svDevelopmentEnvironment.setupEnvironment(
+      developmentEnvironment,
+    );
     CdLogg.debug('result:', result);
+    return result;
   }
 
   /**

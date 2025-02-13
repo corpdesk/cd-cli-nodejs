@@ -7,7 +7,7 @@ import CdLogg from '../../cd-comm/controllers/cd-logger.controller';
 import { CdObjModel } from '../../moduleman/models/cd-obj.model';
 import { DevDescriptorService } from './dev-descriptor.service';
 
-export class CdAppService extends BaseService<CdDescriptor> {
+export class CdAppService extends BaseService {
   cdToken;
   svDevDescriptors;
   constructor() {

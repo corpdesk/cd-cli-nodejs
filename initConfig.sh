@@ -6,7 +6,7 @@
 
 # Define directory and file paths
 CD_CLI_DIR="$HOME/.cd-cli" # Ensure this resolves correctly
-CONFIG_FILE="$CD_CLI_DIR/cd-cli.config.json"
+CONFIG_FILE="$CD_CLI_DIR/cd-cli.profiles.json"
 ENV_FILE="$CD_CLI_DIR/.env"
 
 # Create the .cd-cli directory if it doesn't exist

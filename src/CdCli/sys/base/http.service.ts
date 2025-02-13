@@ -5,13 +5,13 @@ import https from 'node:https';
 /* eslint-disable style/brace-style */
 import type { AxiosRequestConfig } from 'axios';
 import type { CdFxReturn, ICdRequest } from './IBase';
-import config, { loadCdCliConfig } from '@/config';
 import axios from 'axios';
 import { CdCliProfileController } from '../cd-cli/controllers/cd-cli-profile.cointroller';
 import CdLogg from '../cd-comm/controllers/cd-logger.controller';
 
 export class HttpService {
   private axiosInstance: any;
+  ctlCdCliProfile = new CdCliProfileController();
 
   constructor(private debugMode: boolean = false) {}
 
@@ -23,8 +23,12 @@ export class HttpService {
 
   async init(): Promise<void> {
     try {
-      const ctlCdCliProfile = new CdCliProfileController();
-      const baseURL = await ctlCdCliProfile.getEndPoint(config.cdApiLocal);
+      const ret = await this.ctlCdCliProfile.getEndPoint();
+      if (!ret.state) {
+        CdLogg.error('error occured while getting end point data');
+        return;
+      }
+      const baseURL = ret.data;
       if (baseURL) {
         this.axiosInstance = axios.create({
           baseURL,
@@ -48,16 +52,22 @@ export class HttpService {
   async getCdApiUrl(profileName: string): Promise<string | null> {
     try {
       // Load the configuration file
-      const cdCliConfig = await loadCdCliConfig();
+      const ret = await this.ctlCdCliProfile.loadProfiles();
 
-      // Find the profile named eg: 'cd-api-local'
+      if (!ret.state || !ret.data) {
+        CdLogg.error('error occured while loading profiles');
+        return null;
+      }
+
+      const cdCliConfig = ret.data;
+      // Find the profile named eg: config.cdApiLocal
       const profile = cdCliConfig.items.find(
         (item: any) => item.cdCliProfileName === profileName,
       );
 
       if (!profile || !profile.cdCliProfileData?.details?.cdEndpoint) {
         throw new Error(
-          `Profile 'cd-api-local' with 'cdEndpoint' not found in configuration.`,
+          `Profile config.cdApiLocal with 'cdEndpoint' not found in configuration.`,
         );
       }
 
@@ -78,10 +88,10 @@ export class HttpService {
    * @param params The request payload
    */
   async proc(params: ICdRequest): Promise<any> {
-    // 'cd-api-local'
+    // config.cdApiLocal
 
     try {
-      // const url = await this.getCdApiUrl('cd-api-local');
+      // const url = await this.getCdApiUrl(config.cdApiLocal);
 
       await this.init();
       CdLogg.debug('starting proc():', {

@@ -40,7 +40,7 @@ export interface EnvironmentVariablesDescriptor {
 export const developmentEnvironments: DevelopmentEnvironmentDescriptor[] = [
   {
     /**
-     * create an incus container
+     * create an incus container for development
      */
     workstation:
       getWorkstationByName('emp-12', workstations) || defaultWorkstation,
