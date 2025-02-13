@@ -87,7 +87,7 @@ export class CdCliProfileService {
   // async getCdCliProfile(q: IQuery, cdToken: string) {
   //   CdLogg.debug('starting getCdCliProfile():', { token: cdToken, query: q });
   //   const httpService = new HttpService();
-  //   await httpService.init('cd-api-local'); // Ensure axiosInstance is set with preferred profile
+  //   await httpService.init(config.cdApiLocal); // Ensure axiosInstance is set with preferred profile
   //   this.setEnvelopeGetCountCdCliProfile(q, cdToken);
   //   return httpService.proc(this.postData);
   // }
@@ -122,7 +122,7 @@ export class CdCliProfileService {
       const httpService = new HttpService(true);
 
       // Get the base URL dynamically
-      const baseUrl = await httpService.getCdApiUrl('cd-api-local');
+      const baseUrl = await httpService.getCdApiUrl(config.cdApiLocal);
       CdLogg.debug('getCdCliProfile()/baseUrl:', { baseUrl });
 
       if (!baseUrl) {

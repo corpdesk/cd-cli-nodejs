@@ -46,9 +46,14 @@ export class WorkstationService {
         version: '22.04',
         architecture: 'x86_64',
         timezone: '',
-        hostname: '',
-        ipAddresses: [],
-        isVirtualized: false,
+        allocatedResources: {
+          cpuCores: 4, // Number of CPU cores
+          memory: { units: 'GB', value: 32 }, // e.g., "32GB"
+          storage: { units: 'TB', value: 1 }, // e.g., "1TB"
+        },
+        // hostname: '',
+        // ipAddresses: [],
+        // isVirtualized: false,
       };
 
       return {

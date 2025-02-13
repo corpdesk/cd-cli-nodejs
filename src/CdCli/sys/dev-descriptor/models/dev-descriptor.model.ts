@@ -12,6 +12,7 @@ export interface TypeDetails {
   isDescriptor?: boolean;
   isArray?: boolean;
   isPrimitive?: boolean;
+  extend?: number;
 }
 
 export interface CdDescriptor {

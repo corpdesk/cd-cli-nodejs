@@ -16,7 +16,6 @@ import { fileURLToPath } from 'node:url';
 import util from 'node:util';
 /* eslint-disable style/brace-style */
 /* eslint-disable style/operator-linebreak */
-import config, { loadCdCliConfig } from '@/config';
 import chalk from 'chalk';
 import Table from 'cli-table3';
 import inquirer from 'inquirer';
@@ -116,10 +115,59 @@ export class DevDescriptorController {
     return typeDescriptors;
   }
 
-  private mapTypeToDetails(
-    typeNode: ts.TypeNode,
-    // descriptors: CdDescriptor[],
-  ): TypeDetails {
+  // private mapTypeToDetails(
+  //   typeNode: ts.TypeNode,
+  //   // descriptors: CdDescriptor[],
+  // ): TypeDetails {
+  //   const typeDetails: TypeDetails = { cdObjId: -1 }; // Default value
+
+  //   if (!typeNode) {
+  //     return typeDetails; // Return default if typeNode is undefined
+  //   }
+
+  //   // Handle array types
+  //   if (ts.isArrayTypeNode(typeNode)) {
+  //     const elementType = typeNode.elementType;
+  //     typeDetails.isArray = true;
+  //     typeDetails.cdObjId = this.getCdObjId(elementType);
+  //   }
+  //   // Handle union types (e.g., AppType | AppType[])
+  //   else if (ts.isUnionTypeNode(typeNode)) {
+  //     for (const subtype of typeNode.types) {
+  //       if (ts.isArrayTypeNode(subtype)) {
+  //         typeDetails.isArray = true;
+  //         typeDetails.cdObjId = this.getCdObjId(subtype.elementType);
+  //       } else {
+  //         typeDetails.cdObjId = this.getCdObjId(subtype);
+  //       }
+  //     }
+  //   }
+  //   // Handle primitive types (number, string, boolean, etc.)
+  //   else if (
+  //     typeNode.kind >= ts.SyntaxKind.FirstKeyword &&
+  //     typeNode.kind <= ts.SyntaxKind.LastKeyword
+  //   ) {
+  //     typeDetails.isPrimitive = true;
+  //     typeDetails.cdObjId = this.getCdObjId(typeNode);
+  //   }
+
+  //   // Handle interface or descriptor types
+  //   else if (ts.isTypeReferenceNode(typeNode)) {
+  //     const typeName = typeNode.typeName.getText();
+  //     const referencedDescriptor = this.savedDescriptors.find(
+  //       (d) => d.cdObjName === typeName,
+  //     );
+
+  //     if (referencedDescriptor) {
+  //       typeDetails.cdObjId = referencedDescriptor.cdObjId;
+  //       typeDetails.isInterface = true;
+  //       typeDetails.isDescriptor = true; // If it’s a descriptor type
+  //     }
+  //   }
+
+  //   return typeDetails;
+  // }
+  private mapTypeToDetails(typeNode: ts.TypeNode): TypeDetails {
     const typeDetails: TypeDetails = { cdObjId: -1 }; // Default value
 
     if (!typeNode) {
@@ -128,9 +176,8 @@ export class DevDescriptorController {
 
     // Handle array types
     if (ts.isArrayTypeNode(typeNode)) {
-      const elementType = typeNode.elementType;
       typeDetails.isArray = true;
-      typeDetails.cdObjId = this.getCdObjId(elementType);
+      typeDetails.cdObjId = this.getCdObjId(typeNode.elementType);
     }
     // Handle union types (e.g., AppType | AppType[])
     else if (ts.isUnionTypeNode(typeNode)) {
@@ -151,7 +198,6 @@ export class DevDescriptorController {
       typeDetails.isPrimitive = true;
       typeDetails.cdObjId = this.getCdObjId(typeNode);
     }
-
     // Handle interface or descriptor types
     else if (ts.isTypeReferenceNode(typeNode)) {
       const typeName = typeNode.typeName.getText();
@@ -163,6 +209,12 @@ export class DevDescriptorController {
         typeDetails.cdObjId = referencedDescriptor.cdObjId;
         typeDetails.isInterface = true;
         typeDetails.isDescriptor = true; // If it’s a descriptor type
+
+        // Check if the referenced type extends another type
+        const extendsCdObjId = this.getExtendedCdObjId(typeName);
+        if (extendsCdObjId) {
+          typeDetails.extend = extendsCdObjId;
+        }
       }
     }
 
@@ -175,6 +227,46 @@ export class DevDescriptorController {
       (d) => d.cdObjName === typeName,
     );
     return descriptor ? descriptor.cdObjId : -1;
+  }
+
+  private getExtendedCdObjId(typeName: string): number | undefined {
+    const referencedDescriptor = this.savedDescriptors.find(
+      (d) => d.cdObjName === typeName,
+    );
+
+    if (!referencedDescriptor) {
+      return undefined;
+    }
+
+    const sourceFile = ts.createSourceFile(
+      `${typeName}.ts`,
+      fs.readFileSync(join(this.modelsDir, `${typeName}.ts`), 'utf8'),
+      ts.ScriptTarget.ESNext,
+      true,
+    );
+
+    let extendId: number | undefined;
+
+    ts.forEachChild(sourceFile, (node) => {
+      if (ts.isInterfaceDeclaration(node) && node.name.text === typeName) {
+        if (node.heritageClauses) {
+          for (const clause of node.heritageClauses) {
+            if (clause.token === ts.SyntaxKind.ExtendsKeyword) {
+              const extendedTypeName = clause.types[0].expression.getText();
+              const extendedDescriptor = this.savedDescriptors.find(
+                (d) => d.cdObjName === extendedTypeName,
+              );
+
+              if (extendedDescriptor) {
+                extendId = extendedDescriptor.cdObjId;
+              }
+            }
+          }
+        }
+      }
+    });
+
+    return extendId;
   }
 
   // generateObjectId

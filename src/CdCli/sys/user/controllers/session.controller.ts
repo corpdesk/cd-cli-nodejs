@@ -13,12 +13,12 @@ export class SessonController {
 
   /**
    * Save session details to the configuration file.
-   * Updates the session data in the `cd-cli.config.json` file under the appropriate profile.
+   * Updates the session data in the `cd-cli.profiles.json` file under the appropriate profile.
    */
   async saveSession(session: ISessResp, profileName: string): Promise<boolean> {
     try {
       // Load existing configuration
-      const cdCliConfig = loadCdCliConfig();
+      const cdCliConfig = loadProfiles();
 
       const profile = cdCliConfig.items.find(
         (item) => item.cdCliProfileName === profileName,
@@ -50,7 +50,7 @@ export class SessonController {
         name: profileName,
       });
       // Load configuration
-      const cdCliConfig = loadCdCliConfig();
+      const cdCliConfig = loadProfiles();
       CdLogg.debug('SessionController::getSession()/cdCliConfig:', cdCliConfig);
 
       const profile = cdCliConfig.items.find(

@@ -1,5 +1,3 @@
-/* eslint-disable style/brace-style */
-
 import type { ISessResp } from './CdCli/sys/base/IBase';
 import { existsSync } from 'node:fs';
 /* eslint-disable node/prefer-global/process */
@@ -8,7 +6,7 @@ import CdLogg from './CdCli/sys/cd-comm/controllers/cd-logger.controller';
 
 export const CONFIG_FILE_PATH = join(
   process.env.HOME || '~/',
-  '.cd-cli/cd-cli.config.json',
+  '.cd-cli/cd-cli.profiles.json',
 );
 
 export const DEFAULT_SESS: ISessResp = {
@@ -16,6 +14,7 @@ export const DEFAULT_SESS: ISessResp = {
   ttl: 300,
 };
 
+// config.cdApiLocal
 export default {
   cdApiLocal: 'cd-api-local',
   cdSession: DEFAULT_SESS,
@@ -41,19 +40,19 @@ export default {
   },
 };
 
-/**
- * Load the configuration file from the VAULT_DIRECTORY.
- */
-export function loadCdCliConfig(): any {
-  CdLogg.debug('starting loadCdCliConfig()');
-  try {
-    if (!existsSync(CONFIG_FILE_PATH)) {
-      throw new Error(`Configuration file not found at ${CONFIG_FILE_PATH}.`);
-    }
+// /**
+//  * Load the configuration file from the VAULT_DIRECTORY.
+//  */
+// export function loadProfiles(): any {
+//   CdLogg.debug('starting loadProfiles()');
+//   try {
+//     if (!existsSync(CONFIG_FILE_PATH)) {
+//       throw new Error(`Configuration file not found at ${CONFIG_FILE_PATH}.`);
+//     }
 
-    const configContent = fs.readFileSync(CONFIG_FILE_PATH, 'utf-8');
-    return JSON.parse(configContent);
-  } catch (error) {
-    throw new Error(`Error loading configuration: ${(error as Error).message}`);
-  }
-}
+//     const configContent = fs.readFileSync(CONFIG_FILE_PATH, 'utf-8');
+//     return JSON.parse(configContent);
+//   } catch (error) {
+//     throw new Error(`Error loading configuration: ${(error as Error).message}`);
+//   }
+// }

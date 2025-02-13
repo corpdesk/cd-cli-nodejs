@@ -34,18 +34,18 @@ export class UserController {
   async auth(userName: string, password: string): Promise<void> {
     try {
       // Load the configuration file
-      const cdCliConfig = loadCdCliConfig();
+      const cdCliConfig = loadProfiles();
 
-      // Find the profile named 'cd-api-local'
+      // Find the profile named config.cdApiLocal
       const profile = cdCliConfig.items.find(
-        (item: any) => item.cdCliProfileName === 'cd-api-local',
+        (item: any) => item.cdCliProfileName === config.cdApiLocal,
       );
 
       CdLogg.debug('UserController::auth()/profile:', profile);
 
       if (!profile || !profile.cdCliProfileData?.details?.consumerToken) {
         throw new Error(
-          `Profile 'cd-api-local' with 'consumerToken' not found in configuration.`,
+          `Profile config.cdApiLocal with 'consumerToken' not found in configuration.`,
         );
       }
 
@@ -115,7 +115,7 @@ export class UserController {
 
       // Initialize HttpService
       const httpService = new HttpService(true); // Enable debug mode
-      const baseUrl = await httpService.getCdApiUrl('cd-api-local');
+      const baseUrl = await httpService.getCdApiUrl(config.cdApiLocal);
 
       if (baseUrl) {
         await httpService.init(baseUrl);
@@ -131,7 +131,7 @@ export class UserController {
           if (response.app_state?.sess) {
             this.ctlSession.saveSession(
               response.app_state.sess,
-              'cd-api-local',
+              config.cdApiLocal,
             );
 
             const cdToken = response.app_state.sess.cd_token;
@@ -184,7 +184,7 @@ export class UserController {
         await this.auth(usernameAnswer.userName, '');
 
         // Check if login was successful by verifying session
-        if (this.ctlSession.getSession('cd-api-local')) {
+        if (this.ctlSession.getSession(config.cdApiLocal)) {
           CdLogg.success('Login successful!');
           return; // Exit login retry loop if successful
         } else {

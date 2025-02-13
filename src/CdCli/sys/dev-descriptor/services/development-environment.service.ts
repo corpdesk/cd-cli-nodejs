@@ -1,3 +1,4 @@
+/* eslint-disable style/operator-linebreak */
 /* eslint-disable style/brace-style */
 import type { CdFxReturn, IQuery } from '../../base/IBase';
 import type { CdDescriptor } from '../models/dev-descriptor.model';
@@ -13,7 +14,7 @@ import { DependencyService } from './dependency.service';
 import { DevDescriptorService } from './dev-descriptor.service';
 import { WorkstationService } from './workstation.service';
 
-export class DevelopmentEnvironmentService extends BaseService<CdDescriptor> {
+export class DevelopmentEnvironmentService extends BaseService {
   cdToken: string = '';
   svDevDescriptors: DevDescriptorService;
   svWorkstation: WorkstationService;
@@ -61,7 +62,7 @@ export class DevelopmentEnvironmentService extends BaseService<CdDescriptor> {
   ): Promise<CdFxReturn<null>> {
     const totalTasks = workstation.requiredSoftware.length;
     let completedTasks = 0;
-    if (!workstation.sshCredentials) {
+    if (!workstation.workstationAccess.transport.credentials?.sshCredentials) {
       return {
         data: null,
         state: true,
@@ -69,10 +70,10 @@ export class DevelopmentEnvironmentService extends BaseService<CdDescriptor> {
       };
     }
     try {
+      const sshCredentials =
+        workstation.workstationAccess.transport.credentials?.sshCredentials;
       // Detect OS
-      const osResult = await this.svWorkstation.detectOs(
-        workstation.sshCredentials,
-      );
+      const osResult = await this.svWorkstation.detectOs(sshCredentials);
       if (!osResult.state || !osResult.data) {
         return {
           data: null,
@@ -123,9 +124,9 @@ export class DevelopmentEnvironmentService extends BaseService<CdDescriptor> {
 
         // Execute the script
         console.log(`Installing ${dependency.name} on ${workstation.name}...`);
-        if (workstation.sshCredentials) {
+        if (sshCredentials) {
           const executionResult = await this.svWorkstation.executeScript(
-            workstation.sshCredentials,
+            sshCredentials,
             scriptResult.data,
           );
           if (executionResult.state) {

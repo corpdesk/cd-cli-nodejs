@@ -1,4 +1,5 @@
 import type { CdRequest, ISessResp } from '../../base/IBase';
+import type { SessonController } from '../../user/controllers/session.controller';
 import type { CdDescriptor } from '../models/dev-descriptor.model';
 /* eslint-disable style/brace-style */
 import config from '@/config';
@@ -6,31 +7,46 @@ import { HttpService } from '../../base/http.service';
 import { CdCliProfileController } from '../../cd-cli/controllers/cd-cli-profile.cointroller';
 import CdLogg from '../../cd-comm/controllers/cd-logger.controller';
 import { CdObjModel } from '../../moduleman/models/cd-obj.model';
-import { SessonController } from '../../user/controllers/session.controller';
 
 export class DevDescriptorService {
   cdToken = '';
   baseUrl = '';
   httpService;
-  svSession;
-  sess: ISessResp;
+  // svSession: SessonController;
+  // sess: ISessResp;
   constructor() {
     this.init();
-    this.svSession = new SessonController();
-    this.sess = this.svSession.getSession(config.cdApiLocal);
-    if (this.sess.cd_token) {
-      this.cdToken = this.sess.cd_token;
-    }
+    // this.svSession = new SessonController();
+    // const retSess = this.svSession.getSession(config.cdApiLocal);
+
+    // if (retSess ===) {
+    //   this.sess = this.svSession.getSession(config.cdApiLocal);
+    // }
+
+    // if (this.sess.cd_token) {
+    //   this.cdToken = this.sess.cd_token;
+    // }
   }
 
   async init() {
     CdLogg.debug('DevDescriptorService::init()/starting...');
     const createCdCliProfile = new CdCliProfileController();
     // const ctlSession = new SessonController();
-    const sid: any = await createCdCliProfile.getSessionData(config.cdApiLocal);
-    CdLogg.debug('DevDescritorService::init()/sid:', sid);
-    if (sid) {
-      CdLogg.debug('DevDescritorService::init()/sid2:', sid);
+    const result = await createCdCliProfile.getSessionData();
+    if (!result) {
+      CdLogg.error(`could not get valid session`);
+      return;
+    }
+
+    if (!result.state && result.message) {
+      CdLogg.error(result.message);
+      return;
+    }
+
+    // CdLogg.debug('DevDescritorService::init()/result.data:', result.data);
+    if (result.data) {
+      const sid = result.data;
+      // CdLogg.debug('DevDescritorService::init()/sid2:', sid);
       this.cdToken = sid;
       this.httpService = new HttpService(true); // Enable debug mode
       const ret = await this.httpService.getCdApiUrl(config.cdApiLocal);

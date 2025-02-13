@@ -1,3 +1,5 @@
+/* eslint-disable brace-style */
+/* eslint-disable style/indent */
 /* eslint-disable style/brace-style */
 /* eslint-disable antfu/if-newline */
 import type {
@@ -7,7 +9,9 @@ import type {
   IQuery,
 } from './IBase';
 
-export abstract class BaseService<T> implements BaseServiceInterface<T> {
+export abstract class AbstractBaseService<T>
+  implements BaseServiceInterface<T>
+{
   err: string[] = []; // Store error messages
 
   async create(data: T): Promise<CdFxReturn<null>> {
@@ -71,7 +75,7 @@ export abstract class BaseService<T> implements BaseServiceInterface<T> {
     }
   }
 
-  protected abstract getTypeId(): number; // Ensures each subclass defines a typeId
+  // protected abstract getTypeId(): number; // Ensures each subclass defines a typeId
 
   validateJsonUpdate<T>(
     jsonUpdate: IJsonUpdate[],
@@ -131,4 +135,69 @@ export abstract class BaseService<T> implements BaseServiceInterface<T> {
 
     return { valid: errors.length === 0, errors };
   }
+}
+
+export class BaseService extends AbstractBaseService<unknown> {
+  async create(data: any): Promise<CdFxReturn<null>> {
+    try {
+      // const typeId = this.getTypeId(); // Internal logic to determine typeId
+      console.log(`Saving ${JSON.stringify(data)} to database with type`);
+
+      return { data: null, state: true, message: 'Created successfully' };
+    } catch (error) {
+      return {
+        data: null,
+        state: false,
+        message: `Creation failed: ${(error as Error).message}`,
+      };
+    }
+  }
+
+  async read(q?: IQuery): Promise<CdFxReturn<unknown[]>> {
+    try {
+      // If no query is provided, default to pulling all data
+      const query = q ?? { where: {} };
+
+      console.log(`Reading from database with query:`, query);
+      const result: unknown[] = []; // Replace with actual TypeORM fetch logic
+
+      return { data: result, state: true, message: 'Read successfully' };
+    } catch (error) {
+      return {
+        data: null,
+        state: false,
+        message: `Read failed: ${(error as Error).message}`,
+      };
+    }
+  }
+
+  async update(q: IQuery): Promise<CdFxReturn<null>> {
+    try {
+      console.log(`Updating with ${JSON.stringify(q)}`);
+
+      return { data: null, state: true, message: 'Updated successfully' };
+    } catch (error) {
+      return {
+        data: null,
+        state: false,
+        message: `Update failed: ${(error as Error).message}`,
+      };
+    }
+  }
+
+  async delete(criteria: Record<string, any>): Promise<CdFxReturn<null>> {
+    try {
+      console.log(`Deleting with criteria:`, criteria);
+
+      return { data: null, state: true, message: 'Deleted successfully' };
+    } catch (error) {
+      return {
+        data: null,
+        state: false,
+        message: `Delete failed: ${(error as Error).message}`,
+      };
+    }
+  }
+
+  // public getTypeId(): number; // Ensures each subclass defines a typeId
 }

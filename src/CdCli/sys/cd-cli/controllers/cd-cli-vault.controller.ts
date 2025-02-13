@@ -484,12 +484,12 @@ class CdCliVaultController {
         'default',
       );
     }
-    const configFilePath = join(VAULT_DIRECTORY, 'cd-cli.config.json');
+    const configFilePath = join(VAULT_DIRECTORY, 'cd-cli.profiles.json');
     fs.writeFileSync(configFilePath, JSON.stringify(profileData, null, 2));
   }
 
   public static readProfileData(): any {
-    const configFilePath = join(VAULT_DIRECTORY, 'cd-cli.config.json');
+    const configFilePath = join(VAULT_DIRECTORY, 'cd-cli.profiles.json');
     const profileData = JSON.parse(fs.readFileSync(configFilePath, 'utf-8'));
 
     if (
@@ -554,7 +554,7 @@ class CdCliVaultController {
     profileName: string | null = null,
     jPath: string | null = null,
   ): Promise<void> {
-    const cdCliConfig = loadCdCliConfig();
+    const cdCliConfig = loadProfiles();
 
     if (!profileName && !jPath) {
       console.log('Validating all profiles...');
