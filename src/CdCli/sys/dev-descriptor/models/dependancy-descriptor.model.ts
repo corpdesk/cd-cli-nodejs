@@ -2,8 +2,12 @@
 // import type { DependencyDescriptor } from './app-descriptor.model';
 
 import type { SecurityDescriptor } from './/service-descriptor.model';
-import type { FileReference } from './/workstations.model';
+import type {
+  FileReference,
+  WorkstationAccessDescriptor,
+} from './/workstations.model';
 import type { BaseDescriptor } from './base-descriptor.model';
+import type { VersionControlDescriptor } from './version-control.model';
 
 export interface DependencyDescriptor
   extends BaseDescriptor,
@@ -13,6 +17,7 @@ export interface DependencyDescriptor
     DependencyScopeDescriptor {
   resolution?: ResolutionDescriptor;
   usage?: UsageDescriptor;
+  installCommand?: string;
   dependencyConfig?: DependencyConfigDescriptor[];
   platformCompatibility?: PlatformCompatibilityDescriptor;
   dependencyLifecycle?: DependencyLifecycleDescriptor;
@@ -20,6 +25,7 @@ export interface DependencyDescriptor
   security?: SecurityDescriptor;
   dependencyMetadata?: DependencyMetadataDescriptor;
   dependencyFileReferences?: FileReference[]; // Associated file references
+  dependancyRepository?: VersionControlDescriptor;
 }
 
 // Dependency Category Descriptor
@@ -76,6 +82,7 @@ export interface UsageDescriptor {
     | 'test'
     | 'editor'
     | 'core'
+    | 'version-control'
     | 'other'; // Context where the dependency is used
   functionsUsed?: string[]; // Functions used from the dependency
   classesUsed?: string[]; // Classes instantiated
@@ -107,12 +114,6 @@ export interface DependencyConflictDescriptor {
   resolutionStrategy?: 'override' | 'merge' | 'exclude'; // Conflict resolution strategy
 }
 
-// Security Descriptor
-// export interface DependencySecurityDescriptor {
-//   isSecure: boolean; // Whether the dependency is from a trusted source
-//   vulnerabilities?: string[]; // Known vulnerabilities
-// }
-
 // Metadata Descriptor
 export interface DependencyMetadataDescriptor {
   description?: string; // Description of the dependency
@@ -138,6 +139,12 @@ export const dependencies: DependencyDescriptor[] = [
       context: 'api',
       functionsUsed: ['Router', 'json', 'urlencoded'],
     },
+    // workstationAccess: {
+    //   accessScope: 'local',
+    //   physicalAccess: 'direct',
+    //   // transport: { protocol: 'ssh', credentials: {} }, // transport is not necessary, accessing machine directly
+    //   interactionType: 'cli',
+    // },
     platformCompatibility: {
       languages: ['Node.js'],
       os: ['Linux', 'Windows', 'macOS'],

@@ -1,7 +1,7 @@
 /* eslint-disable style/operator-linebreak */
-/* eslint-disable style/indent-binary-ops */
+
 /* eslint-disable antfu/if-newline */
-/* eslint-disable style/quotes */
+
 /* eslint-disable style/brace-style */
 import type { CdFxReturn } from '../../base/IBase';
 import type {
@@ -69,13 +69,13 @@ export class OsController {
     const timezoneResult = await ssh.execCommand(
       'timedatectl | grep "Time zone"',
     );
-    const cpuResult = await ssh.execCommand('nproc');
-    const memoryResult = await ssh.execCommand(
-      "free -g | awk 'NR==2{print $2}'",
-    );
-    const storageResult = await ssh.execCommand(
-      "df -h --total | grep 'total' | awk '{print $2}'",
-    );
+    // const cpuResult = await ssh.execCommand('nproc');
+    // const memoryResult = await ssh.execCommand(
+    //   "free -g | awk 'NR==2{print $2}'",
+    // );
+    // const storageResult = await ssh.execCommand(
+    //   "df -h --total | grep 'total' | awk '{print $2}'",
+    // );
 
     const osInfo: Record<string, string> = {};
     osResult.stdout.split('\n').forEach((line) => {
@@ -89,19 +89,19 @@ export class OsController {
       //   architecture: archResult.stdout.trim(),
       architecture: this.mapArchitecture(archResult.stdout.trim()),
       timezone: timezoneResult.stdout.split(':')[1]?.trim() || 'Unknown',
-      allocatedResources: {
-        cpuCores: Number.parseInt(cpuResult.stdout.trim(), 10) || 1,
-        memory: {
-          units: 'GB',
-          value: Number.parseInt(memoryResult.stdout.trim(), 10) || 0,
-        },
-        storage: {
-          units: 'TB',
-          value:
-            Number.parseFloat(storageResult.stdout.replace('G', '').trim()) /
-              1000 || 0,
-        },
-      },
+      // systemResources: {
+      //   cpuCores: Number.parseInt(cpuResult.stdout.trim(), 10) || 1,
+      //   memory: {
+      //     units: 'GB',
+      //     value: Number.parseInt(memoryResult.stdout.trim(), 10) || 0,
+      //   },
+      //   storage: {
+      //     units: 'TB',
+      //     value:
+      //       Number.parseFloat(storageResult.stdout.replace('G', '').trim()) /
+      //         1000 || 0,
+      //   },
+      // },
     };
   }
 
@@ -109,11 +109,11 @@ export class OsController {
     const osResult = await ssh.execCommand('sw_vers');
     const archResult = await ssh.execCommand('uname -m');
     const timezoneResult = await ssh.execCommand('systemsetup -gettimezone');
-    const cpuResult = await ssh.execCommand('sysctl -n hw.ncpu');
-    const memoryResult = await ssh.execCommand('sysctl -n hw.memsize');
-    const storageResult = await ssh.execCommand(
-      "df -h / | awk 'NR==2{print $2}'",
-    );
+    // const cpuResult = await ssh.execCommand('sysctl -n hw.ncpu');
+    // const memoryResult = await ssh.execCommand('sysctl -n hw.memsize');
+    // const storageResult = await ssh.execCommand(
+    //   "df -h / | awk 'NR==2{print $2}'",
+    // );
 
     const osInfo: Record<string, string> = {};
     osResult.stdout.split('\n').forEach((line) => {
@@ -127,22 +127,22 @@ export class OsController {
       //   architecture: archResult.stdout.trim(),
       architecture: this.mapArchitecture(archResult.stdout.trim()),
       timezone: timezoneResult.stdout.split(': ')[1]?.trim() || 'Unknown',
-      allocatedResources: {
-        cpuCores: Number.parseInt(cpuResult.stdout.trim(), 10) || 1,
-        memory: {
-          units: 'GB',
-          value: Math.round(
-            Number.parseInt(memoryResult.stdout.trim(), 10) /
-              (1024 * 1024 * 1024),
-          ),
-        },
-        storage: {
-          units: 'TB',
-          value:
-            Number.parseFloat(storageResult.stdout.replace('G', '').trim()) /
-              1000 || 0,
-        },
-      },
+      // allocatedResources: {
+      //   cpuCores: Number.parseInt(cpuResult.stdout.trim(), 10) || 1,
+      //   memory: {
+      //     units: 'GB',
+      //     value: Math.round(
+      //       Number.parseInt(memoryResult.stdout.trim(), 10) /
+      //         (1024 * 1024 * 1024),
+      //     ),
+      //   },
+      //   storage: {
+      //     units: 'TB',
+      //     value:
+      //       Number.parseFloat(storageResult.stdout.replace('G', '').trim()) /
+      //         1000 || 0,
+      //   },
+      // },
     };
   }
 
@@ -152,13 +152,13 @@ export class OsController {
     );
     const archResult = await ssh.execCommand('wmic os get OSArchitecture');
     const timezoneResult = await ssh.execCommand('wmic os get LocalDateTime');
-    const cpuResult = await ssh.execCommand('wmic cpu get NumberOfCores');
-    const memoryResult = await ssh.execCommand(
-      'wmic OS get TotalVisibleMemorySize',
-    );
-    const storageResult = await ssh.execCommand(
-      'wmic LogicalDisk where "DeviceID=\'C:\'" get Size',
-    );
+    // const cpuResult = await ssh.execCommand('wmic cpu get NumberOfCores');
+    // const memoryResult = await ssh.execCommand(
+    //   'wmic OS get TotalVisibleMemorySize',
+    // );
+    // const storageResult = await ssh.execCommand(
+    //   'wmic LogicalDisk where "DeviceID=\'C:\'" get Size',
+    // );
 
     const osLines = osResult.stdout.split('\n');
     const osName =
@@ -178,21 +178,21 @@ export class OsController {
       //   architecture: archResult.stdout.trim(),
       architecture: this.mapArchitecture(archResult.stdout.trim()),
       timezone: timezoneResult.stdout.trim(),
-      allocatedResources: {
-        cpuCores: Number.parseInt(cpuResult.stdout.trim(), 10) || 1,
-        memory: {
-          units: 'GB',
-          value: Math.round(
-            Number.parseInt(memoryResult.stdout.trim(), 10) / (1024 * 1024),
-          ),
-        },
-        storage: {
-          units: 'TB',
-          value:
-            Number.parseFloat(storageResult.stdout.trim()) /
-              (1024 * 1024 * 1024 * 1024) || 0,
-        },
-      },
+      // allocatedResources: {
+      //   cpuCores: Number.parseInt(cpuResult.stdout.trim(), 10) || 1,
+      //   memory: {
+      //     units: 'GB',
+      //     value: Math.round(
+      //       Number.parseInt(memoryResult.stdout.trim(), 10) / (1024 * 1024),
+      //     ),
+      //   },
+      //   storage: {
+      //     units: 'TB',
+      //     value:
+      //       Number.parseFloat(storageResult.stdout.trim()) /
+      //         (1024 * 1024 * 1024 * 1024) || 0,
+      //   },
+      // },
     };
   }
 

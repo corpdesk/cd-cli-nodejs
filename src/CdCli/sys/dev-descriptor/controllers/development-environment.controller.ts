@@ -1,27 +1,36 @@
-/* eslint-disable style/operator-linebreak */
 import type { CdFxReturn, CdRequest, IQuery } from '../../base/IBase';
+import type { ProfileModel } from '../../cd-cli/models/cd-cli-profile.model';
 import type { CdDescriptor } from '../models/dev-descriptor.model';
+import { CdCliProfileController } from '../../cd-cli/controllers/cd-cli-profile.cointroller';
+import { ProfileContainer } from '../../cd-cli/models/cd-cli-profile.model';
 import CdLogg from '../../cd-comm/controllers/cd-logger.controller';
-import {
-  type DevelopmentEnvironmentDescriptor,
-  developmentEnvironments,
-  getDevEnvironmentByName,
-} from '../models/development-environment.model';
 import { DevelopmentEnvironmentService } from '../services/development-environment.service';
 import { DevDescriptorController } from './dev-descriptor.controller';
 
 export class DevelopmentEnvironmentController {
   svDevelopmentEnvironment: DevelopmentEnvironmentService;
   ctlDevDescriptor: DevDescriptorController;
+  ctlCdCliProfile: CdCliProfileController;
   constructor() {
     this.svDevelopmentEnvironment = new DevelopmentEnvironmentService();
     this.ctlDevDescriptor = new DevDescriptorController();
+    this.ctlCdCliProfile = new CdCliProfileController();
   }
 
   async createEnvironment(name: string): Promise<CdFxReturn<null>> {
-    const developmentEnvironment: DevelopmentEnvironmentDescriptor =
-      await getDevEnvironmentByName(name, developmentEnvironments);
+    const ret = await this.ctlCdCliProfile.getProfileByName(name);
+    if (!ret.state || !ret.data) {
+      CdLogg.debug('could not load profiles');
+      return { state: false, data: null, message: 'could not load profile' };
+    }
 
+    const cdCliProfile: ProfileModel = ret.data;
+    CdLogg.debug(
+      'CdAutoGitController::getGitHubProfile()/cdCliProfile:',
+      cdCliProfile,
+    );
+
+    const developmentEnvironment = cdCliProfile.cdCliProfileData?.details;
     if (!developmentEnvironment) {
       return {
         data: null,

@@ -1,6 +1,9 @@
 // import type { ServiceDescriptor } from './app-descriptor.model';
-import type { VendorDescriptor } from './service-descriptor.model';
-import type { ServiceDescriptor } from './service-provider.model';
+import type {
+  BaseServiceDescriptor,
+  VendorDescriptor,
+} from './service-descriptor.model';
+// import type { ServiceDescriptor } from './service-provider.model';
 /* eslint-disable style/operator-linebreak */
 // import type { VersionControlDescriptor } from './dev-descriptor.model';
 import { execSync } from 'node:child_process';
@@ -10,6 +13,33 @@ import { execSync } from 'node:child_process';
  * const descriptor = getVersionControlDescriptor('.');
     console.log(descriptor);
  */
+
+// Interface for Tags
+export interface VersionControlTag {
+  name: string; // Tag name (e.g., "v1.0.0")
+  commitHash: string; // Hash of the commit the tag points to
+  description?: string; // Description of the tag
+  date?: string; // Date of tagging
+}
+
+// Interface for Metadata
+export interface VersionControlMetadata {
+  creationDate?: string; // Date the repository was created
+  lastUpdated?: string; // Date of the last update
+  license?: string; // License of the repository (e.g., "MIT")
+  repositorySize?: string; // Human-readable size of the repository (e.g., "20 MB")
+  language?: string; // Primary programming language of the repository
+}
+
+// Main VersionControlDescriptor Interface
+export interface VersionControlDescriptor {
+  repository: RepoDescriptor; // Repository details
+  versionControlBranch?: VersionControlBranch; // Branch details
+  versionControlWorkflow?: VersionControlWorkflow; // Workflow details
+  sourceContributors?: SourceContributor[]; // List of contributors
+  versionControlTags?: VersionControlTag[]; // List of tags
+  versionControlMetadata?: VersionControlMetadata; // Metadata information
+}
 
 // Interface for Commit
 export interface VersionControlCommit {
@@ -53,42 +83,17 @@ export interface SourceContributor {
   role: 'owner' | 'maintainer' | 'contributor' | 'reviewer'; // Role in the repository
 }
 
-// Interface for Tags
-export interface VersionControlTag {
-  name: string; // Tag name (e.g., "v1.0.0")
-  commitHash: string; // Hash of the commit the tag points to
-  description?: string; // Description of the tag
-  date?: string; // Date of tagging
-}
-
-// Interface for Metadata
-export interface VersionControlMetadata {
-  creationDate?: string; // Date the repository was created
-  lastUpdated?: string; // Date of the last update
-  license?: string; // License of the repository (e.g., "MIT")
-  repositorySize?: string; // Human-readable size of the repository (e.g., "20 MB")
-  language?: string; // Primary programming language of the repository
-}
-
-// Main VersionControlDescriptor Interface
-export interface VersionControlDescriptor {
-  repository: RepoDescriptor; // Repository details
-  versionControlBranch: VersionControlBranch; // Branch details
-  versionControlWorkflow: VersionControlWorkflow; // Workflow details
-  sourceContributors?: SourceContributor[]; // List of contributors
-  versionControlTags?: VersionControlTag[]; // List of tags
-  versionControlMetadata?: VersionControlMetadata; // Metadata information
-}
-
 export interface RepoDescriptor {
   name: string;
-  description?: string; // Brief description of the repository
-  url: string; // Repository URL
-  type: 'git' | 'svn' | 'mercurial' | 'other'; // Type of version control system
-  enabled?: boolean; // could be an array. Some could be enabled or disabled. Auto development will syc the enabled ones
+  description?: string;
+  url: string;
+  type: 'git' | 'svn' | 'mercurial' | 'other';
+  enabled?: boolean;
   isPrivate?: boolean;
-  remote?: string; // Default remote name (e.g., "origin")
-  service?: ServiceDescriptor;
+  remote?: string;
+  service?: BaseServiceDescriptor;
+  directory?: string; // NEW: Local directory where the repo should be cloned
+  credentials: RepoCredentials;
 }
 
 export interface DeveloperDescriptor {
@@ -96,6 +101,12 @@ export interface DeveloperDescriptor {
   role?: string; // Role in the project (e.g., 'Lead Developer', 'Contributor')
   contact?: string; // Email or contact link
   profileLink?: string; // Link to personal or group profile (e.g., GitHub)
+}
+
+export interface RepoCredentials {
+  repoHost: string;
+  password?: string;
+  accessToken?: string;
 }
 
 export interface CommunityDescriptor {
@@ -112,7 +123,7 @@ export interface ContributorDescriptor {
 
 export function getVersionControlDescriptor(
   repoPath: string,
-): VersionControlDescriptor {
+): VersionControlDescriptor[] {
   const execGit = (command: string): string =>
     execSync(`git -C ${repoPath} ${command}`, { encoding: 'utf8' }).trim();
 
@@ -125,47 +136,50 @@ export function getVersionControlDescriptor(
   const lastCommitAuthor = execGit('log -1 --pretty=%an');
   const lastCommitDate = execGit('log -1 --pretty=%ad --date=iso');
 
-  return {
-    repository: {
-      name: repositoryName,
-      url: repositoryUrl,
-      type: 'git',
-      remote: 'origin',
-      description: 'A repository managed using Git',
-    },
-    versionControlBranch: {
-      name: branchName,
-      type:
-        branchName === 'main' || branchName === 'master' ? 'main' : 'custom',
-      lastCommit: {
-        hash: lastCommitHash,
-        author: lastCommitAuthor,
-        date: lastCommitDate,
-        message: lastCommitMessage,
+  return [
+    {
+      repository: {
+        name: repositoryName,
+        url: repositoryUrl,
+        type: 'git',
+        remote: 'origin',
+        description: 'A repository managed using Git',
+        credentials: { repoHost: 'corpdesk', accessToken: '#CdVault' },
       },
-      protection: {
-        isProtected: branchName === 'main' || branchName === 'master',
-        rules:
-          branchName === 'main' || branchName === 'master'
-            ? ['require pull request']
-            : [],
+      versionControlBranch: {
+        name: branchName,
+        type:
+          branchName === 'main' || branchName === 'master' ? 'main' : 'custom',
+        lastCommit: {
+          hash: lastCommitHash,
+          author: lastCommitAuthor,
+          date: lastCommitDate,
+          message: lastCommitMessage,
+        },
+        protection: {
+          isProtected: branchName === 'main' || branchName === 'master',
+          rules:
+            branchName === 'main' || branchName === 'master'
+              ? ['require pull request']
+              : [],
+        },
+      },
+      versionControlWorkflow: {
+        strategy: 'gitflow',
+        mergeMethod: 'merge',
+        policies: {
+          reviewRequired: true,
+          ciChecksRequired: true,
+        },
+      },
+      versionControlMetadata: {
+        creationDate: execGit('log --reverse --pretty=%ad --date=iso').split(
+          '\n',
+        )[0],
+        lastUpdated: lastCommitDate,
+        license: 'MIT', // Replace with dynamic lookup if needed
+        language: 'TypeScript', // Replace with dynamic detection if needed
       },
     },
-    versionControlWorkflow: {
-      strategy: 'gitflow',
-      mergeMethod: 'merge',
-      policies: {
-        reviewRequired: true,
-        ciChecksRequired: true,
-      },
-    },
-    versionControlMetadata: {
-      creationDate: execGit('log --reverse --pretty=%ad --date=iso').split(
-        '\n',
-      )[0],
-      lastUpdated: lastCommitDate,
-      license: 'MIT', // Replace with dynamic lookup if needed
-      language: 'TypeScript', // Replace with dynamic detection if needed
-    },
-  };
+  ];
 }

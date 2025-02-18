@@ -7,12 +7,12 @@ import type {
   // CdServiceDescriptor,
   LicenseDescriptor,
 } from './/service-descriptor.model';
+import type { CdControllerDescriptor } from './cd-controller-descriptor.model';
+import type { CiCdDescriptor } from './cicd-descriptor.model';
 import type {
   ContributorDescriptor,
   VersionControlDescriptor,
-} from './/version-control';
-import type { CdControllerDescriptor } from './cd-controller-descriptor.model';
-import type { CiCdDescriptor } from './cicd-descriptor.model';
+} from './version-control.model';
 
 export interface CdModuleDescriptor {
   name: string;

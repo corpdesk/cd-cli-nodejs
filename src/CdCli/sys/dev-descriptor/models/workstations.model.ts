@@ -1,10 +1,14 @@
+import type { ProfileModel } from '../../cd-cli/models/cd-cli-profile.model';
 /* eslint-disable antfu/if-newline */
 // import type { WorkstationDescriptor } from './dev-descriptor.model';
 // import type { OperatingSystemDescriptor } from './app-descriptor.model';
 import type { DependencyDescriptor } from '../../dev-descriptor/models/dependancy-descriptor.model';
 import type { BaseDescriptor } from './base-descriptor.model';
+import type { CiCdDescriptor } from './cicd-descriptor.model';
 import type { ContainerDescriptor } from './container-manager.model.descriptor';
+import type { DevelopmentEnvironmentDescriptor } from './development-environment.model';
 import type { MetricsQuantity } from './service-provider.model';
+import type { VersionControlDescriptor } from './version-control.model';
 import { defaultOs, getOsByName, operatingSystems } from './os.model';
 import {
   getPermissionsByName,
@@ -37,37 +41,12 @@ import {
  * - virtualization and container should be under machine type or machine type should be integrated with a property called host
  */
 export interface WorkstationDescriptor extends BaseDescriptor {
-  workstationAccess: WorkstationAccessDescriptor;
   machineType: MachineType;
   os: OperatingSystemDescriptor;
   enabled?: boolean;
+  workstationAccess: WorkstationAccessDescriptor;
   requiredSoftware: DependencyDescriptor[];
 }
-
-///////////////////////////////////////////////////////////////
-// export interface PhysicalWorkstationDescriptor
-//   extends BaseWorkstationDescriptor {
-//   machineType: 'physical';
-// }
-
-// export interface VirtualWorkstationDescriptor
-//   extends BaseWorkstationDescriptor {
-//   machineType: 'virtual';
-//   virtualization: VirtualMachineDescriptor;
-// }
-
-// export interface ContainerWorkstationDescriptor
-//   extends BaseWorkstationDescriptor {
-//   machineType: 'container';
-//   container: ContainerDescriptor;
-// }
-
-// export type WorkstationDescriptor =
-//   | PhysicalWorkstationDescriptor
-//   | VirtualWorkstationDescriptor
-//   | ContainerWorkstationDescriptor;
-
-/////////////////////////////////////////////////////////////////
 
 export interface SystemResources {
   cpuCores: number; // Number of CPU cores
@@ -84,33 +63,15 @@ export interface OperatingSystemDescriptor {
   buildNumber?: string; // Optional: Build number for the OS (e.g., Windows-specific)
   environmentVariables?: { [key: string]: string }; // Optional: Key-value pairs of environment variables
   timezone: string; // Timezone of the environment (e.g., "UTC", "America/New_York")
-  allocatedResources: SystemResources;
-  // hostname: string; // Hostname of the system
-  // ipAddresses: string[]; // List of IP addresses associated with the environment
-  // uptime?: number; // Optional: System uptime in seconds
-  // isVirtualized: boolean; // Whether the environment is running on a virtual machine
-  // virtualMachineType?: string; // Optional: Type of virtualization (e.g., "VMware", "KVM")
 }
 
 // Physical Machine Descriptor
 export interface PhysicalMachineDescriptor {
   systemResources: SystemResources; // Total physical resources
-  powerState: 'on' | 'off' | 'suspended';
+  powerState?: 'on' | 'off' | 'suspended';
   networkInterfaces: NetworkInterfaceDescriptor[]; // Physical network interfaces
 }
 
-// export interface VirtualMachineDescriptor {
-//   hypervisor: 'KVM' | 'VMware' | 'VirtualBox' | 'Hyper-V' | 'Xen' | 'Other';
-//   vmId: string; // Unique identifier for the VM
-//   allocatedResources: {
-//     cpuCores: number;
-//     memory: string; // e.g., "8GB"
-//     diskSize: string; // e.g., "100GB"
-//   };
-//   networkMode: 'bridged' | 'nat' | 'host-only'; // Network mode of the VM
-//   storagePath: string; // Path where VM is stored
-//   state: 'running' | 'stopped' | 'paused'; // Current state of the VM
-// }
 // Virtual Machine Descriptor
 export interface VirtualMachineDescriptor {
   hypervisor: 'KVM' | 'VMware' | 'VirtualBox' | 'Hyper-V' | 'Xen' | 'Other';
@@ -129,16 +90,13 @@ export interface MachineType {
     | ContainerDescriptor;
 }
 
-// export interface WorkstationAccess {
-//   accessScope?: 'local' | 'remote' | 'hybrid';
-//   physicalAccess?: 'direct' | 'vpn' | 'tunnel';
-//   transportProtocol?: 'ssh' | 'http' | 'rdp' | 'grpc' | 'other';
-//   interactionType?: 'cli' | 'gui' | 'api' | 'desktop';
-// }
 export interface WorkstationAccessDescriptor {
   accessScope?: 'local' | 'remote' | 'hybrid';
   physicalAccess?: 'direct' | 'vpn' | 'tunnel';
-  transport: {
+  /**
+   * transport may be optional if physicalAccess = direct
+   */
+  transport?: {
     protocol: 'ssh' | 'http' | 'rdp' | 'grpc' | 'other';
     credentials?: TransportCredentials; // Holds authentication details based on protocol
   };
@@ -181,6 +139,7 @@ export interface RdpCredentials {
 export interface GrpcCredentials {
   apiKey?: string;
   cert?: string; // Optional certificate for secure connections
+  token?: string;
 }
 
 // Condition Descriptor
@@ -591,11 +550,14 @@ export enum FileStorageOption {
 
 export const workstations: WorkstationDescriptor[] = [
   {
-    name: 'ws-001',
+    /**
+     *
+     */
+    name: 'emp-12-cd-api',
+    description: 'emp-12 laptop machine as host for cd-api',
     workstationAccess: {
       accessScope: 'local',
       physicalAccess: 'direct',
-      transport: { protocol: 'ssh', credentials: {} },
       interactionType: 'cli',
     },
     machineType: {
@@ -612,28 +574,6 @@ export const workstations: WorkstationDescriptor[] = [
     },
     os: getOsByName('ubuntu.22.04', operatingSystems)[0],
     enabled: true,
-    // networkAddress: {
-    //   hostname: 'dev-machine',
-    //   ip4Addresses: ['192.168.0.2'],
-    // },
-    // hardware: {
-    //   cpu: {
-    //     model: 'Intel Core i7-12700K',
-    //     cores: 12,
-    //     threads: 24,
-    //   },
-    //   memory: {
-    //     total: 32768,
-    //   },
-    //   fileStorage: getFileStoregeByName(
-    //     [FileStorageOption.Premium],
-    //     fileStorages,
-    //   ),
-    //   gpu: {
-    //     model: 'NVIDIA RTX 3080',
-    //     memory: 10000,
-    //   },
-    // },
     requiredSoftware: getSoftwareByName(
       ['npm.9.8.1', 'vscode.1.82.0'],
       softwareDataStore,
@@ -923,4 +863,378 @@ export const osPermissions: OperatingSystemPermissionDescriptor = {
       ],
     },
   ],
+};
+
+export const cdApiDependencies: DependencyDescriptor[] = [
+  {
+    name: 'Node.js',
+    version: '18.x',
+    category: 'tool',
+    type: 'development',
+    source: 'npm',
+    scope: 'global',
+    resolution: { method: 'import', path: '/usr/bin/npm' },
+    usage: { context: 'cli' },
+    platformCompatibility: {
+      languages: ['JavaScript', 'Node.js'],
+      os: ['Linux', 'Windows', 'macOS'],
+    },
+    security: { isSecure: true },
+    dependencyMetadata: { description: 'Node package manager', license: 'MIT' },
+  },
+  {
+    name: 'vscode.1.82.0',
+    version: '1.82.0',
+    category: 'tool',
+    type: 'development',
+    source: 'system',
+    scope: 'local',
+    resolution: { method: 'include', path: '/usr/local/bin/code' },
+    usage: { context: 'editor' },
+    platformCompatibility: {
+      os: ['Linux', 'Windows', 'macOS'],
+    },
+    security: { isSecure: true },
+    dependencyMetadata: {
+      description: 'Code editor by Microsoft',
+      license: 'Custom',
+    },
+  },
+  {
+    name: 'pnpm.7.16.0',
+    version: '7.16.0',
+    category: 'tool',
+    type: 'development',
+    source: 'npm',
+    scope: 'global',
+    resolution: { method: 'import', path: '/usr/bin/pnpm' },
+    usage: { context: 'cli' },
+    platformCompatibility: {
+      languages: ['JavaScript', 'Node.js'],
+      os: ['Linux', 'Windows', 'macOS'],
+    },
+    security: { isSecure: true },
+    dependencyMetadata: {
+      description: 'Fast, disk space-efficient package manager',
+      license: 'MIT',
+    },
+  },
+  {
+    name: 'apache.2.4.57',
+    version: '2.4.57',
+    category: 'core',
+    type: 'runtime',
+    source: 'system',
+    scope: 'global',
+    resolution: { method: 'include', path: '/usr/sbin/apache2' },
+    usage: { context: 'api' },
+    platformCompatibility: {
+      os: ['Linux', 'Windows', 'macOS'],
+      architectures: ['x86_64', 'arm64'],
+    },
+    security: { isSecure: true },
+    dependencyMetadata: {
+      description: 'Apache HTTP Server',
+      license: 'Apache-2.0',
+    },
+  },
+  {
+    name: 'incus.1.2.3',
+    version: '1.2.3',
+    category: 'tool',
+    type: 'runtime',
+    source: 'system',
+    scope: 'global',
+    resolution: { method: 'cli', path: '/usr/local/bin/incus' },
+    usage: { context: 'utility' },
+    platformCompatibility: {
+      os: ['Linux'],
+      architectures: ['x86_64', 'arm64'],
+    },
+    security: { isSecure: true },
+    dependencyMetadata: {
+      description: 'Container and VM management',
+      license: 'Apache-2.0',
+    },
+  },
+  {
+    name: 'mysql-server.8.0.34',
+    version: '8.0.34',
+    category: 'core',
+    type: 'runtime',
+    source: 'system',
+    scope: 'global',
+    resolution: { method: 'include', path: '/usr/bin/mysql' },
+    usage: { context: 'service' },
+    platformCompatibility: {
+      os: ['Linux', 'Windows', 'macOS'],
+      architectures: ['x86_64', 'arm64'],
+    },
+    security: { isSecure: true },
+    dependencyMetadata: {
+      description: 'Relational database management system',
+      license: 'GPL',
+    },
+  },
+  {
+    name: 'TypeScript',
+    version: 'latest',
+    category: 'library',
+    type: 'development',
+    source: 'npm',
+    scope: 'global',
+    resolution: { method: 'import', path: '/usr/bin/tsc' },
+    usage: { context: 'cli' },
+    installCommand: 'npm install -g typescript',
+    platformCompatibility: {
+      languages: ['JavaScript', 'TypeScript'],
+      os: ['Linux', 'Windows', 'macOS'],
+    },
+    security: { isSecure: true },
+    dependencyMetadata: {
+      description: 'TypeScript compiler for JavaScript development',
+      license: 'Apache-2.0',
+    },
+  },
+  {
+    name: 'Redis',
+    version: 'latest',
+    category: 'core',
+    type: 'runtime',
+    source: 'system',
+    scope: 'global',
+    resolution: { method: 'include', path: '/usr/bin/redis-server' },
+    usage: { context: 'service' },
+    installCommand: 'sudo apt install redis-server -y',
+    platformCompatibility: {
+      os: ['Linux', 'Windows', 'macOS'],
+      architectures: ['x86_64', 'arm64'],
+    },
+    security: { isSecure: true },
+    dependencyMetadata: {
+      description:
+        'In-memory key-value store for caching and message brokering',
+      license: 'BSD-3-Clause',
+    },
+  },
+  {
+    name: 'Git',
+    version: 'latest',
+    category: 'tool',
+    type: 'development',
+    source: 'system',
+    scope: 'global',
+    resolution: { method: 'cli', path: '/usr/bin/git' },
+    usage: { context: 'version-control' },
+    installCommand: 'sudo apt install git -y',
+    platformCompatibility: {
+      os: ['Linux', 'Windows', 'macOS'],
+      architectures: ['x86_64', 'arm64'],
+    },
+    security: { isSecure: true },
+    dependencyMetadata: {
+      description: 'Distributed version control system',
+      license: 'GPL-2.0',
+    },
+  },
+];
+
+export const cdApiCiCd: CiCdDescriptor = {
+  cICdPipeline: {
+    name: 'Corpdesk CI/CD - Bash Deployment',
+    type: 'deployment',
+    stages: [
+      {
+        name: 'Deployment',
+        description: 'Deploy Corpdesk using Bash scripts',
+        tasks: [
+          {
+            name: 'Stop existing services',
+            type: {
+              name: 'bash',
+              inlineScript:
+                'systemctl stop corpdesk-api && systemctl stop corpdesk-ui',
+            },
+            executor: 'script',
+            status: 'pending',
+          },
+          {
+            name: 'Pull latest code',
+            type: {
+              name: 'bash',
+              inlineScript: 'git pull origin main',
+            },
+            executor: 'script',
+            status: 'pending',
+          },
+          {
+            name: 'Start services',
+            type: {
+              name: 'bash',
+              inlineScript:
+                'systemctl start corpdesk-api && systemctl start corpdesk-ui',
+            },
+            executor: 'script',
+            status: 'pending',
+          },
+        ],
+      },
+    ],
+  },
+  cICdTriggers: {
+    type: 'push',
+    branchFilters: ['main'],
+    conditions: { includeTags: true },
+  },
+  cICdEnvironment: {
+    name: 'production',
+    url: 'https://corpdesk.com',
+    type: 'production',
+    deploymentStrategy: 'rolling',
+  },
+};
+
+export const CdApiRepo: VersionControlDescriptor = {
+  repository: {
+    name: 'cd-api',
+    description: 'api for corpdesk. Also supprts cd-sio push server',
+    url: 'https://github.com/corpdesk/cd-api.git',
+    type: 'git',
+    isPrivate: false,
+    directory: '~/', // NEW: Local directory where the repo should be cloned
+    credentials: { repoHost: 'corpdesk', accessToken: '#CdVault' },
+  },
+};
+
+export const emp12Workstation: DevelopmentEnvironmentDescriptor = {
+  workstation: {
+    machineType: {
+      name: 'physical',
+      hostMachine: {
+        systemResources: {
+          cpuCores: 4, // Number of CPU cores
+          memory: { units: 'GB', value: 32 }, // e.g., "32GB"
+          storage: { units: 'TB', value: 1 }, // e.g., "1TB"
+        }, // Total physical resources
+        networkInterfaces: [
+          {
+            hostname: 'localhost', // Hostname of the workstation
+            ip4Addresses: ['127.0.0.1', '192.168.1.6'], // List of IPv4 addresses
+          },
+          {
+            hostname: 'emp-12', // Hostname of the workstation
+            ip4Addresses: ['192.168.1.6'], // List of IPv4 addresses
+          },
+        ], // Resources allocated to this container
+      },
+    },
+    os: {
+      name: 'Ubuntu',
+      version: '22.04',
+      architecture: 'x86_64',
+      kernelVersion: '5.15.0-79-generic',
+      distribution: 'Ubuntu',
+      timezone: 'UTC',
+    },
+    workstationAccess: {
+      accessScope: 'local',
+      physicalAccess: 'direct',
+      interactionType: 'cli',
+    },
+    requiredSoftware: cdApiDependencies,
+  },
+  versionControl: [CdApiRepo],
+  ciCd: [cdApiCiCd],
+  testingFrameworks: ['Jest', 'Mocha'],
+};
+
+export const emp13DevEnvironment: DevelopmentEnvironmentDescriptor = {
+  workstation: {
+    machineType: {
+      name: 'container',
+      hostMachine: {
+        containerId: 'emp-61',
+        image: 'ubuntu22.04',
+        allocatedResources: {
+          cpuCores: 1, // Number of CPU cores
+          memory: { units: 'GB', value: 4 }, // e.g., "32GB"
+          storage: { units: 'GB', value: 8 }, // e.g., "1TB"
+        }, // Resources allocated to this container
+      },
+    },
+    os: {
+      name: 'Ubuntu',
+      version: '22.04',
+      architecture: 'x86_64',
+      kernelVersion: '5.15.0-79-generic',
+      distribution: 'Ubuntu',
+      timezone: 'UTC',
+    },
+    workstationAccess: {
+      accessScope: 'remote',
+      physicalAccess: 'tunnel',
+      transport: {
+        protocol: 'ssh',
+        credentials: {
+          sshCredentials: {
+            username: 'admin',
+            privateKey: '/keys/build-server-key',
+            host: '123.456.890',
+            port: 22,
+          },
+        },
+      },
+      interactionType: 'cli',
+    },
+    requiredSoftware: cdApiDependencies,
+  },
+  versionControl: [CdApiRepo],
+  ciCd: [cdApiCiCd],
+  testingFrameworks: ['Jest', 'Mocha'],
+};
+
+export const localProfile: ProfileModel = {
+  cdCliProfileName: 'Local Development - emp-12',
+  cdCliProfileData: {
+    owner: {
+      userId: 1001,
+      groupId: 1001,
+    },
+    details: emp12Workstation,
+    cdVault: [],
+    permissions: {
+      userPermissions: [],
+      groupPermissions: [],
+    },
+  },
+  cdCliProfileEnabled: 1,
+  cdCliProfileTypeId: 1,
+  userId: 1001,
+};
+
+export const remoteProfile: ProfileModel = {
+  cdCliProfileName: 'Remote Development - emp-120',
+  cdCliProfileData: {
+    owner: {
+      userId: 1002,
+      groupId: 1002,
+    },
+    details: emp13DevEnvironment,
+    cdVault: [
+      {
+        name: 'sshPrivateKey',
+        description: 'SSH key for accessing remote machine',
+        value: null,
+        encryptedValue: 'ENCRYPTED_SSH_KEY',
+        isEncrypted: true,
+      },
+    ],
+    permissions: {
+      userPermissions: [],
+      groupPermissions: [],
+    },
+  },
+  cdCliProfileEnabled: 1,
+  cdCliProfileTypeId: 2, // SSH profile type
+  userId: 1002,
 };
