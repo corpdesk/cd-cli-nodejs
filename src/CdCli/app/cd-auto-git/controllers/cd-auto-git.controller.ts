@@ -70,14 +70,20 @@ export class CdAutoGitController {
 
   async getGitHubProfile(): Promise<ProfileData | null> {
     CdLogg.debug('starting getGitHubProfile()');
-    const cdCliProfile = await this.ctlCdCliProfile.loadProfiles();
+    const ret = await this.ctlCdCliProfile.loadProfiles();
+    if (!ret.state || !ret.data) {
+      CdLogg.debug('could not load profiles');
+      return null;
+    }
+
+    const cdCliProfile: ProfileContainer = ret.data;
     CdLogg.debug(
       'CdAutoGitController::getGitHubProfile()/cdCliProfile:',
       cdCliProfile,
     );
 
-    const gitProfile = cdCliProfile.data?.items.find(
-      (item: ProfileModel) => item.cdCliProfileName === 'cd-git-config',
+    const gitProfile = cdCliProfile.items.find(
+      (item: ProfileModel) => item.cdCliProfileName === config.cdGitConfig,
     );
 
     CdLogg.debug(
@@ -185,17 +191,17 @@ export class CdAutoGitController {
 
   /**
    * Usage:
-   * cd-cli auto-git create --name abcXyz --desc "project for testing auto-git" --priv false --gitHost corpdesk --debug 4
+   * cd-cli auto-git create --name abcXyz --desc "project for testing auto-git" --priv false --repoHost corpdesk --debug 4
    * @param repoName
    * @param description
    * @param isPrivate
-   * @param gitHost // git organizatin or account name
+   * @param repoHost // git organizatin or account name
    */
   async createGitHubRepo(
     repoName: string,
     descript: string,
     isPrivate: boolean,
-    gitHost: string,
+    repoHost: string,
   ): Promise<void> {
     try {
       // Validation for inputs
@@ -244,7 +250,7 @@ export class CdAutoGitController {
 
       const response = await httpService.proc2({
         method: 'POST',
-        url: `/orgs/${gitHost}/repos`,
+        url: `/orgs/${repoHost}/repos`,
         headers,
         data: payload,
       });
@@ -254,7 +260,7 @@ export class CdAutoGitController {
         const repoUrl = `${apiRepoUrl.replace(
           'https://api.github.com',
           'https://github.com',
-        )}/${gitHost}/${repoName}.git`;
+        )}/${repoHost}/${repoName}.git`;
 
         await this.initializeLocalRepo(repoName, repoUrl);
       }
@@ -400,7 +406,7 @@ export class CdAutoGitController {
 
       // const cdCliProfile = this.ctlCdCliProfile.loadProfiles();
       const gitProfile = profileRet.data.items.find(
-        (item: ProfileModel) => item.cdCliProfileName === 'cd-git-config',
+        (item: ProfileModel) => item.cdCliProfileName === config.cdGitConfig,
       );
       CdLogg.debug(
         'CdAutoGitController::updateCdVault()/gitProfile:',
@@ -476,7 +482,8 @@ export class CdAutoGitController {
         const updatedProfile = apiRes.data?.newProfile[0];
         if (updatedProfile) {
           const configIndex = profileRet.data.items.findIndex(
-            (item: ProfileModel) => item.cdCliProfileName === 'cd-git-config',
+            (item: ProfileModel) =>
+              item.cdCliProfileName === config.cdGitConfig,
           );
 
           if (configIndex !== -1) {
@@ -484,7 +491,7 @@ export class CdAutoGitController {
             // saveCdCliProfileLocal(cdCliProfile);
             ret = await this.ctlCdCliProfile.saveCdCliProfileLocal(
               gitProfile,
-              'cd-git-config',
+              config.cdGitConfig,
             );
             if (ret) {
               CdLogg.success(
@@ -558,12 +565,12 @@ export class CdAutoGitController {
   async cloneRepoToLocal(
     repoName: string,
     repoDirectory: string,
-    gitHost: string /** This can be a Git username or organization */,
+    repoHost: string /** This can be a Git username or organization */,
   ): Promise<void> {
     try {
       // Experimental overrides
       repoName = 'testAutoGit';
-      gitHost = 'corpdesk';
+      repoHost = 'corpdesk';
       repoDirectory = '~';
 
       // Fetch the GitHub profile
@@ -625,7 +632,7 @@ export class CdAutoGitController {
         'https://',
         `https://${gitHubToken}@`,
       );
-      const repoUrl = `${authRepoUrl}/${gitHost}/${repoName}.git`;
+      const repoUrl = `${authRepoUrl}/${repoHost}/${repoName}.git`;
 
       CdLogg.debug('CdAutoGitController::cloneRepoToLocal()/repoUrl:', {
         url: repoUrl,
@@ -675,7 +682,7 @@ export class CdAutoGitController {
 
   // Main method to initiate the GitHub project setup
   async initiateGitHubProject(
-    gitHost: string /** This can be git user name or git company */,
+    repoHost: string /** This can be git user name or git company */,
   ) {
     const gitProfileData: ProfileData =
       (await this.getGitHubProfile()) as ProfileData;
@@ -703,7 +710,7 @@ export class CdAutoGitController {
     );
 
     // Create and clone the repository
-    await this.createGitHubRepo(repoName, repoDescription, isPrivate, gitHost);
-    await this.cloneRepoToLocal(repoName, repoDirectory, gitHost);
+    await this.createGitHubRepo(repoName, repoDescription, isPrivate, repoHost);
+    await this.cloneRepoToLocal(repoName, repoDirectory, repoHost);
   }
 }

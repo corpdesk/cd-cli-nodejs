@@ -9,7 +9,7 @@ export const CD_AUTO_GIT_CMD = {
     {
       /**
        * Usage example:
-       * cd-cli auto-git create --name abcXyz --desc "project for testing auto-git" --priv false --gitHost corpdesk --debug 4
+       * cd-cli auto-git create --name abcXyz --desc "project for testing auto-git" --priv false --repoHost corpdesk --debug 4
        */
       name: 'create',
       description: 'Create a new GitHub repository.',
@@ -30,7 +30,7 @@ export const CD_AUTO_GIT_CMD = {
           defaultValue: false,
         },
         {
-          flags: '--gitHost <gitHost>',
+          flags: '--repoHost <repoHost>',
           description: 'Set account name or git organization.',
           defaultValue: 'corpdesk',
         },
@@ -43,7 +43,7 @@ export const CD_AUTO_GIT_CMD = {
             options.name,
             options.desc,
             options.priv,
-            options.gitHost,
+            options.repoHost,
           );
         },
       },
@@ -63,7 +63,7 @@ export const CD_AUTO_GIT_CMD = {
           defaultValue: '~/cd-projects',
         },
         {
-          flags: '--git-host <gitHost>',
+          flags: '--git-host <repoHost>',
           description:
             'GitHub username or organization hosting the repository.',
           required: true,
@@ -76,7 +76,7 @@ export const CD_AUTO_GIT_CMD = {
           await cdAutoGitController.cloneRepoToLocal(
             options.repoName,
             options.repoDirectory,
-            options.gitHost,
+            options.repoHost,
           );
         },
       },
@@ -106,7 +106,7 @@ export const CD_AUTO_GIT_CMD = {
           defaultValue: '~/cd-projects',
         },
         {
-          flags: '--git-host <gitHost>',
+          flags: '--git-host <repoHost>',
           description:
             'GitHub username or organization hosting the repository.',
           required: true,
@@ -120,12 +120,12 @@ export const CD_AUTO_GIT_CMD = {
             options.repoName,
             options.repoDescription,
             options.private,
-            options.gitHost,
+            options.repoHost,
           );
           await cdAutoGitController.cloneRepoToLocal(
             options.repoName,
             options.repoDirectory,
-            options.gitHost,
+            options.repoHost,
           );
         },
       },
@@ -213,5 +213,5 @@ export interface GitHubRepoCreateRequest {
 export interface GitHubCloneDetails {
   repoName: string; // Name of the repository to clone
   repoDirectory: string; // Local directory where the repository will be cloned
-  gitHost: string; // GitHub username or organization (corpdesk, for example)
+  repoHost: string; // GitHub username or organization (corpdesk, for example)
 }

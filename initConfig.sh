@@ -100,11 +100,11 @@ if [ ! -f "$CONFIG_FILE" ]; then
           "gitRepos": [
             {
               "projName": "coop",
-              "gitHost": "corpdesk"
+              "repoHost": "corpdesk"
             },
             {
               "projName": "coop",
-              "gitHost": "corpdesk"
+              "repoHost": "corpdesk"
             }
           ]
         },

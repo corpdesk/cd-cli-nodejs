@@ -18,11 +18,11 @@
   "gitRepos": [
     {
       "projName": "coop",
-      "gitHost": "corpdesk"
+      "repoHost": "corpdesk"
     },
     {
       "projName": "coop",
-      "gitHost": "corpdesk"
+      "repoHost": "corpdesk"
     }
   ]
 }

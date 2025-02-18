@@ -17,6 +17,7 @@ export const DEFAULT_SESS: ISessResp = {
 // config.cdApiLocal
 export default {
   cdApiLocal: 'cd-api-local',
+  cdGitConfig: 'cd-git-config',
   cdSession: DEFAULT_SESS,
   meta: {
     name: 'cd-cli',
@@ -39,20 +40,3 @@ export default {
     ],
   },
 };
-
-// /**
-//  * Load the configuration file from the VAULT_DIRECTORY.
-//  */
-// export function loadProfiles(): any {
-//   CdLogg.debug('starting loadProfiles()');
-//   try {
-//     if (!existsSync(CONFIG_FILE_PATH)) {
-//       throw new Error(`Configuration file not found at ${CONFIG_FILE_PATH}.`);
-//     }
-
-//     const configContent = fs.readFileSync(CONFIG_FILE_PATH, 'utf-8');
-//     return JSON.parse(configContent);
-//   } catch (error) {
-//     throw new Error(`Error loading configuration: ${(error as Error).message}`);
-//   }
-// }
