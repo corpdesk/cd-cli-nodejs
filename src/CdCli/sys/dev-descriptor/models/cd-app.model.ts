@@ -2,10 +2,10 @@ import type { CdRequest, ICdRequest } from '../../base/IBase';
 import type { BaseDescriptor } from './base-descriptor.model';
 import type { CdModuleDescriptor } from './cd-module-descriptor.model';
 import type { CiCdDescriptor } from './cicd-descriptor.model';
-import type { DevelopmentEnvironmentDescriptor } from './development-environment.model';
+import type { EnvironmentDescriptor } from './environment.model';
 import CdLogg from '../../cd-comm/controllers/cd-logger.controller';
 // import type { CdModuleDescriptor } from './cd-module-descriptor.model';
-import type { RuntimeEnvironmentDescriptor } from './runtime-environment.model';
+// import type { EnvironmentDescriptor } from './environment.model';
 
 // export interface CdAppDescriptor {
 //   $schema?: string; // Optional schema URL for future use. For now versioning will be managed by the host package.json of cd-cli
@@ -14,8 +14,8 @@ import type { RuntimeEnvironmentDescriptor } from './runtime-environment.model';
 //   projectGuid?: string;
 //   parentProjectGuid: string;
 //   modules: CdModuleDescriptor[]; // Array of module descriptors
-//   developmentEnvironment?: DevelopmentEnvironmentDescriptor; // Development environment settings
-//   runtimeEnvironment?: RuntimeEnvironmentDescriptor; // Runtime environment settings
+//   environment?: EnvironmentDescriptor; // Development environment settings
+//   productionEnvironment?: EnvironmentDescriptor; // Production environment settings
 //   cdCi?: CiCdDescriptor; // Coninous Integration / Continous Delivery // getCiCd(names: string[],cIcDs: CiCdDescriptor[],)
 // }
 
@@ -26,8 +26,8 @@ export interface CdAppDescriptor<T extends BaseDescriptor = BaseDescriptor> {
   projectGuid?: string;
   parentProjectGuid: string;
   modules: CdModuleDescriptor[];
-  developmentEnvironment?: DevelopmentEnvironmentDescriptor;
-  runtimeEnvironment?: RuntimeEnvironmentDescriptor;
+  environment?: EnvironmentDescriptor;
+  productionEnvironment?: EnvironmentDescriptor;
   cdCi?: CiCdDescriptor;
   appDetails: T; // Dynamic linking to app type descriptor
 }

@@ -9,7 +9,7 @@ import CdLogg from '../../cd-comm/controllers/cd-logger.controller';
 
 export class CiCdService {
   static async initializeStepMap<T extends { ciCd: CiCdDescriptor[] }>(
-    context: any, // Service context (DevelopmentEnvironmentService, RuntimeEnvironmentService, etc.)
+    context: any, // Service context (EnvironmentService, EnvironmentService, etc.)
     input: T,
     progressTracker: any, // Progress tracking service
   ): Promise<CdFxReturn<null>> {

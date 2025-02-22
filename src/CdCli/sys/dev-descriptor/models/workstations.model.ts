@@ -2,7 +2,7 @@
 import type { CdFxReturn } from '../../base/IBase';
 
 import type { ProfileModel } from '../../cd-cli/models/cd-cli-profile.model';
-import type { DevelopmentEnvironmentService } from '../services/development-environment.service';
+import type { EnvironmentService } from '../services/environment.service';
 import type { BaseDescriptor } from './base-descriptor.model';
 import type { ContainerDescriptor } from './container-manager.model.descriptor';
 /* eslint-disable antfu/if-newline */
@@ -18,7 +18,7 @@ import {
   type CICdTask,
 } from './cicd-descriptor.model';
 // import type { ContainerDescriptor } from './container-manager.model.descriptor';
-import type { DevelopmentEnvironmentDescriptor } from './development-environment.model';
+import type { EnvironmentDescriptor } from './environment.model';
 import type { MetricsQuantity } from './service-provider.model';
 import type { VersionControlDescriptor } from './version-control.model';
 import CdLogg from '../../cd-comm/controllers/cd-logger.controller';
@@ -60,7 +60,7 @@ export interface SystemResources extends BaseDescriptor {
 export interface OperatingSystemDescriptor extends BaseDescriptor {
   name: string; // Name of the operating system (e.g., Windows, Linux, macOS)
   version: string; // Version of the operating system (e.g., "10.0.19044", "Ubuntu 22.04")
-  architecture: 'x86_64' | 'x86' | 'x64' | 'ARM' | 'ARM64'; // CPU architecture supported by the OS
+  architecture: 'x86_64' | 'x86' | 'x64' | 'ARM' | 'ARM64' | 'unknown'; // CPU architecture supported by the OS
   kernelVersion?: string; // Optional: Specific kernel version (e.g., "5.15.0-79-generic")
   distribution?: string; // Optional: For Linux distros (e.g., "Ubuntu", "Fedora")
   buildNumber?: string; // Optional: Build number for the OS (e.g., Windows-specific)
@@ -71,22 +71,29 @@ export interface OperatingSystemDescriptor extends BaseDescriptor {
 // Physical Machine Descriptor
 export interface PhysicalMachineDescriptor extends BaseDescriptor {
   systemResources: SystemResources; // Total physical resources
-  powerState?: 'on' | 'off' | 'suspended';
+  powerState?: 'on' | 'off' | 'suspended' | 'unknown';
   networkInterfaces: NetworkInterfaceDescriptor[]; // Physical network interfaces
 }
 
 // Virtual Machine Descriptor
 export interface VirtualMachineDescriptor extends BaseDescriptor {
-  hypervisor: 'KVM' | 'VMware' | 'VirtualBox' | 'Hyper-V' | 'Xen' | 'Other';
+  hypervisor:
+    | 'KVM'
+    | 'VMware'
+    | 'VirtualBox'
+    | 'Hyper-V'
+    | 'Xen'
+    | 'Other'
+    | 'unknown';
   vmId: string;
   allocatedResources: SystemResources; // Resources allocated to this VM
   networkMode: 'bridged' | 'nat' | 'host-only';
-  state: 'running' | 'stopped' | 'paused';
+  state: 'running' | 'stopped' | 'paused' | 'unknown';
 }
 
 // export type MachineType = 'physical' | 'virtual' | 'container';
 export interface MachineType extends BaseDescriptor {
-  name: 'physical' | 'virtual' | 'container';
+  name: 'physical' | 'virtual' | 'container' | 'unknown';
   hostMachine:
     | PhysicalMachineDescriptor
     | VirtualMachineDescriptor
@@ -94,16 +101,16 @@ export interface MachineType extends BaseDescriptor {
 }
 
 export interface WorkstationAccessDescriptor extends BaseDescriptor {
-  accessScope?: 'local' | 'remote' | 'hybrid';
-  physicalAccess?: 'direct' | 'vpn' | 'tunnel';
+  accessScope?: 'local' | 'remote' | 'hybrid' | 'unknown';
+  physicalAccess?: 'direct' | 'vpn' | 'tunnel' | 'unknown';
   /**
    * transport may be optional if physicalAccess = direct
    */
   transport?: {
-    protocol: 'ssh' | 'http' | 'rdp' | 'grpc' | 'other';
+    protocol: 'ssh' | 'http' | 'rdp' | 'grpc' | 'other' | 'unknown';
     credentials?: TransportCredentials; // Holds authentication details based on protocol
   };
-  interactionType?: 'cli' | 'gui' | 'api' | 'desktop';
+  interactionType?: 'cli' | 'gui' | 'api' | 'desktop' | 'unknown';
 }
 
 // Define a flexible structure for transport-specific credentials
@@ -147,7 +154,7 @@ export interface GrpcCredentials extends BaseDescriptor {
 
 // Condition Descriptor
 export interface ConditionDescriptor extends BaseDescriptor {
-  type: 'time-based' | 'location-based' | 'context-based' | 'other'; // Type of condition
+  type: 'time-based' | 'location-based' | 'context-based' | 'other' | 'unknown'; // Type of condition
   details: Record<string, any>; // Details of the condition (e.g., time range, IP address)
 }
 
@@ -163,8 +170,8 @@ export interface OperatingSystemPermissionDescriptor extends BaseDescriptor {
 export interface PermissionDescriptor extends BaseDescriptor {
   name: string; // Name of the permission (e.g., "read", "write", "execute")
   description?: string; // Description of the permission
-  level: 'user' | 'group' | 'system' | 'unknown' | 'unknown'; // Level of the permission (e.g., user, group, or system-wide)
-  type: 'file' | 'directory' | 'process' | 'network' | 'service'; // Type of resource the permission applies to
+  level: 'user' | 'group' | 'system' | 'unknown' | 'unknown' | 'unknown'; // Level of the permission (e.g., user, group, or system-wide)
+  type: 'file' | 'directory' | 'process' | 'network' | 'service' | 'unknown'; // Type of resource the permission applies to
 }
 
 // Access Control Descriptor
@@ -568,7 +575,7 @@ export enum FileStorageOption {
 export const workstations: WorkstationDescriptor[] = [
   /**
    * local workstation for testing setting up
-   * development and runtime environments
+   * development and production environments
    */
   {
     name: 'emp-12',
@@ -610,7 +617,7 @@ export const workstations: WorkstationDescriptor[] = [
   /**
    * container based remote workstation for
    * testing setting up
-   * development and runtime environments
+   * development and production environments
    */
   {
     name: 'emp-13',
@@ -945,14 +952,14 @@ export const CdApiRepo: VersionControlDescriptor = {
   },
 };
 
-export const emp12DevEnvironment: DevelopmentEnvironmentDescriptor = {
+export const emp12DevEnvironment: EnvironmentDescriptor = {
   workstation: getWorkstationByName('emp-12', workstations),
   versionControl: [CdApiRepo],
   ciCd: [cdApiCiCd],
   testingFrameworks: getTestingFrameworkByContext('cd-api', testingFrameworks),
 };
 
-export const emp13DevEnvironment: DevelopmentEnvironmentDescriptor = {
+export const emp13DevEnvironment: EnvironmentDescriptor = {
   workstation: {
     name: 'emp-13',
     machineType: {

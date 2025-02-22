@@ -1,0 +1,108 @@
+/**
+ * This class should be able to cover:
+ * - development environment
+ * - production environment
+ * - sandbox environment
+ * - other custom environment
+ *
+ * The difference can be enforced with the BaseDescriptor.context
+ * The context be be in the name of the application or profile name at the cd-cli.config.json
+ */
+/* eslint-disable style/operator-linebreak */
+import type { CdDescriptor } from '../models/dev-descriptor.model';
+import { CD_FX_FAIL, type CdFxReturn, type IQuery } from '../../base/IBase';
+import { CdCliProfileController } from '../../cd-cli/controllers/cd-cli-profile.cointroller';
+import CdLogg from '../../cd-comm/controllers/cd-logger.controller';
+import {} from '../models/environment.model';
+import { CiCdService } from '../services/ci-cd.service';
+import { EnvironmentService } from '../services/environment.service';
+import { DevDescriptorController } from './dev-descriptor.controller';
+
+export class EnvironmentController {
+  svEnvironment: EnvironmentService;
+  ctlDevDescriptor: DevDescriptorController;
+  ctlCdCliProfile: CdCliProfileController;
+  svCiCd: CiCdService;
+  constructor() {
+    this.svEnvironment = new EnvironmentService();
+    this.ctlDevDescriptor = new DevDescriptorController();
+    this.ctlCdCliProfile = new CdCliProfileController();
+    this.svCiCd = new CiCdService();
+  }
+
+  /**
+   * Creates a development environment for a given workstation.
+   *
+   * @param {string} name - The name of the application (e.g., cd-api).
+   *                        This is also referred to as 'context' in BaseDescriptor.
+   *                        Since all descriptors inherit BaseDescriptor, this property
+   *                        is used to pull descriptors set for a given application.
+   *                        The data type for `context` is `string[]`, allowing
+   *                        a descriptor to be associated with multiple applications.
+   * @param {string} workstationName - The name of the workstation to set
+   *                                   the development environment for.
+   * @returns {Promise<CdFxReturn<null>>} - A promise resolving to a CdFxReturn object
+   *                                        indicating success or failure.
+   */
+  async createEnvironment(
+    name: string,
+    workstationName: string,
+  ): Promise<CdFxReturn<null>> {
+    /**
+     * construct environment data via constructDevEnvironment()
+     * that will be used to set up the environment
+     */
+    const resultDevEnv = await this.svEnvironment.buildEnvironmentData(
+      name,
+      workstationName,
+    );
+    if (!resultDevEnv.state || !resultDevEnv.data) {
+      return CD_FX_FAIL;
+    }
+
+    /**
+     * use the above result to set up the environment
+     */
+    const result = await this.svEnvironment.setupEnvironment(resultDevEnv.data);
+
+    CdLogg.debug('result:', result);
+    return result;
+  }
+
+  /**
+   * Create a new development environment
+   * - scripts to setup development environment.
+   *    - npm
+   *    - mysql
+   *    - redis
+   * - idempotency
+   *
+   * @param ;d: json data for descriptor for EnvironmentService in the format of CdDescriptor
+   * @returns
+   */
+  async create(d: CdDescriptor): Promise<CdFxReturn<null>> {
+    return this.svEnvironment.create(d);
+  }
+
+  async read(q?: IQuery): Promise<CdFxReturn<CdDescriptor[]>> {
+    return this.svEnvironment.read(q);
+  }
+
+  async update(q: IQuery): Promise<CdFxReturn<null>> {
+    return this.svEnvironment.update(q);
+  }
+
+  async delete(q: IQuery): Promise<CdFxReturn<null>> {
+    return this.svEnvironment.delete(q);
+  }
+
+  // Get all applications
+  async getAllApps(): Promise<CdFxReturn<CdDescriptor[]>> {
+    return this.svEnvironment.getAllApps();
+  }
+
+  // Get a single app by name
+  async getAppByName(name: string): Promise<CdFxReturn<CdDescriptor[]>> {
+    return this.svEnvironment.getAppByName(name);
+  }
+}

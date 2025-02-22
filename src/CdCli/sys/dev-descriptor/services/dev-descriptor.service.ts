@@ -1,5 +1,4 @@
 import type { CdRequest, ISessResp } from '../../base/IBase';
-import type { SessonController } from '../../user/controllers/session.controller';
 import type { CdDescriptor } from '../models/dev-descriptor.model';
 /* eslint-disable style/brace-style */
 import config from '@/config';

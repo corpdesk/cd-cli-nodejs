@@ -1,6 +1,7 @@
 import antfu from '@antfu/eslint-config';
 
 export default antfu({
+  plugins: ['jsdoc'],
   rules: {
     'antfu/consistent-list-newline': 'off',
     'no-console': 'off',

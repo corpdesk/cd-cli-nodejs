@@ -42,7 +42,7 @@ export interface DependencyCategoryDescriptor extends BaseDescriptor {
 
 // Dependency Type Descriptor
 export interface DependencyTypeDescriptor extends BaseDescriptor {
-  type: 'runtime' | 'development' | 'peer' | 'optional' | 'unknown'; // Usage type
+  type: 'production' | 'development' | 'peer' | 'optional' | 'unknown'; // Usage type
 }
 
 // Dependency Source Descriptor
@@ -137,7 +137,7 @@ export const dependencies: DependencyDescriptor[] = [
     name: 'express',
     version: '^4.18.1',
     category: 'library',
-    type: 'runtime',
+    type: 'production',
     source: 'npm',
     scope: 'module',
     resolution: {
@@ -213,7 +213,7 @@ export const dependencies: DependencyDescriptor[] = [
     name: 'stdio.h',
     version: 'default for headers',
     category: 'header',
-    type: 'runtime',
+    type: 'production',
     source: 'system',
     scope: 'local',
     resolution: {
@@ -244,7 +244,7 @@ export const dependencies: DependencyDescriptor[] = [
     name: 'React',
     version: '^18.2.0',
     category: 'framework',
-    type: 'runtime',
+    type: 'production',
     source: 'cdn',
     scope: 'module',
     resolution: {
@@ -309,7 +309,7 @@ export const dependencies: DependencyDescriptor[] = [
     name: 'NVIDIA CUDA Toolkit',
     version: '12.1',
     category: 'core',
-    type: 'runtime',
+    type: 'production',
     source: 'system',
     scope: 'global',
     resolution: {
@@ -341,32 +341,10 @@ export const dependencies: DependencyDescriptor[] = [
 
 export const defaultDependency: DependencyDescriptor = {
   name: 'Unknown',
-  version: 'N/A',
-  category: 'custom',
-  type: 'runtime',
-  source: 'custom',
-  scope: 'local',
-  resolution: {
-    method: 'other',
-  },
-  usage: {
-    usageContext: 'other',
-  },
-  platformCompatibility: {
-    languages: [],
-    os: [],
-    architectures: [],
-  },
-  dependencyLifecycle: {
-    loadTime: 'manual',
-    updates: 'manual',
-  },
-  security: {
-    isSecure: false,
-  },
-  dependencyMetadata: {
-    description: 'No metadata available.',
-  },
+  category: 'unknown',
+  type: 'production',
+  source: 'unknown',
+  scope: 'unknown',
 };
 
 export function getDependencyByName(
@@ -388,7 +366,7 @@ export function getDependencyByName(
 }
 
 /**
- * In assembling software for runtime or development environtment, a database can be developed
+ * In assembling software for production or development environtment, a database can be developed
  * and maintained.
  * Future plans would be to automate maintenance.
  * The profile that has the basic environment descriptor can have an automated way of calling the database for
@@ -454,7 +432,7 @@ export const cdApiDependencies: DependencyDescriptor[] = [
     name: 'apache.2.4.57',
     version: '2.4.57',
     category: 'core',
-    type: 'runtime',
+    type: 'production',
     source: 'system',
     scope: 'global',
     resolution: { method: 'include', path: '/usr/sbin/apache2' },
@@ -473,7 +451,7 @@ export const cdApiDependencies: DependencyDescriptor[] = [
     name: 'incus.1.2.3',
     version: '1.2.3',
     category: 'tool',
-    type: 'runtime',
+    type: 'production',
     source: 'system',
     scope: 'global',
     resolution: { method: 'cli', path: '/usr/local/bin/incus' },
@@ -492,7 +470,7 @@ export const cdApiDependencies: DependencyDescriptor[] = [
     name: 'mysql-server.8.0.34',
     version: '8.0.34',
     category: 'core',
-    type: 'runtime',
+    type: 'production',
     source: 'system',
     scope: 'global',
     resolution: { method: 'include', path: '/usr/bin/mysql' },
@@ -531,7 +509,7 @@ export const cdApiDependencies: DependencyDescriptor[] = [
     name: 'Redis',
     version: 'latest',
     category: 'core',
-    type: 'runtime',
+    type: 'production',
     source: 'system',
     scope: 'global',
     resolution: { method: 'include', path: '/usr/bin/redis-server' },
