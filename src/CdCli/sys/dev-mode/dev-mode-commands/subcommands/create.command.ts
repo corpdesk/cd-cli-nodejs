@@ -1,14 +1,12 @@
 import CdLogg from '@/CdCli/sys/cd-comm/controllers/cd-logger.controller';
-import { DevDescriptorController } from '@/CdCli/sys/dev-descriptor/controllers/dev-descriptor.controller';
-import { DevelopmentEnvironmentController } from '@/CdCli/sys/dev-descriptor/controllers/development-environment.controller';
-import { DevelopmentEnvironmentService } from '@/CdCli/sys/dev-descriptor/services/development-environment.service';
+import { EnvironmentController } from '@/CdCli/sys/dev-descriptor/controllers/environment.controller';
 
 export const createCommand = {
   name: 'create',
   description: 'Synchronize different resources.',
   options: [
     { flags: 'dev-env', description: 'development environment' },
-    { flags: 'run-env', description: 'runtime environment' },
+    { flags: 'run-env', description: 'production environment' },
     { flags: 'name', description: 'name of given item eg dev-env.' },
   ],
   action: {
@@ -24,15 +22,15 @@ export const createCommand = {
         `DevModeModel::createCommand()/resource:${resource}, name:${options.name}`,
       );
 
-      const ctlDevelopmentEnvironment = new DevelopmentEnvironmentController();
+      const ctlEnvironment = new EnvironmentController();
 
       switch (resource.toLowerCase()) {
         case 'dev-env':
-          await ctlDevelopmentEnvironment.createEnvironment(options.name);
+          await ctlEnvironment.createEnvironment(options.name, options.wsName);
           console.log(chalk.green('✔ Setup completed successfully.'));
           break;
         case 'run-env':
-          await ctlDevelopmentEnvironment.createEnvironment(options.name);
+          await ctlEnvironment.createEnvironment(options.name, options.wsName);
           console.log(chalk.green('✔ Synced apps successfully.'));
           break;
         default:

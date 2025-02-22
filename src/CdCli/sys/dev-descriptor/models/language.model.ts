@@ -42,7 +42,7 @@ export interface LanguageFeatures extends BaseDescriptor {
   dynamicTyping: boolean; // Dynamic typing support
   memoryManagement: 'garbageCollection' | 'manual' | 'other' | 'unknown'; // Memory management type
   platformSupport: string[]; // Supported platforms (e.g., server, mobile, etc.)
-  interoperability?: string[]; // Supported languages/runtimes for interop
+  interoperability?: string[]; // Supported languages/productions for interop
 }
 
 export interface LanguageMiscellaneous extends BaseDescriptor {

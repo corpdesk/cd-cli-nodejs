@@ -7,10 +7,7 @@ import { CdAutoGitController } from '@/CdCli/app/cd-auto-git/controllers/cd-auto
 import { BaseService } from '../../base/base.service';
 import { HttpService } from '../../base/http.service';
 import { getCiCdByName, knownCiCds } from '../models/cicd-descriptor.model';
-import {
-  defaultDevelopmentEnvironment,
-  type DevelopmentEnvironmentDescriptor,
-} from '../models/development-environment.model';
+import { type EnvironmentDescriptor } from '../models/environment.model';
 import {
   type BaseServiceDescriptor,
   getServiceByName,
@@ -18,25 +15,19 @@ import {
 } from '../models/service-descriptor.model';
 import {
   getWorkstationByName,
-  type OperatingSystemDescriptor,
-  type WorkstationAccessDescriptor,
   type WorkstationDescriptor,
   workstations,
 } from '../models/workstations.model';
 /* eslint-disable style/operator-linebreak */
 /* eslint-disable style/brace-style */
 import { CD_FX_FAIL, type CdFxReturn, type IQuery } from '../../base/IBase';
+import { CdCliProfileController } from '../../cd-cli/controllers/cd-cli-profile.cointroller';
 import { ProgressTrackerService } from '../../cd-cli/services/progress-tracker.service';
 import CdLogg from '../../cd-comm/controllers/cd-logger.controller';
 import { ServiceController } from '../controllers/service.controller';
 import { WorkstationAccessController } from '../controllers/workstation-access.controller';
+import { getEnvironmentVariablesByContext } from '../models/os.model';
 import {
-  environmentVariables,
-  getEnvironmentVariablesByContext,
-  getEnvironmentVariablesByNames,
-} from '../models/os.model';
-import {
-  getTestingFramework,
   getTestingFrameworkByContext,
   testingFrameworks,
 } from '../models/testing-framework.model';
@@ -49,8 +40,9 @@ import { DependencyService } from './dependency.service';
 import { DevDescriptorService } from './dev-descriptor.service';
 import { SshService } from './ssh.service';
 import { WorkstationService } from './workstation.service';
+import { ProfileModel } from '../../cd-cli/models/cd-cli-profile.model';
 
-export class DevelopmentEnvironmentService extends BaseService {
+export class EnvironmentService extends BaseService {
   cdToken: string = '';
   svDevDescriptors: DevDescriptorService;
   svWorkstation: WorkstationService;
@@ -59,6 +51,7 @@ export class DevelopmentEnvironmentService extends BaseService {
   svSsh: SshService;
   progressTracker = new ProgressTrackerService();
   ctlService: ServiceController;
+  ctlCdCliProfile: CdCliProfileController;
   svCiCd: CiCdService;
 
   stepMap: {
@@ -77,6 +70,7 @@ export class DevelopmentEnvironmentService extends BaseService {
     this.svSsh = new SshService();
     this.ctlService = new ServiceController();
     this.svCiCd = new CiCdService();
+    this.ctlCdCliProfile = new CdCliProfileController();
   }
 
   /**
@@ -92,7 +86,7 @@ export class DevelopmentEnvironmentService extends BaseService {
    * @returns
    */
   async setupEnvironment(
-    devEnviron: DevelopmentEnvironmentDescriptor,
+    devEnviron: EnvironmentDescriptor,
     steps?: number[],
   ): Promise<CdFxReturn<null>> {
     try {
@@ -316,7 +310,7 @@ export class DevelopmentEnvironmentService extends BaseService {
   }
 
   async cloneRepositories(
-    devEnviron: DevelopmentEnvironmentDescriptor,
+    devEnviron: EnvironmentDescriptor,
   ): Promise<CdFxReturn<null>> {
     const stepKey = 'cloneRepositories';
     this.progressTracker.updateProgress(stepKey, 'in-progress', 1, 0);
@@ -358,7 +352,7 @@ export class DevelopmentEnvironmentService extends BaseService {
   }
 
   async configureServices(
-    devEnviron: DevelopmentEnvironmentDescriptor,
+    devEnviron: EnvironmentDescriptor,
   ): Promise<CdFxReturn<null>> {
     const stepKey = 'configureServices';
     this.progressTracker.updateProgress(stepKey, 'in-progress', 1, 0);
@@ -461,7 +455,7 @@ export class DevelopmentEnvironmentService extends BaseService {
   }
 
   async startServices(
-    devEnviron: DevelopmentEnvironmentDescriptor,
+    devEnviron: EnvironmentDescriptor,
   ): Promise<CdFxReturn<null>> {
     const stepKey = 'startServices';
     await this.progressTracker.updateProgress(stepKey, 'in-progress', 1, 0);
@@ -605,7 +599,7 @@ export class DevelopmentEnvironmentService extends BaseService {
   }
 
   protected getTypeId(): number {
-    return 1; // DevelopmentEnvironment type
+    return 1; // Environment type
   }
 
   // Get all applications
@@ -649,11 +643,46 @@ export class DevelopmentEnvironmentService extends BaseService {
     }
   }
 
-  async constructDevEnvironment(
+  /**
+   * This method takes in a context name, workstation name and defaultEnvironment to constrct
+   * development denvironment data. The output is expected to be used for setting up development environment.
+   * Idealy the defaultEnvironment should come from profile data as opposed to the model file (only used for experiments).
+   * Most data set up in model files are experimental. In production the data should come from profiles and other nested items saved in redis.
+   * @param name // name of application. In descriptors, it is refered to as 'context'
+   * @param workstationName // the workstation where the setup is being done
+   * @returns // Promise<CdFxReturn<EnvironmentDescriptor>>
+   */
+  async buildEnvironmentData(
     name: string,
     workstationName: string,
-  ): Promise<CdFxReturn<DevelopmentEnvironmentDescriptor>> {
-    const devEnv = { ...defaultDevelopmentEnvironment };
+  ): Promise<CdFxReturn<EnvironmentDescriptor>> {
+    /**
+     * pull appropriate profile from the cd-cli.config.json
+     */
+    const ret = await this.ctlCdCliProfile.getProfileByName(name);
+    if (!ret.state || !ret.data) {
+      CdLogg.debug('could not load profiles');
+      return { state: false, data: null, message: 'could not load profile' };
+    }
+
+    const cdCliProfile: ProfileModel = ret.data;
+    CdLogg.debug(
+      'CdAutoGitController::getGitHubProfile()/cdCliProfile:',
+      cdCliProfile,
+    );
+
+    const environment = cdCliProfile.cdCliProfileData?.details;
+    if (!environment) {
+      return {
+        data: null,
+        state: false,
+        message: `Failed to get descriptor with the name ${name}`,
+      };
+    }
+
+    // const devEnv = { ...defaultEnvironment };
+    const devEnv = { ...environment };
+
     const resCiCd = [getCiCdByName([name], knownCiCds)];
     if (resCiCd) {
       devEnv.ciCd = resCiCd;
@@ -691,7 +720,7 @@ export class DevelopmentEnvironmentService extends BaseService {
     if (resWorkstation) {
       devEnv.workstation = resWorkstation;
     }
-    const retValidDevEnv = this.validateDevelopmentEnvironment(devEnv);
+    const retValidDevEnv = this.validateEnvironment(devEnv);
     if (!retValidDevEnv) {
       return CD_FX_FAIL;
     }
@@ -703,9 +732,7 @@ export class DevelopmentEnvironmentService extends BaseService {
     };
   }
 
-  validateDevelopmentEnvironment(
-    devEnv: DevelopmentEnvironmentDescriptor,
-  ): CdFxReturn<boolean> {
+  validateEnvironment(devEnv: EnvironmentDescriptor): CdFxReturn<boolean> {
     if (!devEnv) {
       return {
         data: false,

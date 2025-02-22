@@ -31,7 +31,7 @@ export const testingFrameworks: TestingFrameworkDescriptor[] = [
       codeCoverage: true,
     },
     popularityRank: 1,
-    context: ['cd-api', 'cd-cli'],
+    context: ['cd-api', 'cd-api-dev-env', 'cd-cli'],
   },
   {
     name: 'Mocha',
@@ -46,7 +46,7 @@ export const testingFrameworks: TestingFrameworkDescriptor[] = [
       customExtensions: true,
     },
     popularityRank: 2,
-    context: ['cd-api'],
+    context: ['cd-api', 'cd-api-dev-env'],
   },
   {
     name: 'Cypress',

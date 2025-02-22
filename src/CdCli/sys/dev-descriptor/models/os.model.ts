@@ -71,14 +71,6 @@ export const defaultOs: OperatingSystemDescriptor = {
   version: '0.0',
   architecture: 'x64',
   timezone: 'UTC',
-  // allocatedResources: {
-  //   cpuCores: 4, // Number of CPU cores
-  //   memory: { units: 'GB', value: 32 }, // e.g., "32GB"
-  //   storage: { units: 'TB', value: 1 }, // e.g., "1TB"
-  // },
-  // hostname: 'unknown',
-  // ipAddresses: [],
-  // isVirtualized: false,
 };
 
 // export const environmentVariables: { [key: string]: string } = {
@@ -92,9 +84,12 @@ export const environmentVariables: {
   [key: string]: { value: string; context: string[] };
 } = {
   NODE_ENV: { value: 'production', context: ['cd-api', 'cd-frontend'] },
-  DB_HOST: { value: 'localhost', context: ['cd-api'] },
-  API_KEY: { value: '12345-abcdef', context: ['cd-api', 'cd-cli'] },
-  PORT: { value: '3000', context: ['cd-api'] },
+  DB_HOST: { value: 'localhost', context: ['cd-api', 'cd-api-dev-env'] },
+  API_KEY: {
+    value: '12345-abcdef',
+    context: ['cd-api', 'cd-api-dev-env', 'cd-cli'],
+  },
+  PORT: { value: '3000', context: ['cd-api', 'cd-api-dev-env'] },
   CLI_TIMEOUT: { value: '5000', context: ['cd-cli'] },
   LOG_LEVEL: { value: 'verbose', context: ['cd-cli'] },
   API_URL: { value: 'https://api.corpdesk.com', context: ['cd-frontend'] },

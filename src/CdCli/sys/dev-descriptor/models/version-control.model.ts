@@ -177,7 +177,7 @@ export const versionControlRepositories: VersionControlDescriptor[] = [
         repoHost: 'github.com',
       },
     },
-    context: ['cd-api'],
+    context: ['cd-api', 'cd-api-dev-env'],
     versionControlBranch: {
       name: 'main',
       type: 'main',

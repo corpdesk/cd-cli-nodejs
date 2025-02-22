@@ -1,18 +1,11 @@
-import type { ICdRequest } from '../../base/IBase';
-import type { DependencyDescriptor } from '../../dev-descriptor/models/dependancy-descriptor.model';
 import type { BaseDescriptor } from './base-descriptor.model';
-import type { MigrationDescriptor } from './migration-descriptor.model';
 import type { BaseServiceDescriptor } from './service-descriptor.model';
 import {
   type CiCdDescriptor,
   getCiCdByName,
   knownCiCds,
 } from '../../dev-descriptor/models/cicd-descriptor.model';
-import {
-  defaultService,
-  getServiceByName,
-  services,
-} from './service-descriptor.model';
+import { getServiceByName, services } from './service-descriptor.model';
 import {
   getTestingFramework,
   type TestingFrameworkDescriptor,
@@ -30,7 +23,7 @@ import {
   workstations,
 } from './workstations.model';
 
-export interface DevelopmentEnvironmentDescriptor extends BaseDescriptor {
+export interface EnvironmentDescriptor extends BaseDescriptor {
   workstation: WorkstationDescriptor;
   services?: BaseServiceDescriptor[];
   environmentVariables?: EnvironmentVariablesDescriptor; // Separate descriptor
@@ -44,7 +37,7 @@ export interface EnvironmentVariablesDescriptor extends BaseDescriptor {
   perEnvironment?: Record<string, Record<string, string>>; // Variables per environment (e.g., local, staging, production)
 }
 
-export const developmentEnvironments: DevelopmentEnvironmentDescriptor[] = [
+export const environments: EnvironmentDescriptor[] = [
   {
     /**
      * create an incus container for development
@@ -154,17 +147,62 @@ export const developmentEnvironments: DevelopmentEnvironmentDescriptor[] = [
   },
 ];
 
-export const defaultDevelopmentEnvironment: DevelopmentEnvironmentDescriptor = {
-  workstation: defaultWorkstation,
+export const defaultEnvironment: EnvironmentDescriptor = {
+  workstation: {
+    name: 'unknown',
+    workstationAccess: {
+      accessScope: 'local',
+      physicalAccess: 'direct',
+      transport: {
+        protocol: 'unknown',
+        credentials: {
+          sshCredentials: {
+            username: 'unknown',
+            host: '127.0.0.1',
+            port: -1,
+          },
+        },
+      },
+      interactionType: 'cli',
+    },
+    machineType: {
+      name: 'unknown',
+      hostMachine: {
+        containerId: 'unknown',
+        image: 'unknown',
+        allocatedResources: {
+          cpuCores: 0,
+          memory: { units: 'GB', value: 0 },
+          storage: { units: 'GB', value: 0 },
+        },
+      },
+    },
+    os: {
+      name: 'Unknown',
+      version: '0.0',
+      architecture: 'unknown',
+      timezone: 'unknown',
+    },
+    enabled: true,
+    requiredSoftware: [
+      {
+        name: 'unknown',
+        category: 'unknown',
+        type: 'unknown',
+        source: 'unknown',
+        scope: 'unknown',
+      },
+    ],
+  },
 };
 
 export function getDevEnvironmentByName(
   name: string,
-  developmentEnvironments: DevelopmentEnvironmentDescriptor[],
-): DevelopmentEnvironmentDescriptor {
+  environments: EnvironmentDescriptor[],
+): EnvironmentDescriptor {
   return (
-    developmentEnvironments.find(
+    environments.find(
       (env) => env.workstation.name?.toLowerCase() === name.toLowerCase(),
-    ) || defaultDevelopmentEnvironment
+    ) || defaultEnvironment
   );
 }

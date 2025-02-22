@@ -34,7 +34,7 @@ export class App {
     // Global --debug flag
     program.option(
       '--debug <level>',
-      'Set the debug level dynamically during runtime',
+      'Set the debug level dynamically during production',
       (level) => {
         setLogLevel(level);
         CdLogg.setDebugLevel(Number(level));

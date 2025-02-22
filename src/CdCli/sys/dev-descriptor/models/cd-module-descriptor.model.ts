@@ -1,8 +1,7 @@
 import type { CdServiceDescriptor } from './/cd-service-descriptor.model';
-import type { DevelopmentEnvironmentDescriptor } from './/development-environment.model';
+import type { EnvironmentDescriptor } from './/environment.model';
 import type { LanguageDescriptor } from './/language.model';
 import type { CdModelDescriptor } from './/model-descriptor.model';
-import type { RuntimeEnvironmentDescriptor } from './/runtime-environment.model';
 import type {
   // CdServiceDescriptor,
   LicenseDescriptor,
@@ -27,8 +26,8 @@ export interface CdModuleDescriptor extends BaseDescriptor {
   controllers: CdControllerDescriptor[]; // List of controllers
   models: CdModelDescriptor[]; // List of models
   services: CdServiceDescriptor[]; // List of services
-  developmentEnvironment?: DevelopmentEnvironmentDescriptor; // Development environment settings
-  runtimeEnvironment?: RuntimeEnvironmentDescriptor; // Runtime environment settings
+  environment?: EnvironmentDescriptor; // Development environment settings
+  productionEnvironment?: EnvironmentDescriptor; // Production environment settings
   cdCi?: CiCdDescriptor; // Continuous Integration/Continuous Delivery
   versionControl?: VersionControlDescriptor; // Version control details
 }

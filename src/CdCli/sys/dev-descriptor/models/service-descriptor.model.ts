@@ -307,7 +307,7 @@ export interface ServiceCost extends BaseDescriptor {
 // export const services: SystemServiceDescriptor[] = [
 //   {
 //     serviceName: 'redis',
-//     context: ['cd-api', 'cd-cli'],
+//     context: ['cd-api', 'cd-api-dev-env', 'cd-cli'],
 //     serviceType: 'storage',
 //     osServiceManager: 'systemd',
 //     command: 'sudo service redis-server start', // Execution command
@@ -329,7 +329,7 @@ export interface ServiceCost extends BaseDescriptor {
 //   },
 //   {
 //     serviceName: 'mysql',
-//     context: ['cd-api'],
+//     context: ['cd-api', 'cd-api-dev-env'],
 //     serviceType: 'storage',
 //     osServiceManager: 'systemd',
 //     command: 'sudo service mysql start', // Execution command
@@ -357,7 +357,7 @@ export interface ServiceCost extends BaseDescriptor {
 export const services: SystemServiceDescriptor[] = [
   {
     serviceName: 'redis',
-    context: ['cd-api', 'cd-cli'],
+    context: ['cd-api', 'cd-api-dev-env', 'cd-cli'],
     serviceType: 'storage',
     osServiceManager: 'systemd',
     command: 'sudo service redis-server start', // Execution command
@@ -369,7 +369,7 @@ export const services: SystemServiceDescriptor[] = [
     networkConfig: [
       {
         name: 'Redis Localhost',
-        context: ['cd-api', 'cd-cli'],
+        context: ['cd-api', 'cd-api-dev-env', 'cd-cli'],
         hostname: 'localhost',
         ip4Addresses: ['127.0.0.1'],
         servicePorts: {
@@ -378,7 +378,7 @@ export const services: SystemServiceDescriptor[] = [
       },
       {
         name: 'Redis External',
-        context: ['cd-api'],
+        context: ['cd-api', 'cd-api-dev-env'],
         hostname: 'redis.cd-api.local',
         ip4Addresses: ['192.168.1.100', '10.0.0.1'],
         publicUrl: 'redis://redis.cd-api.local:6379',
@@ -387,7 +387,7 @@ export const services: SystemServiceDescriptor[] = [
   },
   {
     serviceName: 'mysql',
-    context: ['cd-api'],
+    context: ['cd-api', 'cd-api-dev-env'],
     serviceType: 'storage',
     osServiceManager: 'systemd',
     command: 'sudo service mysql start', // Execution command
@@ -399,7 +399,7 @@ export const services: SystemServiceDescriptor[] = [
     networkConfig: [
       {
         name: 'MySQL Localhost',
-        context: ['cd-api'],
+        context: ['cd-api', 'cd-api-dev-env'],
         hostname: 'localhost',
         ip4Addresses: ['127.0.0.1'],
         servicePorts: {
@@ -408,7 +408,7 @@ export const services: SystemServiceDescriptor[] = [
       },
       {
         name: 'MySQL External',
-        context: ['cd-api'],
+        context: ['cd-api', 'cd-api-dev-env'],
         hostname: 'mysql.cd-api.local',
         ip4Addresses: ['0.0.0.0'],
         publicUrl: 'mysql://mysql.cd-api.local:3306',

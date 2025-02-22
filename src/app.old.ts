@@ -41,7 +41,7 @@ export class App {
     // Add the --debug flag globally
     program.option(
       '--debug <level>',
-      'Set the debug level dynamically during runtime',
+      'Set the debug level dynamically during production',
       (level: any) => {
         // Parse the level and set it
         setLogLevel(level);

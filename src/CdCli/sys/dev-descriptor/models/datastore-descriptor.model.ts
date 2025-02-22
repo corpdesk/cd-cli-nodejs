@@ -1,6 +1,5 @@
 /* eslint-disable style/indent */
-import type { DevelopmentEnvironmentDescriptor } from './/development-environment.model';
-import type { RuntimeEnvironmentDescriptor } from './/runtime-environment.model';
+import type { EnvironmentDescriptor } from './/environment.model';
 // import type { BaseDescriptor } from './app-descriptor.model';
 import type { BaseDescriptor } from './base-descriptor.model';
 
@@ -8,8 +7,8 @@ import type { BaseDescriptor } from './base-descriptor.model';
 export interface DataStoreDescriptor
   extends BaseDescriptor,
     DataStoreTypeDescriptor {
-  developmentEnvironment?: DevelopmentEnvironmentDescriptor;
-  runtimeEnvironment?: RuntimeEnvironmentDescriptor;
+  environment?: EnvironmentDescriptor;
+  productionEnvironment?: EnvironmentDescriptor;
 
   dataStoreSchema?: DataStoreSchemaDescriptor;
   dataStoreReplicationConfig?: DataStoreReplicationConfig;

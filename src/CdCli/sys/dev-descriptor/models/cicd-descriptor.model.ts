@@ -3,11 +3,11 @@
 
 import type { CdFxReturn } from '../../base/IBase';
 import type { BaseDescriptor } from './base-descriptor.model';
-import type { DevelopmentEnvironmentDescriptor } from './development-environment.model';
+import type { EnvironmentDescriptor } from './environment.model';
 import type { MigrationDescriptor } from './migration-descriptor.model';
 import type { TestingFrameworkDescriptor } from './testing-framework.model';
 import CdLogg from '../../cd-comm/controllers/cd-logger.controller';
-import { DevelopmentEnvironmentService } from '../services/development-environment.service';
+import { EnvironmentService } from '../services/environment.service';
 
 // Main CiCdDescriptor Interface
 export interface CiCdDescriptor extends BaseDescriptor {
@@ -58,8 +58,8 @@ export interface CICdTask<T = any> extends BaseDescriptor {
 
 export const methodRegistry = {
   async installDependencies(
-    this: DevelopmentEnvironmentService,
-    input?: DevelopmentEnvironmentDescriptor,
+    this: EnvironmentService,
+    input?: EnvironmentDescriptor,
   ): Promise<CdFxReturn<null>> {
     if (input?.workstation) {
       return this.installDependencies(input.workstation);
@@ -69,8 +69,8 @@ export const methodRegistry = {
     }
   },
   async cloneRepositories(
-    this: DevelopmentEnvironmentService,
-    input?: DevelopmentEnvironmentDescriptor,
+    this: EnvironmentService,
+    input?: EnvironmentDescriptor,
   ): Promise<CdFxReturn<null>> {
     if (input) {
       return this.cloneRepositories(input);
@@ -80,8 +80,8 @@ export const methodRegistry = {
     }
   },
   async configureServices(
-    this: DevelopmentEnvironmentService,
-    input?: DevelopmentEnvironmentDescriptor,
+    this: EnvironmentService,
+    input?: EnvironmentDescriptor,
   ): Promise<CdFxReturn<null>> {
     if (input) {
       return this.configureServices(input);
@@ -91,8 +91,8 @@ export const methodRegistry = {
     }
   },
   async startServices(
-    this: DevelopmentEnvironmentService,
-    input?: DevelopmentEnvironmentDescriptor,
+    this: EnvironmentService,
+    input?: EnvironmentDescriptor,
   ): Promise<CdFxReturn<null>> {
     if (input) {
       return this.startServices(input);
@@ -103,7 +103,7 @@ export const methodRegistry = {
   },
 };
 
-export const CdApiSetupTasks: CICdTask<DevelopmentEnvironmentDescriptor>[] = [
+export const CdApiSetupTasks: CICdTask<EnvironmentDescriptor>[] = [
   {
     name: 'installDependencies',
     type: { name: 'bash', inlineScript: 'npm install' },
@@ -136,13 +136,13 @@ export const CdApiSetupTasks: CICdTask<DevelopmentEnvironmentDescriptor>[] = [
 
 // Function to execute a task given its method name and input
 export async function executeTask(
-  task: CICdTask<DevelopmentEnvironmentDescriptor>,
-  input: DevelopmentEnvironmentDescriptor,
+  task: CICdTask<EnvironmentDescriptor>,
+  input: EnvironmentDescriptor,
 ) {
   if (task.methodName && methodRegistry[task.methodName]) {
     // Dynamically call the method from the registry
     const result = await methodRegistry[task.methodName].call(
-      new DevelopmentEnvironmentService(),
+      new EnvironmentService(),
       input,
     );
     return result;
