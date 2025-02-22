@@ -11,7 +11,7 @@ import type { CdVault, EncryptionMeta } from '../models/cd-cli-vault.model';
 import crypto from 'node:crypto';
 import fs, { existsSync, mkdirSync } from 'node:fs';
 import path, { join } from 'node:path';
-import { loadCdCliConfig } from '@/config';
+// import { loadCdCliConfig } from '@/config';
 import axios from 'axios';
 import inquirer from 'inquirer';
 import CdLogg from '../../cd-comm/controllers/cd-logger.controller';
@@ -19,6 +19,7 @@ import {
   ENCRYPTION_CONFIGS,
   VAULT_DIRECTORY,
 } from '../models/cd-cli-vault.model';
+import { CdCliProfileController } from './cd-cli-profile.cointroller';
 
 // Ensure the vault directory exists
 if (!existsSync(VAULT_DIRECTORY)) {
@@ -26,93 +27,11 @@ if (!existsSync(VAULT_DIRECTORY)) {
 }
 
 class CdCliVaultController {
-  /**
-   * Retrieves the encryption key from the environment variables.
-   * If the key is missing, it triggers the creation of a new key.
-   * @returns {Buffer} - The encryption key as a Buffer.
-   */
-  // static getEncryptionKey(): Buffer {
-  //   let encryptionKey = process.env.CD_CLI_ENCRYPT_KEY;
+  ctlCdCliProfile: CdCliProfileController;
+  constructor() {
+    this.ctlCdCliProfile = new CdCliProfileController();
+  }
 
-  //   if (!encryptionKey) {
-  //     CdLogg.warning(
-  //       'Encryption key not found in environment variables. Generating a new key...',
-  //     );
-  //     encryptionKey = this.createEncryptionKey();
-  //   }
-
-  //   // Validate the key length
-  //   if (encryptionKey.length !== 64) {
-  //     throw new Error(
-  //       `Invalid encryption key length: ${encryptionKey.length}. Expected a 64-character hex string.`,
-  //     );
-  //   }
-
-  //   return Buffer.from(encryptionKey, 'hex');
-  // }
-
-  // static async getEncryptionKey(): Promise<Buffer> {
-  //   let encryptionKey = process.env.CD_CLI_ENCRYPT_KEY;
-
-  //   if (!encryptionKey) {
-  //     CdLogg.warning('Encryption key not found in environment variables.');
-
-  //     // Prompt user for action
-  //     const answers = await inquirer.prompt([
-  //       {
-  //         type: 'confirm',
-  //         name: 'provideKey',
-  //         message:
-  //           'Encryption key not found. Do you want to provide an existing key?',
-  //         default: true,
-  //       },
-  //     ]);
-
-  //     if (answers.provideKey) {
-  //       // Prompt for existing encryption key
-  //       const keyInput = await inquirer.prompt([
-  //         {
-  //           type: 'password',
-  //           name: 'encryptionKey',
-  //           message: 'Enter your existing encryption key:',
-  //           mask: '*',
-  //           validate: (input) =>
-  //             input.length === 64 || 'Key must be a 64-character hex string.',
-  //         },
-  //       ]);
-  //       encryptionKey = keyInput.encryptionKey;
-
-  //       // Set the environment variable for subsequent use
-  //       process.env.CD_CLI_ENCRYPT_KEY = encryptionKey;
-  //     } else {
-  //       // Ask if the user wants to generate a new key
-  //       const generateNewKey = await inquirer.prompt([
-  //         {
-  //           type: 'confirm',
-  //           name: 'generateKey',
-  //           message:
-  //             'Do you want to generate a new encryption key? (This will make previous data inaccessible)',
-  //           default: false,
-  //         },
-  //       ]);
-
-  //       if (generateNewKey.generateKey) {
-  //         encryptionKey = this.createEncryptionKey();
-  //       } else {
-  //         throw new Error('Operation aborted: No encryption key provided.');
-  //       }
-  //     }
-  //   }
-
-  //   // Validate the key length
-  //   if (encryptionKey?.length !== 64) {
-  //     throw new Error(
-  //       `Invalid encryption key length: ${encryptionKey?.length}. Expected a 64-character hex string.`,
-  //     );
-  //   }
-
-  //   return Buffer.from(encryptionKey, 'hex');
-  // }
   static async getEncryptionKey(): Promise<Buffer> {
     let encryptionKey = process.env.CD_CLI_ENCRYPT_KEY;
 
@@ -334,55 +253,6 @@ class CdCliVaultController {
     }
   }
 
-  // static async decrypt(
-  //   encryptionMeta: EncryptionMeta & { iv: string },
-  //   encryptedValue: string,
-  // ): Promise<string | null> {
-  //   CdLogg.debug('starting CdCliValutController::decrypt()');
-  //   CdLogg.debug(
-  //     'CdCliValutController::decrypt()/encryptionMeta:',
-  //     encryptionMeta,
-  //   );
-  //   CdLogg.debug('CdCliValutController::decrypt()/encryptedValue:', {
-  //     e: encryptedValue,
-  //   });
-
-  //   try {
-  //     if (!encryptionMeta.iv) {
-  //       // CdLogg.debug('CdCliValutController::decrypt()/02');
-  //       throw new Error(
-  //         'Initialization vector (iv) is missing in the encryption metadata.',
-  //       );
-  //     }
-
-  //     // CdLogg.debug('CdCliValutController::decrypt()/03');
-  //     const iv = Buffer.from(encryptionMeta.iv, encryptionMeta.encoding);
-  //     CdLogg.debug('CdCliValutController::decrypt()/iv:', { vector: iv });
-
-  //     const decipher = crypto.createDecipheriv(
-  //       encryptionMeta.algorithm,
-  //       await this.getEncryptionKey(),
-  //       iv,
-  //     );
-  //     CdLogg.debug('CdCliValutController::decrypt()/decipher:', decipher);
-  //     // CdLogg.debug('CdCliValutController::decrypt()/05');
-  //     let decrypted = decipher.update(
-  //       encryptedValue,
-  //       encryptionMeta.encoding as BufferEncoding,
-  //       'utf8',
-  //     );
-  //     CdLogg.debug('CdCliValutController::decrypt()/06');
-  //     decrypted += decipher.final('utf8');
-  //     CdLogg.debug('CdCliValutController::decrypt()/07');
-
-  //     return decrypted;
-  //   } catch (e) {
-  //     CdLogg.error('Error at CdCliValutController::decrypt()/e:', {
-  //       e: (e as Error).message,
-  //     });
-  //     return null;
-  //   }
-  // }
   static async decrypt(
     encryptionMeta: EncryptionMeta & { iv: string },
     encryptedValue: string,
@@ -553,8 +423,16 @@ class CdCliVaultController {
   async encryptionValidator(
     profileName: string | null = null,
     jPath: string | null = null,
-  ): Promise<void> {
-    const cdCliConfig = loadProfiles();
+  ): Promise<any> {
+    this.ctlCdCliProfile = new CdCliProfileController();
+    const profileRet = await this.ctlCdCliProfile.loadProfiles();
+    if (!profileRet.state || !profileRet.data) {
+      CdLogg.error(`Failed to load profiles: ${profileRet.message}`);
+      return null; // Handle the failure case properly
+    }
+
+    // const cdCliConfig = this.ctlCdCliProfile.loadProfiles();
+    const cdCliConfig = profileRet.data;
 
     if (!profileName && !jPath) {
       console.log('Validating all profiles...');

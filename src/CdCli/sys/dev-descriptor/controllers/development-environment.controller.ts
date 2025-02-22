@@ -1,9 +1,10 @@
-import type { CdFxReturn, CdRequest, IQuery } from '../../base/IBase';
+import type { CdFxReturn, IQuery } from '../../base/IBase';
 import type { ProfileModel } from '../../cd-cli/models/cd-cli-profile.model';
 import type { CdDescriptor } from '../models/dev-descriptor.model';
 import { CdCliProfileController } from '../../cd-cli/controllers/cd-cli-profile.cointroller';
-import { ProfileContainer } from '../../cd-cli/models/cd-cli-profile.model';
 import CdLogg from '../../cd-comm/controllers/cd-logger.controller';
+import {} from '../models/development-environment.model';
+import { CiCdService } from '../services/ci-cd.service';
 import { DevelopmentEnvironmentService } from '../services/development-environment.service';
 import { DevDescriptorController } from './dev-descriptor.controller';
 
@@ -11,10 +12,12 @@ export class DevelopmentEnvironmentController {
   svDevelopmentEnvironment: DevelopmentEnvironmentService;
   ctlDevDescriptor: DevDescriptorController;
   ctlCdCliProfile: CdCliProfileController;
+  svCiCd: CiCdService;
   constructor() {
     this.svDevelopmentEnvironment = new DevelopmentEnvironmentService();
     this.ctlDevDescriptor = new DevDescriptorController();
     this.ctlCdCliProfile = new CdCliProfileController();
+    this.svCiCd = new CiCdService();
   }
 
   async createEnvironment(name: string): Promise<CdFxReturn<null>> {

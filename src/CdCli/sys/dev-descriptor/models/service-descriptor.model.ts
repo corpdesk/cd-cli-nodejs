@@ -2,6 +2,7 @@
 
 import type { ContainerManagerDescriptor } from '../../dev-descriptor/models/container-manager.model.descriptor';
 import type { DataStoreDescriptor } from '../../dev-descriptor/models/datastore-descriptor.model';
+import type { BaseDescriptor } from './base-descriptor.model';
 import type {
   AccountCredentials,
   ProviderInstruction,
@@ -24,7 +25,7 @@ import {
   type WorkstationAccessDescriptor,
 } from './workstations.model';
 
-export interface BaseServiceDescriptor {
+export interface BaseServiceDescriptor extends BaseDescriptor {
   serviceName: string;
   serviceType:
     | 'storage'
@@ -41,7 +42,8 @@ export interface BaseServiceDescriptor {
     | 'daemon'
     | 'cron-job'
     | 'worker-thread'
-    | 'other'; // Covers all service types
+    | 'other' // Covers all service types
+    | 'unknown';
 
   command: string; // Execution command
   workstationAccess: WorkstationAccessDescriptor;
@@ -77,9 +79,15 @@ export interface BaseServiceDescriptor {
 // }
 
 export interface CloudServiceDescriptor extends BaseServiceDescriptor {
-  provider: 'aws' | 'google-cloud' | 'azure' | 'digitalocean' | 'custom';
+  provider:
+    | 'aws'
+    | 'google-cloud'
+    | 'azure'
+    | 'digitalocean'
+    | 'custom'
+    | 'unknown';
 
-  webServerEnvironment: 'development' | 'staging' | 'production';
+  webServerEnvironment: 'development' | 'staging' | 'production' | 'unknown';
   webServer: WebServer;
   sslConfig: SslConfig;
   domainConfig: DomainConfig;
@@ -97,10 +105,23 @@ export interface CloudServiceDescriptor extends BaseServiceDescriptor {
 }
 
 export interface SystemServiceDescriptor extends BaseServiceDescriptor {
-  serviceType: 'background-process' | 'daemon' | 'cron-job' | 'worker-thread';
-  osServiceManager: 'systemd' | 'initd' | 'supervisor' | 'custom';
+  serviceType:
+    | 'background-process'
+    | 'daemon'
+    | 'cron-job'
+    | 'worker-thread'
+    | 'storage'
+    | 'unknown';
+  osServiceManager:
+    | 'systemd'
+    | 'initd'
+    | 'supervisor'
+    | 'custom'
+    | 'unknown'
+    | 'unknown';
   dependencies?: string[]; // Other required system services
-  restartPolicy?: 'always' | 'on-failure' | 'manual';
+  restartPolicy?: 'always' | 'on-failure' | 'manual' | 'unknown';
+  networkConfig?: NetworkInterfaceDescriptor[];
 }
 
 export interface WebserverSecurityConfig {
@@ -115,21 +136,21 @@ export interface DomainConfig {
   dnsSettings: DNSRecord[];
 }
 
-export interface WebServer {
-  provider: 'nginx' | 'apache' | 'iis' | 'custom'; // Web server type
+export interface WebServer extends BaseDescriptor {
+  provider: 'nginx' | 'apache' | 'iis' | 'custom' | 'unknown'; // Web server type
   config: string; // Path or raw content of server configuration (e.g., nginx.conf)
 }
 
-export interface SslConfig {
+export interface SslConfig extends BaseDescriptor {
   enabled: boolean; // Whether SSL is enabled
-  provider: 'letsencrypt' | 'custom'; // SSL provider
+  provider: 'letsencrypt' | 'custom' | 'unknown'; // SSL provider
   certificatePath?: string; // Path to SSL certificate (if custom)
   privateKeyPath?: string; // Path to private key (if custom)
   autoRenew?: boolean; // Whether SSL should auto-renew
 }
 
 // Scaling Configuration Descriptor
-export interface ScalingDescriptor {
+export interface ScalingDescriptor extends BaseDescriptor {
   autoScaling: boolean; // Whether auto-scaling is supported
   scalingStrategies?: ('horizontal' | 'vertical' | 'cluster' | 'node-pool')[]; // Supported scaling strategies
   maxContainers?: number; // Maximum number of containers supported
@@ -141,7 +162,7 @@ export interface ScalingDescriptor {
 
 export interface WebserviceProvisionDescriptor extends CloudServiceDescriptor {
   accountAccess: {
-    method: 'api-key' | 'oauth' | 'ssh-key' | 'username-password'; // Authentication method
+    method: 'api-key' | 'oauth' | 'ssh-key' | 'username-password' | 'unknown'; // Authentication method
     credentials: AccountCredentials; // Encapsulated account credentials
   };
 
@@ -151,14 +172,15 @@ export interface WebserviceProvisionDescriptor extends CloudServiceDescriptor {
       | 'ansible'
       | 'cloudformation'
       | 'pulumi'
-      | 'custom-script'; // Tool for provisioning
+      | 'custom-script'
+      | 'unknown'; // Tool for provisioning
     version?: string; // Version of the tool (optional)
     configuration: string; // Path or inline configuration for the tool
   }[];
 
   scriptingSupport?: {
     enabled: boolean; // Whether custom scripting is allowed
-    language: 'bash' | 'python' | 'typescript' | 'other'; // Scripting language
+    language: 'bash' | 'python' | 'typescript' | 'other' | 'unknown'; // Scripting language
     scripts: ScriptDescriptor[]; // List of available or custom scripts
   };
 
@@ -169,33 +191,35 @@ export interface WebserviceProvisionDescriptor extends CloudServiceDescriptor {
       | 'google-cloud'
       | 'azure'
       | 'digitalocean'
-      | 'custom'; // Current provider
+      | 'custom'
+      | 'unknown'; // Current provider
     targetProvider:
       | 'aws'
       | 'google-cloud'
       | 'azure'
       | 'digitalocean'
-      | 'custom'; // Target provider
+      | 'custom'
+      | 'unknown'; // Target provider
     steps: MigrationStep[]; // Steps to facilitate migration
     rollback?: boolean; // Whether rollback options are provided
   };
 
-  providerSpecificInstructions?: Record<string, ProviderInstruction>; // Instructions for specific providers
+  // providerSpecificInstructions?: Record<string, ProviderInstruction>; // Instructions for specific providers
 }
 
-export interface ScriptDescriptor {
+export interface ScriptDescriptor extends BaseDescriptor {
   name: string; // Name of the script
   description: string; // Description of what the script does
   script: string; // Inline script content or path to the script file
 }
 
-export interface MigrationStep {
+export interface MigrationStep extends BaseDescriptor {
   description: string; // Description of the migration step
   command: string; // Command or action to perform during migration
   tools?: string[]; // Tools required to perform the step (optional)
 }
 
-export interface LicenseDescriptor {
+export interface LicenseDescriptor extends BaseDescriptor {
   type: 'openSource' | 'commercial' | 'custom';
   licenseName?: string; // For standard licenses (e.g., 'MIT', 'GPL-3.0', 'Apache-2.0')
   licenseLink?: string; // URL to the license text (for commercial or open source)
@@ -207,33 +231,34 @@ export interface LicenseDescriptor {
   };
 }
 
-export interface VendorDescriptor {
+export interface VendorDescriptor extends BaseDescriptor {
   name: string; // Name of the vendor or organization
   contact?: string; // Email or contact link
   website?: string; // Website URL
 }
 
 // CLI Controls Descriptor
-export interface CliControlsDescriptor {
+export interface CliControlsDescriptor extends BaseDescriptor {
   supportsCli: boolean; // Whether CLI controls are available
   cliCommands?: string[]; // List of supported CLI commands (e.g., ["docker run", "kubectl apply"])
   customScripting?: boolean; // Whether custom scripting is supported
 }
 
 // Security Descriptor
-export interface SecurityDescriptor {
+export interface SecurityDescriptor extends BaseDescriptor {
   isSecure: boolean; // Indicates if the manager has built-in security features
   features?: (
     | 'isolation'
     | 'encryption'
     | 'role-based-access-control'
     | 'audit-logs'
+    | 'unknown'
   )[]; // Supported security features
   vulnerabilities?: string[];
   complianceStandards?: string[]; // Supported compliance standards (e.g., ["CIS", "PCI DSS", "HIPAA"])
 }
 
-export interface UtilityConfig {
+export interface UtilityConfig extends BaseDescriptor {
   loadBalancer?: {
     enabled: boolean; // Whether load balancer is enabled
     type?: string; // Load balancer type (e.g., nginx)
@@ -255,191 +280,163 @@ export interface UtilityConfig {
   };
 }
 
-export interface ServiceCost {
-  type: 'free' | 'paid';
+export interface ServiceCost extends BaseDescriptor {
+  type: 'free' | 'paid' | 'unknown';
   amount?: number; // Specify cost if 'paid'
   currency?: string; // Currency type if 'paid'
-  costRate?: 'once' | 'per-month' | 'per-quarter' | 'per-year' | 'per-user';
+  costRate?:
+    | 'once'
+    | 'per-month'
+    | 'per-quarter'
+    | 'per-year'
+    | 'per-user'
+    | 'unknown';
 }
 
-// export const services: BaseServiceDescriptor[] = [
+/**
+ * cd-api Services:
+    ----------------
+    apache
+    nginx
+    mysql
+    redis
+    cd-api system service
+    cd-sio system service
+    ssh-server
+ */
+// export const services: SystemServiceDescriptor[] = [
 //   {
-//     serviceName: 'S3',
+//     serviceName: 'redis',
+//     context: ['cd-api', 'cd-cli'],
 //     serviceType: 'storage',
-//     credentials: {
-//       type: 'apiKey',
-//       apiKey: 'AKIA123456789EXAMPLE',
+//     osServiceManager: 'systemd',
+//     command: 'sudo service redis-server start', // Execution command
+//     workstationAccess: {
+//       accessScope: 'local',
+//       physicalAccess: 'direct',
+//       interactionType: 'cli',
 //     },
-//     usageMetrics: {
-//       quota: { units: 'TB', value: 1 },
-//       currentUsage: { units: 'GB', value: 200 },
-//     },
-//     configuration: {
-//       bucketName: 'my-app-bucket',
-//       encryption: 'AES256',
-//     },
-//     availabilityZones: ['us-east-1', 'us-west-2'],
-//     serviceProvider: getServiceProviderByName('AWS', serviceProviders),
+//     /**
+//      *  # bind 192.168.1.100 10.0.0.1     # listens on two specific IPv4 addresses
+//         # bind 127.0.0.1 ::1              # listens on loopback IPv4 and IPv6
+//         # bind * -::*                     # like the default, all available interfaces
+
+//         # Accept connections on the specified port, default is 6379 (IANA #815344).
+//         # If port 0 is specified Redis will not listen on a TCP socket.
+//         port 6379
+//      */
+//     // configuration?: Record<string, any>; // Service-specific settings
 //   },
 //   {
-//     serviceName: 'Compute Engine',
-//     serviceType: 'compute',
-//     credentials: {
-//       type: 'oauth',
-//       token: 'ya29.A0AfH6SMD2j-example',
-//     },
-//     usageMetrics: {
-//       quota: { units: 'vCPUs', value: 100 },
-//       currentUsage: { units: 'vCPUs', value: 25 },
-//     },
-//     configuration: {
-//       machineType: 'e2-standard-4',
-//       autoScaling: true,
-//     },
-//     availabilityZones: ['us-central1', 'europe-west1'],
-//     serviceProvider: getServiceProviderByName('GCP', serviceProviders),
-//   },
-//   {
-//     serviceName: 'Blob Storage',
+//     serviceName: 'mysql',
+//     context: ['cd-api'],
 //     serviceType: 'storage',
-//     credentials: {
-//       type: 'custom',
-//       customAuthConfig: {
-//         accountName: 'myblobaccount',
-//         accountKey: 'abc123exampleKey',
-//       },
+//     osServiceManager: 'systemd',
+//     command: 'sudo service mysql start', // Execution command
+//     workstationAccess: {
+//       accessScope: 'local',
+//       physicalAccess: 'direct',
+//       interactionType: 'cli',
 //     },
-//     usageMetrics: {
-//       quota: { units: 'GB', value: 500 },
-//       currentUsage: { units: 'GB', value: 150 },
-//     },
-//     configuration: {
-//       containerName: 'static-content',
-//       accessTier: 'Hot',
-//     },
-//     availabilityZones: ['eastus', 'westus2'],
-//     serviceProvider: getServiceProviderByName('Azure', serviceProviders),
-//   },
-//   {
-//     serviceName: 'Push Notification Service',
-//     serviceType: 'other',
-//     credentials: {
-//       type: 'apiKey',
-//       apiKey: 'PUSH123456789EXAMPLE',
-//     },
-//     usageMetrics: {
-//       quota: { units: 'notifications/month', value: 1_000_000 },
-//       currentUsage: { units: 'notifications', value: 200_000 },
-//     },
-//     configuration: {
-//       platform: 'iOS/Android',
-//       retries: 3,
-//     },
-//     availabilityZones: ['global'],
-//     serviceProvider: getServiceProviderByName('Firebase', serviceProviders),
-//   },
-//   {
-//     serviceName: 'MySQL Database',
-//     serviceType: 'database',
-//     credentials: {
-//       type: 'usernamePassword',
-//       username: 'admin',
-//       password: 'securePass123',
-//     },
-//     usageMetrics: {
-//       quota: { units: 'GB', value: 100 },
-//       currentUsage: { units: 'GB', value: 45 },
-//     },
-//     configuration: {
-//       replication: true,
-//       backupEnabled: true,
-//     },
-//     availabilityZones: ['ap-southeast-1', 'us-east-1'],
-//     serviceProvider: getServiceProviderByName('Digitalocean', serviceProviders),
-//   },
-//   {
-//     serviceName: 'Container Registry',
-//     serviceType: 'storage',
-//     credentials: {
-//       type: 'oauth',
-//       token: 'ya29.ContainerRegistryExampleToken',
-//     },
-//     usageMetrics: {
-//       quota: { units: 'TB', value: 10 },
-//       currentUsage: { units: 'TB', value: 2 },
-//     },
-//     configuration: {
-//       retentionPolicy: '30 days',
-//       scanningEnabled: true,
-//     },
-//     availabilityZones: ['europe-north1', 'us-central1'],
-//     serviceProvider: getServiceProviderByName('GCP', serviceProviders),
-//   },
-//   {
-//     serviceName: 'Default Repository',
-//     serviceType: 'repository',
-//     configuration: {
-//       url: 'https://github.com/example/default-repo',
-//       defaultBranch: 'main',
-//       enabled: true,
-//       isPrivate: true,
-//     },
-//     serviceProvider: getServiceProviderByName('GitHub', serviceProviders),
-//   },
-//   {
-//     serviceName: 'GitLab Repository',
-//     serviceType: 'repository',
-//     configuration: {
-//       url: 'https://gitlab.com/example/project-repo',
-//       defaultBranch: 'main',
-//       enabled: true,
-//       isPrivate: false,
-//     },
-//     serviceProvider: getServiceProviderByName('GitLab', serviceProviders),
-//   },
-//   {
-//     serviceName: 'AWS CodeCommit Repository',
-//     serviceType: 'repository',
-//     configuration: {
-//       url: 'https://git-codecommit.us-east-1.amazonaws.com/v1/repos/my-repo',
-//       defaultBranch: 'main',
-//       enabled: true,
-//       isPrivate: true,
-//     },
-//     serviceProvider: getServiceProviderByName('AWS', serviceProviders),
+//     /**
+//      *  port = 3306
+//         # localhost which is more compatible and is not less secure.
+//         bind-address            = 0.0.0.0
+//      */
+//     // configuration?: Record<string, any>; // Service-specific settings
 //   },
 // ];
 
-// export const defaultService: BaseServiceDescriptor = {
-//   serviceName: 'Unknown Service',
-//   serviceType: 'other',
-//   workstationAccess: getWorkstationAccessByName(''),
-//   usageMetrics: {},
-//   configuration: {},
-//   availabilityZones: ['global'],
-//   serviceProvider: {
-//     providerName: 'Unknown Provider',
-//     credentials: {
-//       type: 'custom',
-//       customAuthConfig: {},
-//     },
-//     servicesInUse: [],
-//     dataCenterLocation: {
-//       region: 'unknown',
-//       country: 'unknown',
-//     },
-//   },
-// };
-
-// export function getServiceByName(
-//   names: string[],
-//   resources: ServiceDescriptor[],
-// ): BaseServiceDescriptor[] {
-//   const foundServices = resources.filter((service) =>
-//     names.some(
-//       (name) => service.serviceName.toLowerCase() === name.toLowerCase(),
-//     ),
-//   );
-
-//   return foundServices.length > 0 ? foundServices : [defaultService];
+// export interface PortMapping extends BaseDescriptor {
+//   containerPort: number; // Port inside the container/application
+//   hostPort?: number; // Port exposed on the host
+//   protocol: 'TCP' | 'UDP' | 'unknown'; // Protocol type
+//   ingress?: IngressConfig; // Ingress rules for this port
+//   egress?: EgressConfig; // Egress rules for this port
 // }
+export const services: SystemServiceDescriptor[] = [
+  {
+    serviceName: 'redis',
+    context: ['cd-api', 'cd-cli'],
+    serviceType: 'storage',
+    osServiceManager: 'systemd',
+    command: 'sudo service redis-server start', // Execution command
+    workstationAccess: {
+      accessScope: 'local',
+      physicalAccess: 'direct',
+      interactionType: 'cli',
+    },
+    networkConfig: [
+      {
+        name: 'Redis Localhost',
+        context: ['cd-api', 'cd-cli'],
+        hostname: 'localhost',
+        ip4Addresses: ['127.0.0.1'],
+        servicePorts: {
+          portMapping: [{ port: 6379, protocol: 'TCP' }],
+        },
+      },
+      {
+        name: 'Redis External',
+        context: ['cd-api'],
+        hostname: 'redis.cd-api.local',
+        ip4Addresses: ['192.168.1.100', '10.0.0.1'],
+        publicUrl: 'redis://redis.cd-api.local:6379',
+      },
+    ],
+  },
+  {
+    serviceName: 'mysql',
+    context: ['cd-api'],
+    serviceType: 'storage',
+    osServiceManager: 'systemd',
+    command: 'sudo service mysql start', // Execution command
+    workstationAccess: {
+      accessScope: 'local',
+      physicalAccess: 'direct',
+      interactionType: 'cli',
+    },
+    networkConfig: [
+      {
+        name: 'MySQL Localhost',
+        context: ['cd-api'],
+        hostname: 'localhost',
+        ip4Addresses: ['127.0.0.1'],
+        servicePorts: {
+          portMapping: [{ port: 3306, protocol: 'TCP' }],
+        },
+      },
+      {
+        name: 'MySQL External',
+        context: ['cd-api'],
+        hostname: 'mysql.cd-api.local',
+        ip4Addresses: ['0.0.0.0'],
+        publicUrl: 'mysql://mysql.cd-api.local:3306',
+      },
+    ],
+  },
+];
+
+export const defaultService: BaseServiceDescriptor = {
+  serviceName: 'unknown',
+  serviceType: 'unknown',
+  command: 'sudo service redis-server start', // Execution command
+  workstationAccess: {
+    accessScope: 'local',
+    physicalAccess: 'direct',
+    interactionType: 'cli',
+  },
+};
+
+export function getServiceByName(
+  names: string[],
+  resources: BaseServiceDescriptor[],
+): BaseServiceDescriptor[] {
+  const foundServices = resources.filter((service) =>
+    names.some(
+      (name) => service.serviceName.toLowerCase() === name.toLowerCase(),
+    ),
+  );
+
+  return foundServices.length > 0 ? foundServices : [defaultService];
+}

@@ -11,7 +11,7 @@ export interface CdModelDescriptor extends BaseDescriptor {
 }
 
 // Base Field Descriptor
-export interface FieldDescriptor {
+export interface FieldDescriptor extends BaseDescriptor {
   name: string; // Field name
   type: string; // Data type of the field
   required: boolean; // Indicates if the field is mandatory
@@ -21,7 +21,7 @@ export interface FieldDescriptor {
 }
 
 // Validation Descriptor
-export interface ValidationDescriptor {
+export interface ValidationDescriptor extends BaseDescriptor {
   pattern?: string; // Regex pattern for validation
   maxLength?: number; // Maximum length of the field
   minLength?: number; // Minimum length of the field
@@ -29,7 +29,7 @@ export interface ValidationDescriptor {
 }
 
 // Relationship Descriptor
-export interface RelationshipDescriptor {
+export interface RelationshipDescriptor extends BaseDescriptor {
   type: 'one-to-one' | 'one-to-many' | 'many-to-one' | 'many-to-many'; // Relationship type
   relatedModel: string; // Name of the related model
   foreignKey?: string; // Key used for the relationship

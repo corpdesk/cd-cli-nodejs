@@ -12,7 +12,7 @@ export const softwareDataStore: DependencyDescriptor[] = [
     source: 'npm',
     scope: 'global',
     resolution: { method: 'import', path: '/usr/bin/npm' },
-    usage: { context: 'cli' },
+    usage: { usageContext: 'cli' },
     platformCompatibility: {
       languages: ['JavaScript', 'Node.js'],
       os: ['Linux', 'Windows', 'macOS'],
@@ -28,7 +28,7 @@ export const softwareDataStore: DependencyDescriptor[] = [
     source: 'system',
     scope: 'local',
     resolution: { method: 'include', path: '/usr/local/bin/code' },
-    usage: { context: 'editor' },
+    usage: { usageContext: 'editor' },
     platformCompatibility: {
       os: ['Linux', 'Windows', 'macOS'],
     },
@@ -46,7 +46,7 @@ export const softwareDataStore: DependencyDescriptor[] = [
     source: 'npm',
     scope: 'global',
     resolution: { method: 'import', path: '/usr/bin/pnpm' },
-    usage: { context: 'cli' },
+    usage: { usageContext: 'cli' },
     platformCompatibility: {
       languages: ['JavaScript', 'Node.js'],
       os: ['Linux', 'Windows', 'macOS'],
@@ -65,7 +65,7 @@ export const softwareDataStore: DependencyDescriptor[] = [
     source: 'system',
     scope: 'global',
     resolution: { method: 'include', path: '/usr/sbin/apache2' },
-    usage: { context: 'api' },
+    usage: { usageContext: 'api' },
     platformCompatibility: {
       os: ['Linux', 'Windows', 'macOS'],
       architectures: ['x86_64', 'arm64'],
@@ -84,7 +84,7 @@ export const softwareDataStore: DependencyDescriptor[] = [
     source: 'system',
     scope: 'global',
     resolution: { method: 'cli', path: '/snap/bin/lxd' },
-    usage: { context: 'utility' },
+    usage: { usageContext: 'utility' },
     platformCompatibility: {
       os: ['Linux'],
       architectures: ['x86_64', 'arm64'],
@@ -103,7 +103,7 @@ export const softwareDataStore: DependencyDescriptor[] = [
     source: 'system',
     scope: 'global',
     resolution: { method: 'cli', path: '/usr/local/bin/incus' },
-    usage: { context: 'utility' },
+    usage: { usageContext: 'utility' },
     platformCompatibility: {
       os: ['Linux'],
       architectures: ['x86_64', 'arm64'],
@@ -122,7 +122,7 @@ export const softwareDataStore: DependencyDescriptor[] = [
     source: 'system',
     scope: 'global',
     resolution: { method: 'include', path: '/usr/bin/mysql' },
-    usage: { context: 'service' },
+    usage: { usageContext: 'service' },
     platformCompatibility: {
       os: ['Linux', 'Windows', 'macOS'],
       architectures: ['x86_64', 'arm64'],
@@ -144,7 +144,7 @@ export const defaultSoftware: DependencyDescriptor[] = [
     source: 'npm',
     scope: 'global',
     resolution: { method: 'import', path: '/usr/bin/npm' },
-    usage: { context: 'cli' },
+    usage: { usageContext: 'cli' },
     platformCompatibility: {
       languages: ['JavaScript', 'Node.js'],
       os: ['Linux', 'Windows', 'macOS'],

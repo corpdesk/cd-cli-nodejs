@@ -1,9 +1,10 @@
 // import type { ServiceCost } from './service.model';
 
+import type { BaseDescriptor } from './base-descriptor.model';
 import type { ServiceCost } from './service-descriptor.model';
 
 // // LicenseDescriptor Definition
-export interface LicenseDescriptor {
+export interface LicenseDescriptor extends BaseDescriptor {
   type: 'openSource' | 'commercial' | 'custom';
   licenseName?: string; // For standard licenses (e.g., 'MIT', 'GPL-3.0', 'Apache-2.0')
   licenseLink?: string; // URL to the license text (for commercial or open source)

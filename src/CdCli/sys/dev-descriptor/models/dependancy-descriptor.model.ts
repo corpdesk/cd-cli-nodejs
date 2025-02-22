@@ -29,17 +29,24 @@ export interface DependencyDescriptor
 }
 
 // Dependency Category Descriptor
-export interface DependencyCategoryDescriptor {
-  category: 'library' | 'tool' | 'framework' | 'header' | 'core' | 'custom'; // Categorization
+export interface DependencyCategoryDescriptor extends BaseDescriptor {
+  category:
+    | 'library'
+    | 'tool'
+    | 'framework'
+    | 'header'
+    | 'core'
+    | 'custom'
+    | 'unknown'; // Categorization
 }
 
 // Dependency Type Descriptor
-export interface DependencyTypeDescriptor {
-  type: 'runtime' | 'development' | 'peer' | 'optional'; // Usage type
+export interface DependencyTypeDescriptor extends BaseDescriptor {
+  type: 'runtime' | 'development' | 'peer' | 'optional' | 'unknown'; // Usage type
 }
 
 // Dependency Source Descriptor
-export interface DependencySourceDescriptor {
+export interface DependencySourceDescriptor extends BaseDescriptor {
   source:
     | 'npm'
     | 'cdn'
@@ -47,16 +54,17 @@ export interface DependencySourceDescriptor {
     | 'custom'
     | 'external'
     | 'system'
-    | 'repository'; // Origin or source of the dependency
+    | 'repository'
+    | 'unknown'; // Origin or source of the dependency
 }
 
 // Dependency Scope Descriptor
-export interface DependencyScopeDescriptor {
-  scope: 'global' | 'module' | 'local'; // Scope of the dependency
+export interface DependencyScopeDescriptor extends BaseDescriptor {
+  scope: 'global' | 'module' | 'local' | 'unknown'; // Scope of the dependency
 }
 
 // Resolution Descriptor
-export interface ResolutionDescriptor {
+export interface ResolutionDescriptor extends BaseDescriptor {
   method:
     | 'import'
     | 'require'
@@ -65,14 +73,15 @@ export interface ResolutionDescriptor {
     | 'new'
     | 'DI'
     | 'cli'
-    | 'other'; // How the dependency is resolved
+    | 'other'
+    | 'unknown'; // How the dependency is resolved
   path?: string; // Path to the dependency
   alias?: string; // Alias name for the dependency
 }
 
 // Usage Descriptor
-export interface UsageDescriptor {
-  context?:
+export interface UsageDescriptor extends BaseDescriptor {
+  usageContext?:
     | 'service'
     | 'controller'
     | 'model'
@@ -83,39 +92,40 @@ export interface UsageDescriptor {
     | 'editor'
     | 'core'
     | 'version-control'
-    | 'other'; // Context where the dependency is used
+    | 'other'
+    | 'unknown'; // Context where the dependency is used
   functionsUsed?: string[]; // Functions used from the dependency
   classesUsed?: string[]; // Classes instantiated
   modulesUsed?: string[]; // Modules used
 }
 
 // Dependency Configuration Descriptor
-export interface DependencyConfigDescriptor {
+export interface DependencyConfigDescriptor extends BaseDescriptor {
   environmentVariables?: Record<string, string>; // Environment variables required
   customSettings?: Record<string, any>; // Custom configuration settings
 }
 
 // Platform Compatibility Descriptor
-export interface PlatformCompatibilityDescriptor {
+export interface PlatformCompatibilityDescriptor extends BaseDescriptor {
   languages?: string[]; // Supported programming languages
   os?: string[]; // Supported operating systems
   architectures?: string[]; // Supported architectures
 }
 
 // Lifecycle Descriptor
-export interface DependencyLifecycleDescriptor {
-  loadTime: 'startup' | 'lazy' | 'manual'; // When the dependency is loaded
-  updates: 'manual' | 'automatic'; // Update management
+export interface DependencyLifecycleDescriptor extends BaseDescriptor {
+  loadTime: 'startup' | 'lazy' | 'manual' | 'unknown'; // When the dependency is loaded
+  updates: 'manual' | 'automatic' | 'unknown'; // Update management
 }
 
 // Conflict Descriptor
-export interface DependencyConflictDescriptor {
+export interface DependencyConflictDescriptor extends BaseDescriptor {
   with: string; // Conflicting dependency
-  resolutionStrategy?: 'override' | 'merge' | 'exclude'; // Conflict resolution strategy
+  resolutionStrategy?: 'override' | 'merge' | 'exclude' | 'unknown'; // Conflict resolution strategy
 }
 
 // Metadata Descriptor
-export interface DependencyMetadataDescriptor {
+export interface DependencyMetadataDescriptor extends BaseDescriptor {
   description?: string; // Description of the dependency
   repository?: string; // URL to repository
   license?: string; // Licensing information
@@ -136,7 +146,7 @@ export const dependencies: DependencyDescriptor[] = [
       alias: 'express',
     },
     usage: {
-      context: 'api',
+      usageContext: 'api',
       functionsUsed: ['Router', 'json', 'urlencoded'],
     },
     // workstationAccess: {
@@ -176,7 +186,7 @@ export const dependencies: DependencyDescriptor[] = [
       method: 'cli',
     },
     usage: {
-      context: 'utility',
+      usageContext: 'utility',
       functionsUsed: ['bundle', 'watch'],
     },
     platformCompatibility: {
@@ -211,7 +221,7 @@ export const dependencies: DependencyDescriptor[] = [
       path: '/usr/include/stdio.h',
     },
     usage: {
-      context: 'utility',
+      usageContext: 'utility',
       functionsUsed: ['printf', 'scanf'],
     },
     platformCompatibility: {
@@ -242,7 +252,7 @@ export const dependencies: DependencyDescriptor[] = [
       alias: 'React',
     },
     usage: {
-      context: 'controller',
+      usageContext: 'controller',
       functionsUsed: ['useState', 'useEffect'],
       modulesUsed: ['ReactDOM', 'React'],
     },
@@ -275,7 +285,7 @@ export const dependencies: DependencyDescriptor[] = [
       method: 'cli',
     },
     usage: {
-      context: 'test',
+      usageContext: 'test',
     },
     platformCompatibility: {
       languages: ['Python'],
@@ -306,7 +316,7 @@ export const dependencies: DependencyDescriptor[] = [
       method: 'cli',
     },
     usage: {
-      context: 'core',
+      usageContext: 'core',
     },
     platformCompatibility: {
       languages: ['C++', 'Python'],
@@ -340,7 +350,7 @@ export const defaultDependency: DependencyDescriptor = {
     method: 'other',
   },
   usage: {
-    context: 'other',
+    usageContext: 'other',
   },
   platformCompatibility: {
     languages: [],
@@ -376,3 +386,186 @@ export function getDependencyByName(
 
   return foundDependencies;
 }
+
+/**
+ * In assembling software for runtime or development environtment, a database can be developed
+ * and maintained.
+ * Future plans would be to automate maintenance.
+ * The profile that has the basic environment descriptor can have an automated way of calling the database for
+ * Standard collection of software based on which environment is being setup and in context of given application.
+ * Below is a sample database for cd-api application.
+ * In a more robust database, there would be ways for selecting version for every dependancy one is to select.
+ */
+export const cdApiDependencies: DependencyDescriptor[] = [
+  {
+    name: 'Node.js',
+    version: '18.x',
+    category: 'tool',
+    type: 'development',
+    source: 'npm',
+    scope: 'global',
+    resolution: { method: 'import', path: '/usr/bin/npm' },
+    usage: { usageContext: 'cli' },
+    platformCompatibility: {
+      languages: ['JavaScript', 'Node.js'],
+      os: ['Linux', 'Windows', 'macOS'],
+    },
+    security: { isSecure: true },
+    dependencyMetadata: { description: 'Node package manager', license: 'MIT' },
+  },
+  {
+    name: 'vscode.1.82.0',
+    version: '1.82.0',
+    category: 'tool',
+    type: 'development',
+    source: 'system',
+    scope: 'local',
+    resolution: { method: 'include', path: '/usr/local/bin/code' },
+    usage: { usageContext: 'editor' },
+    platformCompatibility: {
+      os: ['Linux', 'Windows', 'macOS'],
+    },
+    security: { isSecure: true },
+    dependencyMetadata: {
+      description: 'Code editor by Microsoft',
+      license: 'Custom',
+    },
+  },
+  {
+    name: 'pnpm.7.16.0',
+    version: '7.16.0',
+    category: 'tool',
+    type: 'development',
+    source: 'npm',
+    scope: 'global',
+    resolution: { method: 'import', path: '/usr/bin/pnpm' },
+    usage: { usageContext: 'cli' },
+    platformCompatibility: {
+      languages: ['JavaScript', 'Node.js'],
+      os: ['Linux', 'Windows', 'macOS'],
+    },
+    security: { isSecure: true },
+    dependencyMetadata: {
+      description: 'Fast, disk space-efficient package manager',
+      license: 'MIT',
+    },
+  },
+  {
+    name: 'apache.2.4.57',
+    version: '2.4.57',
+    category: 'core',
+    type: 'runtime',
+    source: 'system',
+    scope: 'global',
+    resolution: { method: 'include', path: '/usr/sbin/apache2' },
+    usage: { usageContext: 'api' },
+    platformCompatibility: {
+      os: ['Linux', 'Windows', 'macOS'],
+      architectures: ['x86_64', 'arm64'],
+    },
+    security: { isSecure: true },
+    dependencyMetadata: {
+      description: 'Apache HTTP Server',
+      license: 'Apache-2.0',
+    },
+  },
+  {
+    name: 'incus.1.2.3',
+    version: '1.2.3',
+    category: 'tool',
+    type: 'runtime',
+    source: 'system',
+    scope: 'global',
+    resolution: { method: 'cli', path: '/usr/local/bin/incus' },
+    usage: { usageContext: 'utility' },
+    platformCompatibility: {
+      os: ['Linux'],
+      architectures: ['x86_64', 'arm64'],
+    },
+    security: { isSecure: true },
+    dependencyMetadata: {
+      description: 'Container and VM management',
+      license: 'Apache-2.0',
+    },
+  },
+  {
+    name: 'mysql-server.8.0.34',
+    version: '8.0.34',
+    category: 'core',
+    type: 'runtime',
+    source: 'system',
+    scope: 'global',
+    resolution: { method: 'include', path: '/usr/bin/mysql' },
+    usage: { usageContext: 'service' },
+    platformCompatibility: {
+      os: ['Linux', 'Windows', 'macOS'],
+      architectures: ['x86_64', 'arm64'],
+    },
+    security: { isSecure: true },
+    dependencyMetadata: {
+      description: 'Relational database management system',
+      license: 'GPL',
+    },
+  },
+  {
+    name: 'TypeScript',
+    version: 'latest',
+    category: 'library',
+    type: 'development',
+    source: 'npm',
+    scope: 'global',
+    resolution: { method: 'import', path: '/usr/bin/tsc' },
+    usage: { usageContext: 'cli' },
+    installCommand: 'npm install -g typescript',
+    platformCompatibility: {
+      languages: ['JavaScript', 'TypeScript'],
+      os: ['Linux', 'Windows', 'macOS'],
+    },
+    security: { isSecure: true },
+    dependencyMetadata: {
+      description: 'TypeScript compiler for JavaScript development',
+      license: 'Apache-2.0',
+    },
+  },
+  {
+    name: 'Redis',
+    version: 'latest',
+    category: 'core',
+    type: 'runtime',
+    source: 'system',
+    scope: 'global',
+    resolution: { method: 'include', path: '/usr/bin/redis-server' },
+    usage: { usageContext: 'service' },
+    installCommand: 'sudo apt install redis-server -y',
+    platformCompatibility: {
+      os: ['Linux', 'Windows', 'macOS'],
+      architectures: ['x86_64', 'arm64'],
+    },
+    security: { isSecure: true },
+    dependencyMetadata: {
+      description:
+        'In-memory key-value store for caching and message brokering',
+      license: 'BSD-3-Clause',
+    },
+  },
+  {
+    name: 'Git',
+    version: 'latest',
+    category: 'tool',
+    type: 'development',
+    source: 'system',
+    scope: 'global',
+    resolution: { method: 'cli', path: '/usr/bin/git' },
+    usage: { usageContext: 'version-control' },
+    installCommand: 'sudo apt install git -y',
+    platformCompatibility: {
+      os: ['Linux', 'Windows', 'macOS'],
+      architectures: ['x86_64', 'arm64'],
+    },
+    security: { isSecure: true },
+    dependencyMetadata: {
+      description: 'Distributed version control system',
+      license: 'GPL-2.0',
+    },
+  },
+];

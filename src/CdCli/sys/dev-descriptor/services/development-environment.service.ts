@@ -1,25 +1,50 @@
 /* eslint-disable style/indent */
 /* eslint-disable antfu/if-newline */
 
-/* eslint-disable style/operator-linebreak */
-/* eslint-disable style/brace-style */
-import type { CdFxReturn, IQuery } from '../../base/IBase';
 import type { DependencyDescriptor } from '../models/dependancy-descriptor.model';
 import type { CdDescriptor } from '../models/dev-descriptor.model';
-import type { DevelopmentEnvironmentDescriptor } from '../models/development-environment.model';
-import type { BaseServiceDescriptor } from '../models/service-descriptor.model';
-import type {
-  OperatingSystemDescriptor,
-  WorkstationAccessDescriptor,
-  WorkstationDescriptor,
-} from '../models/workstations.model';
 import { CdAutoGitController } from '@/CdCli/app/cd-auto-git/controllers/cd-auto-git.controller';
 import { BaseService } from '../../base/base.service';
 import { HttpService } from '../../base/http.service';
+import { getCiCdByName, knownCiCds } from '../models/cicd-descriptor.model';
+import {
+  defaultDevelopmentEnvironment,
+  type DevelopmentEnvironmentDescriptor,
+} from '../models/development-environment.model';
+import {
+  type BaseServiceDescriptor,
+  getServiceByName,
+  services,
+} from '../models/service-descriptor.model';
+import {
+  getWorkstationByName,
+  type OperatingSystemDescriptor,
+  type WorkstationAccessDescriptor,
+  type WorkstationDescriptor,
+  workstations,
+} from '../models/workstations.model';
+/* eslint-disable style/operator-linebreak */
+/* eslint-disable style/brace-style */
+import { CD_FX_FAIL, type CdFxReturn, type IQuery } from '../../base/IBase';
 import { ProgressTrackerService } from '../../cd-cli/services/progress-tracker.service';
 import CdLogg from '../../cd-comm/controllers/cd-logger.controller';
 import { ServiceController } from '../controllers/service.controller';
 import { WorkstationAccessController } from '../controllers/workstation-access.controller';
+import {
+  environmentVariables,
+  getEnvironmentVariablesByContext,
+  getEnvironmentVariablesByNames,
+} from '../models/os.model';
+import {
+  getTestingFramework,
+  getTestingFrameworkByContext,
+  testingFrameworks,
+} from '../models/testing-framework.model';
+import {
+  getVersionControlByContext,
+  versionControlRepositories,
+} from '../models/version-control.model';
+import { CiCdService } from './ci-cd.service';
 import { DependencyService } from './dependency.service';
 import { DevDescriptorService } from './dev-descriptor.service';
 import { SshService } from './ssh.service';
@@ -34,6 +59,7 @@ export class DevelopmentEnvironmentService extends BaseService {
   svSsh: SshService;
   progressTracker = new ProgressTrackerService();
   ctlService: ServiceController;
+  svCiCd: CiCdService;
 
   stepMap: {
     key: string;
@@ -50,31 +76,7 @@ export class DevelopmentEnvironmentService extends BaseService {
     this.ctlWorkstationAccess = new WorkstationAccessController();
     this.svSsh = new SshService();
     this.ctlService = new ServiceController();
-  }
-
-  initializeStepMap(devEnviron: DevelopmentEnvironmentDescriptor) {
-    const steps = [
-      {
-        key: 'installDependencies',
-        method: () => this.installDependencies(devEnviron.workstation),
-      },
-      {
-        key: 'cloneRepositories',
-        method: () => this.cloneRepositories(devEnviron),
-      },
-      {
-        key: 'configureServices',
-        method: () => this.configureServices(devEnviron),
-      },
-      {
-        key: 'startServices',
-        method: () => this.startServices(devEnviron),
-      },
-    ];
-
-    steps.forEach(({ key, method }) => {
-      this.progressTracker.registerStep(key, method, 0); // Register steps in ProgressTrackerService
-    });
+    this.svCiCd = new CiCdService();
   }
 
   /**
@@ -94,8 +96,24 @@ export class DevelopmentEnvironmentService extends BaseService {
     steps?: number[],
   ): Promise<CdFxReturn<null>> {
     try {
+      if (!devEnviron.ciCd) {
+        return CD_FX_FAIL;
+      }
       // ✅ Ensure steps are registered first
-      this.initializeStepMap(devEnviron);
+      // this.initializeStepMap(devEnviron);
+      const resInitStepMap = await CiCdService.initializeStepMap(
+        this,
+        { ciCd: devEnviron.ciCd },
+        this.progressTracker,
+      );
+
+      if (!resInitStepMap.state) {
+        return {
+          data: null,
+          state: false,
+          message: 'Failed to initialize the step map',
+        };
+      }
 
       const registeredSteps = this.progressTracker.getSteps();
 
@@ -136,9 +154,14 @@ export class DevelopmentEnvironmentService extends BaseService {
     }
   }
 
-  private async installDependencies(
+  async installDependencies(
     workstation: WorkstationDescriptor,
   ): Promise<CdFxReturn<null>> {
+    const retValidWS = this.svWorkstation.validateWorkstation(workstation);
+    if (!retValidWS) {
+      CdLogg.error('This workstation is invalid!');
+      return CD_FX_FAIL;
+    }
     const stepKey = 'installDependencies';
     const totalTasks = workstation.requiredSoftware?.length || 0;
     let completedTasks = 0;
@@ -292,7 +315,7 @@ export class DevelopmentEnvironmentService extends BaseService {
     };
   }
 
-  private async cloneRepositories(
+  async cloneRepositories(
     devEnviron: DevelopmentEnvironmentDescriptor,
   ): Promise<CdFxReturn<null>> {
     const stepKey = 'cloneRepositories';
@@ -308,7 +331,7 @@ export class DevelopmentEnvironmentService extends BaseService {
         if (repo && repo.enabled) {
           const repoName = repo.name;
           const repoDirectory = repo.directory ?? '/default/path'; // Provide fallback if undefined
-          const repoHost = repo.repoHost ?? 'corpdesk'; // Provide fallback if undefined
+          const repoHost = repo.credentials.repoHost ?? 'corpdesk'; // Provide fallback if undefined
 
           await ctlCdAutoGit.cloneRepoToLocal(
             repoName,
@@ -334,7 +357,7 @@ export class DevelopmentEnvironmentService extends BaseService {
     }
   }
 
-  private async configureServices(
+  async configureServices(
     devEnviron: DevelopmentEnvironmentDescriptor,
   ): Promise<CdFxReturn<null>> {
     const stepKey = 'configureServices';
@@ -390,43 +413,7 @@ export class DevelopmentEnvironmentService extends BaseService {
     }
   }
 
-  // private async authenticateService(
-  //   service: ServiceDescriptor,
-  // ): Promise<boolean> {
-  //   const { credentials } = service;
-  //   if (!credentials) return true; // No authentication required
-
-  //   switch (credentials.type) {
-  //     case 'apiKey':
-  //       CdLogg.info(`Authenticating ${service.serviceName} using API key...`);
-  //       return !!credentials.apiKey;
-
-  //     case 'usernamePassword':
-  //       CdLogg.info(
-  //         `Authenticating ${service.serviceName} with username/password...`,
-  //       );
-  //       return !!credentials.username && !!credentials.password;
-
-  //     case 'oauth':
-  //       CdLogg.info(
-  //         `Authenticating ${service.serviceName} with OAuth token...`,
-  //       );
-  //       return !!credentials.token;
-
-  //     case 'custom':
-  //       CdLogg.info(
-  //         `Authenticating ${service.serviceName} with custom method...`,
-  //       );
-  //       return !!credentials.customAuthConfig;
-
-  //     default:
-  //       CdLogg.warning(
-  //         `Unknown authentication method for ${service.serviceName}`,
-  //       );
-  //       return false;
-  //   }
-  // }
-  private async authenticateService(
+  async authenticateService(
     service: BaseServiceDescriptor, // Now accepts BaseServiceDescriptor
   ): Promise<boolean> {
     const { credentials } = service;
@@ -463,7 +450,7 @@ export class DevelopmentEnvironmentService extends BaseService {
     }
   }
 
-  private async applyServiceConfiguration(
+  async applyServiceConfiguration(
     service: BaseServiceDescriptor,
   ): Promise<void> {
     // Placeholder for actual configuration logic
@@ -473,11 +460,11 @@ export class DevelopmentEnvironmentService extends BaseService {
     );
   }
 
-  private async startServices(
+  async startServices(
     devEnviron: DevelopmentEnvironmentDescriptor,
   ): Promise<CdFxReturn<null>> {
     const stepKey = 'startServices';
-    this.progressTracker.updateProgress(stepKey, 'in-progress', 1, 0);
+    await this.progressTracker.updateProgress(stepKey, 'in-progress', 1, 0);
 
     try {
       if (!devEnviron.services || devEnviron.services.length === 0) {
@@ -660,5 +647,118 @@ export class DevelopmentEnvironmentService extends BaseService {
         message: `Failed to retrieve app by name: ${(error as Error).message}`,
       };
     }
+  }
+
+  async constructDevEnvironment(
+    name: string,
+    workstationName: string,
+  ): Promise<CdFxReturn<DevelopmentEnvironmentDescriptor>> {
+    const devEnv = { ...defaultDevelopmentEnvironment };
+    const resCiCd = [getCiCdByName([name], knownCiCds)];
+    if (resCiCd) {
+      devEnv.ciCd = resCiCd;
+    }
+
+    /**
+     * use context to pull the relevant environment variables
+     */
+    const resEnvironmentVariables = getEnvironmentVariablesByContext(name);
+
+    if (resEnvironmentVariables) {
+      devEnv.environmentVariables = resEnvironmentVariables;
+    }
+
+    const resServices = getServiceByName([name], services);
+    if (resServices) {
+      devEnv.services = resServices;
+    }
+    const resTestingFrameworks = getTestingFrameworkByContext(
+      name,
+      testingFrameworks,
+    );
+    if (resTestingFrameworks) {
+      devEnv.testingFrameworks = resTestingFrameworks;
+    }
+    const resVersionControl = getVersionControlByContext(
+      name,
+      versionControlRepositories,
+    );
+    if (resVersionControl) {
+      devEnv.versionControl = resVersionControl;
+    }
+
+    const resWorkstation = getWorkstationByName(workstationName, workstations);
+    if (resWorkstation) {
+      devEnv.workstation = resWorkstation;
+    }
+    const retValidDevEnv = this.validateDevelopmentEnvironment(devEnv);
+    if (!retValidDevEnv) {
+      return CD_FX_FAIL;
+    }
+
+    return {
+      data: devEnv,
+      state: true,
+      message: '',
+    };
+  }
+
+  validateDevelopmentEnvironment(
+    devEnv: DevelopmentEnvironmentDescriptor,
+  ): CdFxReturn<boolean> {
+    if (!devEnv) {
+      return {
+        data: false,
+        state: false,
+        message: 'Development environment is missing',
+      };
+    }
+
+    // Validate workstation
+    if (!this.svWorkstation.validateWorkstation(devEnv.workstation)) {
+      return { data: false, state: false, message: 'Invalid workstation' };
+    }
+
+    // Validate services (if present)
+    if (devEnv.services) {
+      const hasUnknownService = devEnv.services.some(
+        (service) => service.serviceType === 'unknown',
+      );
+      if (hasUnknownService) {
+        return { data: false, state: false, message: 'Invalid service found' };
+      }
+    }
+
+    // Validate testing frameworks (if present)
+    if (devEnv.testingFrameworks) {
+      const hasUnknownFramework = devEnv.testingFrameworks.some(
+        (framework) => framework.type === 'unknown',
+      );
+      if (hasUnknownFramework) {
+        return {
+          data: false,
+          state: false,
+          message: 'Invalid testing framework found',
+        };
+      }
+    }
+
+    // Validate version control (if present)
+    if (devEnv.versionControl) {
+      const hasInvalidRepo = devEnv.versionControl.some((vc) => !vc.repository);
+      if (hasInvalidRepo) {
+        return {
+          data: false,
+          state: false,
+          message: 'Invalid version control repository',
+        };
+      }
+    }
+
+    return {
+      data: true,
+      state: true,
+      message: 'Valid development environment',
+    };
   }
 }

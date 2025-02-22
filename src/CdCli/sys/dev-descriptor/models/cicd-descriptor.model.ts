@@ -1,27 +1,32 @@
+/* eslint-disable style/brace-style */
 /* eslint-disable antfu/if-newline */
 
+import type { CdFxReturn } from '../../base/IBase';
 import type { BaseDescriptor } from './base-descriptor.model';
+import type { DevelopmentEnvironmentDescriptor } from './development-environment.model';
 import type { MigrationDescriptor } from './migration-descriptor.model';
 import type { TestingFrameworkDescriptor } from './testing-framework.model';
+import CdLogg from '../../cd-comm/controllers/cd-logger.controller';
+import { DevelopmentEnvironmentService } from '../services/development-environment.service';
 
 // Main CiCdDescriptor Interface
 export interface CiCdDescriptor extends BaseDescriptor {
   cICdPipeline: CICdPipeline; // Details of the pipeline
-  cICdTriggers: CICdTrigger; // Details of the triggers
-  cICdEnvironment: CICdEnvironment; // Details of the environment
+  cICdTriggers?: CICdTrigger; // Details of the triggers
+  cICdEnvironment?: CICdEnvironment; // Details of the environment
   cICdNotifications?: CICdNotification; // Details of the notifications
   cICdMetadata?: CICdMetadata; // Metadata information
 }
 
 // Interface for Pipeline
-export interface CICdPipeline {
+export interface CICdPipeline extends BaseDescriptor {
   name: string; // Name of the pipeline (e.g., "Build and Deploy Pipeline")
   type: 'integration' | 'delivery' | 'deployment'; // Type of pipeline
   stages: CICdStage[]; // List of stages in the pipeline
 }
 
 // Interface for Triggers
-export interface CICdTrigger {
+export interface CICdTrigger extends BaseDescriptor {
   type: 'push' | 'pull_request' | 'schedule' | 'manual' | 'other'; // Trigger type
   schedule?: string; // Cron-like schedule (e.g., "0 0 * * *")
   branchFilters?: string[]; // Branches that trigger the pipeline
@@ -29,27 +34,121 @@ export interface CICdTrigger {
 }
 
 // Interface for Environment
-export interface CICdEnvironment {
+export interface CICdEnvironment extends BaseDescriptor {
   name: string; // Name of the environment (e.g., "staging", "production")
   url: string; // Environment URL
   type: 'staging' | 'production' | 'testing' | 'custom'; // Environment type
   deploymentStrategy: 'blue-green' | 'canary' | 'rolling' | 'recreate'; // Deployment strategy
 }
 
-// Interface for Stages
-export interface CICdStage {
+export interface CICdStage extends BaseDescriptor {
   name: string; // Name of the stage (e.g., "Build", "Test", "Deploy")
   description?: string; // Description of the stage
   tasks: CICdTask[]; // List of tasks in the stage
 }
 
-export interface CICdTask {
-  name: string; // Name of the task (e.g., "Run Unit Tests", "Install Dependencies")
-  type: CICdTaskType | string; // More structured task type
-  executor: 'script' | 'docker' | 'runner' | 'custom'; // Task executor
-  status?: 'pending' | 'running' | 'success' | 'failed'; // Current status of the task
-  duration?: string; // Duration of the task (e.g., "2m 30s")
-  logs?: string[]; // Logs generated during the task
+export interface CICdTask<T = any> extends BaseDescriptor {
+  name: string;
+  type: { name: string; inlineScript: string };
+  executor: string;
+  status: string;
+  methodName?: string; // Store method as a string reference
+  method?: (input?: T) => Promise<CdFxReturn<null>>; // Ensure it returns a promise
+}
+
+export const methodRegistry = {
+  async installDependencies(
+    this: DevelopmentEnvironmentService,
+    input?: DevelopmentEnvironmentDescriptor,
+  ): Promise<CdFxReturn<null>> {
+    if (input?.workstation) {
+      return this.installDependencies(input.workstation);
+    } else {
+      CdLogg.warning('Skipping installDependencies: workstation is undefined.');
+      return { state: false, data: null };
+    }
+  },
+  async cloneRepositories(
+    this: DevelopmentEnvironmentService,
+    input?: DevelopmentEnvironmentDescriptor,
+  ): Promise<CdFxReturn<null>> {
+    if (input) {
+      return this.cloneRepositories(input);
+    } else {
+      CdLogg.warning('Skipping cloneRepositories: input is undefined.');
+      return { state: false, data: null };
+    }
+  },
+  async configureServices(
+    this: DevelopmentEnvironmentService,
+    input?: DevelopmentEnvironmentDescriptor,
+  ): Promise<CdFxReturn<null>> {
+    if (input) {
+      return this.configureServices(input);
+    } else {
+      CdLogg.warning('Skipping configureServices: input is undefined.');
+      return { state: false, data: null };
+    }
+  },
+  async startServices(
+    this: DevelopmentEnvironmentService,
+    input?: DevelopmentEnvironmentDescriptor,
+  ): Promise<CdFxReturn<null>> {
+    if (input) {
+      return this.startServices(input);
+    } else {
+      CdLogg.warning('Skipping startServices: input is undefined.');
+      return { state: false, data: null };
+    }
+  },
+};
+
+export const CdApiSetupTasks: CICdTask<DevelopmentEnvironmentDescriptor>[] = [
+  {
+    name: 'installDependencies',
+    type: { name: 'bash', inlineScript: 'npm install' },
+    executor: 'script',
+    status: 'pending',
+    methodName: 'installDependencies',
+  },
+  {
+    name: 'cloneRepositories',
+    type: { name: 'bash', inlineScript: 'git clone <repo_url>' },
+    executor: 'script',
+    status: 'pending',
+    methodName: 'cloneRepositories',
+  },
+  {
+    name: 'configureServices',
+    type: { name: 'bash', inlineScript: 'cp .env.example .env' },
+    executor: 'script',
+    status: 'pending',
+    methodName: 'configureServices',
+  },
+  {
+    name: 'startServices',
+    type: { name: 'bash', inlineScript: 'pm2 start app.js' },
+    executor: 'script',
+    status: 'pending',
+    methodName: 'startServices',
+  },
+];
+
+// Function to execute a task given its method name and input
+export async function executeTask(
+  task: CICdTask<DevelopmentEnvironmentDescriptor>,
+  input: DevelopmentEnvironmentDescriptor,
+) {
+  if (task.methodName && methodRegistry[task.methodName]) {
+    // Dynamically call the method from the registry
+    const result = await methodRegistry[task.methodName].call(
+      new DevelopmentEnvironmentService(),
+      input,
+    );
+    return result;
+  } else {
+    throw new Error(`Method ${task.methodName} not found in the registry.`);
+  }
 }
 
 // Task type now allows structured descriptors
@@ -61,7 +160,7 @@ export type CICdTaskType =
   | BashScriptDescriptor // ✅ Added support for Bash scripts
   | CICdNotification;
 
-export interface BuildDescriptor {
+export interface BuildDescriptor extends BaseDescriptor {
   name: 'build';
   buildTool: 'webpack' | 'babel' | 'vite' | 'other';
   sourceDirectory: string; // Directory containing the source files
@@ -69,7 +168,7 @@ export interface BuildDescriptor {
   options?: Record<string, any>; // Optional configurations
 }
 
-export interface DeploymentDescriptor {
+export interface DeploymentDescriptor extends BaseDescriptor {
   name: 'deploy';
   strategy: 'blue-green' | 'rolling' | 'recreate' | 'canary';
   targetEnvironment: string; // E.g., "staging", "production"
@@ -78,13 +177,13 @@ export interface DeploymentDescriptor {
 }
 
 // Interface for Trigger Conditions
-export interface CICdTriggerConditions {
+export interface CICdTriggerConditions extends BaseDescriptor {
   includeTags: boolean; // Whether to include tags in triggers
   excludeBranches?: string[]; // Branches to exclude
 }
 
 // Interface for Notification Channels
-export interface CICdNotificationChannel {
+export interface CICdNotificationChannel extends BaseDescriptor {
   name: string; // Name of the channel (e.g., "Slack", "Email")
   type: 'slack' | 'email' | 'webhook' | 'custom'; // Notification channel type
   recipients?: string[]; // List of recipients
@@ -92,20 +191,20 @@ export interface CICdNotificationChannel {
 }
 
 // Interface for Notifications
-export interface CICdNotification {
+export interface CICdNotification extends BaseDescriptor {
   channels: CICdNotificationChannel[]; // List of notification channels
   onEvents: ('success' | 'failure' | 'start' | 'end')[]; // Events that trigger notifications
 }
 
 // Interface for Metadata
-export interface CICdMetadata {
+export interface CICdMetadata extends BaseDescriptor {
   createdBy?: string; // Person or team who created the pipeline
   lastModified?: string; // Last modification date
   version?: string; // Version of the pipeline configuration
   repository?: string; // Associated repository
 }
 
-export interface BashScriptDescriptor {
+export interface BashScriptDescriptor extends BaseDescriptor {
   name: 'bash';
   scriptPath?: string; // Path to the Bash script
   inlineScript?: string; // Inline script content
@@ -180,7 +279,7 @@ export const defaultCiCd: CiCdDescriptor = {
         tasks: [
           {
             name: 'Default Build Task',
-            type: 'build',
+            type: { name: 'bash', inlineScript: '' },
             executor: 'script',
             status: 'pending',
           },
@@ -200,7 +299,7 @@ export const defaultCiCd: CiCdDescriptor = {
   },
 };
 
-export function getCiCd(
+export function getCiCdByName(
   names: string[],
   cIcDs: CiCdDescriptor[],
 ): CiCdDescriptor {

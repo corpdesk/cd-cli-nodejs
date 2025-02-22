@@ -22,6 +22,12 @@ export interface CdFxReturn<T> {
   message?: string; // Optional error/success message
 }
 
+export const CD_FX_FAIL = {
+  data: null,
+  state: false,
+  message: 'Failed!',
+};
+
 // cd request format
 export interface ICdRequest {
   ctx: string;

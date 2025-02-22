@@ -1,10 +1,12 @@
 // import type { LanguageDescriptor } from './dev-descriptor.model';
 
-export interface LanguageDescriptor {
+import type { BaseDescriptor } from './base-descriptor.model';
+
+export interface LanguageDescriptor extends BaseDescriptor {
   name: string; // Name of the language
   version: string; // Current version
   releaseDate?: string; // Release date of the current or first version
-  type: 'interpreted' | 'compiled' | 'hybrid'; // Type of language
+  type: 'interpreted' | 'compiled' | 'hybrid' | 'unknown'; // Type of language
 
   languageEcosystem: LanguageEcosystem;
   languageParadigms: LanguageParadigms;
@@ -13,7 +15,7 @@ export interface LanguageDescriptor {
   languageMiscellaneous: LanguageMiscellaneous;
 }
 
-export interface LanguageEcosystem {
+export interface LanguageEcosystem extends BaseDescriptor {
   defaultPackageManager?: string; // Primary package manager
   frameworks?: string[]; // List of popular frameworks/libraries
   community?: {
@@ -22,28 +24,28 @@ export interface LanguageEcosystem {
   };
 }
 
-export interface LanguageParadigms {
+export interface LanguageParadigms extends BaseDescriptor {
   supportsOOP: boolean; // Supports Object-Oriented Programming
   supportsFunctional: boolean; // Supports Functional Programming
   supportsProcedural: boolean; // Supports Procedural Programming
 }
 
-export interface LanguageTooling {
+export interface LanguageTooling extends BaseDescriptor {
   buildTools?: string[]; // Common build tools
   testingFrameworks?: string[]; // Testing frameworks
   linters?: string[]; // Linters for code quality
   debuggers?: string[]; // Debugging tools
 }
 
-export interface LanguageFeatures {
+export interface LanguageFeatures extends BaseDescriptor {
   staticTyping: boolean; // Static typing support
   dynamicTyping: boolean; // Dynamic typing support
-  memoryManagement: 'garbageCollection' | 'manual' | 'other'; // Memory management type
+  memoryManagement: 'garbageCollection' | 'manual' | 'other' | 'unknown'; // Memory management type
   platformSupport: string[]; // Supported platforms (e.g., server, mobile, etc.)
   interoperability?: string[]; // Supported languages/runtimes for interop
 }
 
-export interface LanguageMiscellaneous {
+export interface LanguageMiscellaneous extends BaseDescriptor {
   documentationStyle?: string; // Preferred documentation tool or style
   fileExtensions?: string[]; // File extensions associated with the language
   useCases?: string[]; // Typical use cases for the language
