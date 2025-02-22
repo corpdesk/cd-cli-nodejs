@@ -1,14 +1,27 @@
+/* eslint-disable style/brace-style */
+import type { CdFxReturn } from '../../base/IBase';
+
 import type { ProfileModel } from '../../cd-cli/models/cd-cli-profile.model';
+import type { DevelopmentEnvironmentService } from '../services/development-environment.service';
+import type { BaseDescriptor } from './base-descriptor.model';
+import type { ContainerDescriptor } from './container-manager.model.descriptor';
 /* eslint-disable antfu/if-newline */
 // import type { WorkstationDescriptor } from './dev-descriptor.model';
 // import type { OperatingSystemDescriptor } from './app-descriptor.model';
-import type { DependencyDescriptor } from '../../dev-descriptor/models/dependancy-descriptor.model';
-import type { BaseDescriptor } from './base-descriptor.model';
-import type { CiCdDescriptor } from './cicd-descriptor.model';
-import type { ContainerDescriptor } from './container-manager.model.descriptor';
+import {
+  cdApiDependencies,
+  type DependencyDescriptor,
+} from '../../dev-descriptor/models/dependancy-descriptor.model';
+import {
+  CdApiSetupTasks,
+  type CiCdDescriptor,
+  type CICdTask,
+} from './cicd-descriptor.model';
+// import type { ContainerDescriptor } from './container-manager.model.descriptor';
 import type { DevelopmentEnvironmentDescriptor } from './development-environment.model';
 import type { MetricsQuantity } from './service-provider.model';
 import type { VersionControlDescriptor } from './version-control.model';
+import CdLogg from '../../cd-comm/controllers/cd-logger.controller';
 import { defaultOs, getOsByName, operatingSystems } from './os.model';
 import {
   getPermissionsByName,
@@ -20,22 +33,12 @@ import {
   getSoftwareByName,
   softwareDataStore,
 } from './software-store.model';
+import {
+  getTestingFramework,
+  getTestingFrameworkByContext,
+  testingFrameworks,
+} from './testing-framework.model';
 
-// export interface WorkstationDescriptor {
-//   id: string; // Unique identifier for the workstation
-//   name: string; // Descriptive name of the workstation
-//   type: 'local' | 'remote'; // Indicates if the workstation is local or remote
-//   os: OperatingSystemDescriptor; // Details of the operating system
-//   path: string;
-//   timezone: string;
-//   enabled?: boolean;
-//   requiredSoftware: DependencyDescriptor[]; // List of installed software
-//   networkAddress: NetworkInterfaceDescriptor;
-//   hardware: HardwareSpecs;
-//   sshCredentials?: SshCredentials;
-//   lastActive?: Date; // Optional: Timestamp of the last activity
-//   isOnline: boolean; // Indicates if the workstation is currently online
-// }
 /**
  * Questions:
  * - virtualization and container should be under machine type or machine type should be integrated with a property called host
@@ -48,13 +51,13 @@ export interface WorkstationDescriptor extends BaseDescriptor {
   requiredSoftware: DependencyDescriptor[];
 }
 
-export interface SystemResources {
+export interface SystemResources extends BaseDescriptor {
   cpuCores: number; // Number of CPU cores
   memory: MetricsQuantity; // e.g., "32GB" {units: 'GB',value: 32}
   storage: MetricsQuantity; // e.g., "1TB"
 }
 
-export interface OperatingSystemDescriptor {
+export interface OperatingSystemDescriptor extends BaseDescriptor {
   name: string; // Name of the operating system (e.g., Windows, Linux, macOS)
   version: string; // Version of the operating system (e.g., "10.0.19044", "Ubuntu 22.04")
   architecture: 'x86_64' | 'x86' | 'x64' | 'ARM' | 'ARM64'; // CPU architecture supported by the OS
@@ -66,14 +69,14 @@ export interface OperatingSystemDescriptor {
 }
 
 // Physical Machine Descriptor
-export interface PhysicalMachineDescriptor {
+export interface PhysicalMachineDescriptor extends BaseDescriptor {
   systemResources: SystemResources; // Total physical resources
   powerState?: 'on' | 'off' | 'suspended';
   networkInterfaces: NetworkInterfaceDescriptor[]; // Physical network interfaces
 }
 
 // Virtual Machine Descriptor
-export interface VirtualMachineDescriptor {
+export interface VirtualMachineDescriptor extends BaseDescriptor {
   hypervisor: 'KVM' | 'VMware' | 'VirtualBox' | 'Hyper-V' | 'Xen' | 'Other';
   vmId: string;
   allocatedResources: SystemResources; // Resources allocated to this VM
@@ -82,7 +85,7 @@ export interface VirtualMachineDescriptor {
 }
 
 // export type MachineType = 'physical' | 'virtual' | 'container';
-export interface MachineType {
+export interface MachineType extends BaseDescriptor {
   name: 'physical' | 'virtual' | 'container';
   hostMachine:
     | PhysicalMachineDescriptor
@@ -90,7 +93,7 @@ export interface MachineType {
     | ContainerDescriptor;
 }
 
-export interface WorkstationAccessDescriptor {
+export interface WorkstationAccessDescriptor extends BaseDescriptor {
   accessScope?: 'local' | 'remote' | 'hybrid';
   physicalAccess?: 'direct' | 'vpn' | 'tunnel';
   /**
@@ -104,7 +107,7 @@ export interface WorkstationAccessDescriptor {
 }
 
 // Define a flexible structure for transport-specific credentials
-export interface TransportCredentials {
+export interface TransportCredentials extends BaseDescriptor {
   sshCredentials?: SshCredentials;
   httpCredentials?: HttpCredentials;
   rdpCredentials?: RdpCredentials;
@@ -113,7 +116,7 @@ export interface TransportCredentials {
 }
 
 // Keep SSH credentials definition unchanged
-export interface SshCredentials {
+export interface SshCredentials extends BaseDescriptor {
   username: string;
   host: string;
   port: number;
@@ -122,34 +125,34 @@ export interface SshCredentials {
 }
 
 // Example HTTP authentication credentials
-export interface HttpCredentials {
+export interface HttpCredentials extends BaseDescriptor {
   username: string;
   password: string;
   token?: string; // Supports bearer tokens for APIs
 }
 
 // Example RDP authentication credentials
-export interface RdpCredentials {
+export interface RdpCredentials extends BaseDescriptor {
   username: string;
   password: string;
   domain?: string; // Optional for Windows domain logins
 }
 
 // Example gRPC authentication credentials
-export interface GrpcCredentials {
+export interface GrpcCredentials extends BaseDescriptor {
   apiKey?: string;
   cert?: string; // Optional certificate for secure connections
   token?: string;
 }
 
 // Condition Descriptor
-export interface ConditionDescriptor {
+export interface ConditionDescriptor extends BaseDescriptor {
   type: 'time-based' | 'location-based' | 'context-based' | 'other'; // Type of condition
   details: Record<string, any>; // Details of the condition (e.g., time range, IP address)
 }
 
 // Comprehensive OS Permissions Descriptor
-export interface OperatingSystemPermissionDescriptor {
+export interface OperatingSystemPermissionDescriptor extends BaseDescriptor {
   basePermissions: PermissionDescriptor[]; // List of base permissions defined in the system
   accessControls: AccessControlDescriptor[]; // Access control rules
   auditConfig?: AuditDescriptor; // Audit configuration for permissions
@@ -157,15 +160,15 @@ export interface OperatingSystemPermissionDescriptor {
 }
 
 // Base Permission Descriptor
-export interface PermissionDescriptor {
+export interface PermissionDescriptor extends BaseDescriptor {
   name: string; // Name of the permission (e.g., "read", "write", "execute")
   description?: string; // Description of the permission
-  level: 'user' | 'group' | 'system'; // Level of the permission (e.g., user, group, or system-wide)
+  level: 'user' | 'group' | 'system' | 'unknown' | 'unknown'; // Level of the permission (e.g., user, group, or system-wide)
   type: 'file' | 'directory' | 'process' | 'network' | 'service'; // Type of resource the permission applies to
 }
 
 // Access Control Descriptor
-export interface AccessControlDescriptor {
+export interface AccessControlDescriptor extends BaseDescriptor {
   subject: string; // Subject (user, group, or process) the permission applies to
   resource: string; // Resource (e.g., file path, directory, process ID, service name)
   allowedActions: (
@@ -175,12 +178,13 @@ export interface AccessControlDescriptor {
     | 'delete'
     | 'modify'
     | 'create'
+    | 'unknown'
   )[]; // Allowed actions on the resource
   conditions?: ConditionDescriptor[]; // Optional conditions or constraints
 }
 
 // Audit Descriptor
-export interface AuditDescriptor {
+export interface AuditDescriptor extends BaseDescriptor {
   logChanges: boolean; // Whether changes to the permissions should be logged
   lastModifiedBy?: string; // User or process that last modified the permission
   lastModifiedAt?: Date; // Timestamp of the last modification
@@ -188,19 +192,20 @@ export interface AuditDescriptor {
 }
 
 // Role-Based Access Control Descriptor (Optional)
-export interface RoleDescriptor {
+export interface RoleDescriptor extends BaseDescriptor {
   roleName: string; // Name of the role (e.g., "admin", "user", "guest")
   permissions: PermissionDescriptor[]; // List of permissions assigned to this role
 }
 
-export interface FileStoreDescriptor {
+export interface FileStoreDescriptor extends BaseDescriptor {
   name: string; // Unique identifier for the file store
   type:
     | 'local'
     | 'network'
     | 'object-storage'
     | 'distributed'
-    | 'container-managed'; // Type of file storage
+    | 'container-managed'
+    | 'unknown'; // Type of file storage
 
   fileStorageCapacity: FileStorageCapacity; // Storage capacity details
   fileStorageLocation: FileStorageLocation; // Storage location details
@@ -214,7 +219,7 @@ export interface FileStoreDescriptor {
 }
 
 // Root Interface
-export interface NetworkInterfaceDescriptor {
+export interface NetworkInterfaceDescriptor extends BaseDescriptor {
   hostname: string; // Hostname of the workstation
   ip4Addresses?: string[]; // List of IPv4 addresses
   ip6Addresses?: string[]; // List of IPv6 addresses
@@ -228,39 +233,51 @@ export interface NetworkInterfaceDescriptor {
 }
 
 // Service Port Configurations
-export interface ServicePortConfig {
+// export interface ServicePortConfig extends BaseDescriptor {
+//   http?: number; // HTTP port
+//   https?: number; // HTTPS port
+//   portMapping?: PortMapping[]; // Port mapping details, including forwarding, ingress, and egress
+// }
+export interface ServicePortConfig extends BaseDescriptor {
   http?: number; // HTTP port
   https?: number; // HTTPS port
+  ports?: Record<string, number[]>; // Generic protocol-based port mapping (e.g., tcp, udp)
   portMapping?: PortMapping[]; // Port mapping details, including forwarding, ingress, and egress
 }
 
 // Port Mapping Details
-export interface PortMapping {
-  containerPort: number; // Port inside the container/application
-  hostPort?: number; // Port exposed on the host
-  protocol: 'TCP' | 'UDP'; // Protocol type
+// export interface PortMapping extends BaseDescriptor {
+//   containerPort: number; // Port inside the container/application
+//   hostPort?: number; // Port exposed on the host
+//   protocol: 'TCP' | 'UDP' | 'unknown'; // Protocol type
+//   ingress?: IngressConfig; // Ingress rules for this port
+//   egress?: EgressConfig; // Egress rules for this port
+// }
+export interface PortMapping extends BaseDescriptor {
+  port: number; // Port used by the service
+  protocol: 'TCP' | 'UDP' | 'unknown'; // Protocol type
   ingress?: IngressConfig; // Ingress rules for this port
   egress?: EgressConfig; // Egress rules for this port
 }
 
 // Ingress Configuration
-export interface IngressConfig {
+export interface IngressConfig extends BaseDescriptor {
   allowedSources?: string[]; // Allowed source IPs or CIDR blocks
   rateLimit?: number; // Maximum number of requests per second
   tlsEnabled?: boolean; // Whether TLS is enabled for this port
 }
 
 // Egress Configuration
-export interface EgressConfig {
+export interface EgressConfig extends BaseDescriptor {
   allowedDestinations?: string[]; // Allowed destination IPs or CIDR blocks
   bandwidthLimit?: string; // Bandwidth limit for egress traffic (e.g., "100Mbps")
 }
 
 // Firewall Rules
-export interface FirewallRule {
+export interface FirewallRule extends BaseDescriptor {
   id?: string; // Unique identifier for the rule
-  action: 'allow' | 'deny'; // Action to take (allow or deny)
-  protocol: 'TCP' | 'UDP' | 'ICMP'; // Protocol for the rule
+  action: 'allow' | 'deny' | 'unknown'; // Action to take (allow or deny)
+  protocol: 'TCP' | 'UDP' | 'ICMP' | 'unknown'; // Protocol for the rule
   portRange?: { from: number; to: number }; // Port range (optional)
   source?: string; // Source IP or CIDR (optional)
   destination?: string; // Destination IP or CIDR (optional)
@@ -268,7 +285,7 @@ export interface FirewallRule {
 }
 
 // DNS Configuration
-export interface DNSConfig {
+export interface DNSConfig extends BaseDescriptor {
   primary: string; // Primary DNS server
   secondary?: string; // Secondary DNS server
   searchDomains?: string[]; // List of search domains
@@ -276,30 +293,30 @@ export interface DNSConfig {
 }
 
 // DNS Record
-export interface DNSRecord {
-  provider: 'route53' | 'google-dns' | 'cloudflare' | 'custom'; // DNS provider
-  type: 'A' | 'AAAA' | 'CNAME' | 'TXT' | 'MX'; // DNS record type
+export interface DNSRecord extends BaseDescriptor {
+  provider: 'route53' | 'google-dns' | 'cloudflare' | 'custom' | 'unknown'; // DNS provider
+  type: 'A' | 'AAAA' | 'CNAME' | 'TXT' | 'MX' | 'unknown'; // DNS record type
   name: string; // Name of the record
   value: string; // Value of the record
   ttl?: number; // Time-to-live (TTL) in seconds
 }
 
 // Routing Configuration
-export interface RoutingConfig {
+export interface RoutingConfig extends BaseDescriptor {
   staticRoutes?: StaticRoute[]; // Static routes
   loadBalancing?: LoadBalancingConfig; // Load balancing settings
 }
 
 // Static Route
-export interface StaticRoute {
+export interface StaticRoute extends BaseDescriptor {
   destination: string; // Destination CIDR block
   gateway: string; // Gateway for the route
   metric?: number; // Priority metric for the route
 }
 
 // Load Balancing Configuration
-export interface LoadBalancingConfig {
-  strategy: 'round-robin' | 'least-connections' | 'ip-hash'; // Load balancing strategy
+export interface LoadBalancingConfig extends BaseDescriptor {
+  strategy: 'round-robin' | 'least-connections' | 'ip-hash' | 'unknown'; // Load balancing strategy
   healthCheck?: {
     interval: number; // Health check interval in seconds
     timeout: number; // Timeout in seconds
@@ -308,21 +325,21 @@ export interface LoadBalancingConfig {
 }
 
 // Proxy Settings
-export interface ProxySettings {
+export interface ProxySettings extends BaseDescriptor {
   httpProxy?: string; // HTTP proxy URL
   httpsProxy?: string; // HTTPS proxy URL
   noProxy?: string[]; // List of domains or IPs to bypass the proxy
 }
 
 // Network Policy
-export interface NetworkPolicy {
+export interface NetworkPolicy extends BaseDescriptor {
   name: string; // Policy name
   description?: string; // Description of the policy
   allowedIngress?: IngressConfig[]; // Allowed ingress configurations
   allowedEgress?: EgressConfig[]; // Allowed egress configurations
 }
 
-export interface VolumeMapping {
+export interface VolumeMapping extends BaseDescriptor {
   hostPath: string; // Host machine path
   containerPath: string; // Container path
 }
@@ -332,23 +349,23 @@ export interface VolumeMapping {
 //   containerPort: number; // Container port
 // }
 
-export interface HardwareSpecs {
+export interface HardwareSpecs extends BaseDescriptor {
   cpu: CpuSpecs;
   memory: MemorySpecs;
   fileStorage: FileStoreDescriptor[];
   gpu?: GpuSpecs;
 }
 
-export interface FileReference {
+export interface FileReference extends BaseDescriptor {
   name: string; // Logical name of the file reference (e.g., "packageJson", "dockerCompose")
   filePath: string; // Path to the file (relative or absolute)
-  format: 'json' | 'yaml' | 'xml' | 'text'; // Format of the file
+  format: 'json' | 'yaml' | 'xml' | 'text' | 'unknown'; // Format of the file
   section?: string | string[]; // Optional: Section(s) of the file to extract (e.g., "dependencies" for package.json)
   description?: string; // Description of the purpose of this file reference
 }
 
 // Interface for File Storage Capacity
-export interface FileStorageCapacity {
+export interface FileStorageCapacity extends BaseDescriptor {
   size: string; // Total storage size (e.g., "500GB", "2TB")
   autoScaling?: boolean; // Whether storage can auto-scale
   quota?: {
@@ -358,7 +375,7 @@ export interface FileStorageCapacity {
 }
 
 // Interface for File Storage Location
-export interface FileStorageLocation {
+export interface FileStorageLocation extends BaseDescriptor {
   path?: string; // Path for local or network file storage
   bucketName?: string; // Bucket name for object storage
   region?: string; // Region for cloud-based storage (e.g., "us-east-1")
@@ -366,14 +383,14 @@ export interface FileStorageLocation {
 }
 
 // Interface for File Storage Access
-export interface FileStorageAccess {
-  fileStorageAccessType: 'public' | 'private' | 'restricted'; // Access control type
+export interface FileStorageAccess extends BaseDescriptor {
+  fileStorageAccessType: 'public' | 'private' | 'restricted' | 'unknown'; // Access control type
   osPermissions?: PermissionDescriptor[];
   authentication?: AuthenticationConfig;
 }
 
-export interface AuthenticationConfig {
-  type: 'key-based' | 'token-based' | 'role-based' | 'none'; // Authentication mechanism
+export interface AuthenticationConfig extends BaseDescriptor {
+  type: 'key-based' | 'token-based' | 'role-based' | 'none' | 'unknown'; // Authentication mechanism
   credentials?: {
     apiKey?: string; // API key for access
     token?: string; // Authentication token
@@ -384,14 +401,14 @@ export interface AuthenticationConfig {
 }
 
 // Interface for File Storage Redundancy
-export interface FileStorageRedundancy {
+export interface FileStorageRedundancy extends BaseDescriptor {
   enabled: boolean; // Whether redundancy is enabled
-  strategy?: 'mirroring' | 'striping' | 'parity'; // Redundancy strategy
+  strategy?: 'mirroring' | 'striping' | 'parity' | 'unknown'; // Redundancy strategy
   replicas?: number; // Number of replicas for redundancy
 }
 
 // Interface for File Storage Encryption
-export interface FileStorageEncryption {
+export interface FileStorageEncryption extends BaseDescriptor {
   enabled: boolean; // Whether encryption is enabled
   atRest?: boolean; // Encrypt files at rest
   inTransit?: boolean; // Encrypt files during transit
@@ -399,33 +416,33 @@ export interface FileStorageEncryption {
 }
 
 // Interface for File Storage Performance
-export interface FileStoragePerformance {
+export interface FileStoragePerformance extends BaseDescriptor {
   maxThroughput?: string; // Maximum throughput (e.g., "1Gbps")
   latency?: string; // Expected latency (e.g., "10ms")
   caching?: {
     enabled: boolean; // Whether caching is enabled
-    type?: 'local' | 'distributed'; // Type of caching
+    type?: 'local' | 'distributed' | 'unknown'; // Type of caching
     size?: string; // Cache size (e.g., "10GB")
   };
 }
 
 // Interface for File Storage Integration
-export interface FileStorageIntegration {
+export interface FileStorageIntegration extends BaseDescriptor {
   containerManager?: {
     manager: 'kubernetes' | 'docker'; // Container manager type
-    volumeType: 'persistentVolume' | 'configMap' | 'emptyDir'; // Volume type
+    volumeType: 'persistentVolume' | 'configMap' | 'emptyDir' | 'unknown'; // Volume type
     mountPath: string; // Mount path inside the container
     accessModes: string[]; // Kubernetes access modes (e.g., "ReadWriteOnce", "ReadOnlyMany")
   };
   cloudProvider?: {
-    provider: 'aws-s3' | 'gcp-storage' | 'azure-blob'; // Cloud provider
+    provider: 'aws-s3' | 'gcp-storage' | 'azure-blob' | 'unknown'; // Cloud provider
     sdkVersion?: string; // SDK version for interaction
     customEndpoints?: string[]; // Custom endpoints for interaction
   };
 }
 
 // Interface for File Storage Backup
-export interface FileStorageBackup {
+export interface FileStorageBackup extends BaseDescriptor {
   enabled: boolean; // Whether backups are enabled
   schedule?: string; // Cron-like schedule for backups (e.g., "0 3 * * *")
   retentionPolicy?: string; // Retention policy (e.g., "30d" for 30 days)
@@ -433,7 +450,7 @@ export interface FileStorageBackup {
 }
 
 // Interface for File Storage Metadata
-export interface FileStorageMetadata {
+export interface FileStorageMetadata extends BaseDescriptor {
   description?: string; // Description of the file store
   createdBy?: string; // Creator of the file store
   tags?: string[]; // Tags for categorization
@@ -441,23 +458,23 @@ export interface FileStorageMetadata {
   lastModified?: string; // Last modification timestamp
 }
 
-export interface CpuSpecs {
+export interface CpuSpecs extends BaseDescriptor {
   model: string; // CPU model (e.g., "Intel Core i7-12700K")
   cores: number; // Number of CPU cores
   threads: number; // Number of CPU threads
 }
 
-export interface GpuSpecs {
+export interface GpuSpecs extends BaseDescriptor {
   model: string; // Optional: GPU model (e.g., "NVIDIA RTX 3080")
   memory: number; // GPU memory in MB
 }
 
-export interface MemorySpecs {
+export interface MemorySpecs extends BaseDescriptor {
   total: number; // Total memory in MB
   used?: number; // Optional: Memory currently in use in MB
 }
 
-export interface SshCredentials {
+export interface SshCredentials extends BaseDescriptor {
   username: string; // SSH username (for remote workstations)
   host: string; // SSH host address (e.g., "192.168.1.100")
   port: number; // SSH port (default: 22)
@@ -549,6 +566,92 @@ export enum FileStorageOption {
 }
 
 export const workstations: WorkstationDescriptor[] = [
+  /**
+   * local workstation for testing setting up
+   * development and runtime environments
+   */
+  {
+    name: 'emp-12',
+    machineType: {
+      name: 'physical',
+      hostMachine: {
+        systemResources: {
+          cpuCores: 4, // Number of CPU cores
+          memory: { units: 'GB', value: 32 }, // e.g., "32GB"
+          storage: { units: 'TB', value: 1 }, // e.g., "1TB"
+        }, // Total physical resources
+        networkInterfaces: [
+          {
+            hostname: 'localhost', // Hostname of the workstation
+            ip4Addresses: ['127.0.0.1', '192.168.1.6'], // List of IPv4 addresses
+          },
+          {
+            hostname: 'emp-12', // Hostname of the workstation
+            ip4Addresses: ['192.168.1.6'], // List of IPv4 addresses
+          },
+        ], // Resources allocated to this container
+      },
+    },
+    os: {
+      name: 'Ubuntu',
+      version: '22.04',
+      architecture: 'x86_64',
+      kernelVersion: '5.15.0-79-generic',
+      distribution: 'Ubuntu',
+      timezone: 'UTC',
+    },
+    workstationAccess: {
+      accessScope: 'local',
+      physicalAccess: 'direct',
+      interactionType: 'cli',
+    },
+    requiredSoftware: cdApiDependencies,
+  },
+  /**
+   * container based remote workstation for
+   * testing setting up
+   * development and runtime environments
+   */
+  {
+    name: 'emp-13',
+    machineType: {
+      name: 'container',
+      hostMachine: {
+        containerId: 'emp-61',
+        image: 'ubuntu22.04',
+        allocatedResources: {
+          cpuCores: 1, // Number of CPU cores
+          memory: { units: 'GB', value: 4 }, // e.g., "32GB"
+          storage: { units: 'GB', value: 8 }, // e.g., "1TB"
+        }, // Resources allocated to this container
+      },
+    },
+    os: {
+      name: 'Ubuntu',
+      version: '22.04',
+      architecture: 'x86_64',
+      kernelVersion: '5.15.0-79-generic',
+      distribution: 'Ubuntu',
+      timezone: 'UTC',
+    },
+    workstationAccess: {
+      accessScope: 'remote',
+      physicalAccess: 'tunnel',
+      transport: {
+        protocol: 'ssh',
+        credentials: {
+          sshCredentials: {
+            username: 'admin',
+            privateKey: '/keys/build-server-key',
+            host: '123.456.890',
+            port: 22,
+          },
+        },
+      },
+      interactionType: 'cli',
+    },
+    requiredSoftware: cdApiDependencies,
+  },
   {
     /**
      *
@@ -612,28 +715,6 @@ export const workstations: WorkstationDescriptor[] = [
     // container: ContainerDescriptor;
     os: getOsByName('Windows', operatingSystems)[0],
     enabled: true,
-    // networkAddress: {
-    //   hostname: 'build-server',
-    //   ip4Addresses: ['10.0.0.10'],
-    // },
-    // hardware: {
-    //   cpu: {
-    //     model: 'AMD Ryzen 9 5950X',
-    //     cores: 16,
-    //     threads: 32,
-    //   },
-    //   memory: {
-    //     total: 65536,
-    //   },
-    //   fileStorage: getFileStoregeByName(
-    //     [FileStorageOption.Premium],
-    //     fileStorages,
-    //   ),
-    //   gpu: {
-    //     model: 'NVIDIA RTX A6000',
-    //     memory: 48000,
-    //   },
-    // },
     requiredSoftware: getSoftwareByName(
       ['pnpm.7.16.0', 'apache.2.4.57', 'mysql-server.8.0.34'],
       softwareDataStore,
@@ -708,57 +789,25 @@ export const workstations: WorkstationDescriptor[] = [
     },
     os: getOsByName('CentOS', operatingSystems)[0],
     enabled: true,
-    // timezone: 'UTC',
-    // networkAddress: {
-    //   hostname: 'db-server',
-    //   ip4Addresses: ['10.0.1.15'],
-    // },
-    // hardware: {
-    //   cpu: {
-    //     model: 'Intel Xeon Gold 6258R',
-    //     cores: 28,
-    //     threads: 56,
-    //   },
-    //   memory: {
-    //     total: 128000,
-    //   },
-    //   fileStorage: getFileStoregeByName(
-    //     [FileStorageOption.Premium],
-    //     fileStorages,
-    //   ),
-    //   gpu: {
-    //     model: 'None',
-    //     memory: 0,
-    //   },
-    // },
     requiredSoftware: getSoftwareByName(
       ['mysql-server.8.0.34'],
       softwareDataStore,
     ),
-    // sshCredentials: {
-    //   username: 'dbadmin',
-    //   privateKey: '/keys/db-server-key',
-    //   host: '10.0.1.15',
-    //   port: 22,
-    // },
-    // lastActive: new Date('2025-01-17T08:15:00Z'),
-    // isOnline: true,
   },
 ];
 
 export const defaultWorkstation: WorkstationDescriptor = {
-  name: 'Local Development Machine',
+  name: 'unknown',
   workstationAccess: {
-    accessScope: 'remote',
+    accessScope: 'local',
     physicalAccess: 'direct',
     transport: {
       protocol: 'ssh',
       credentials: {
         sshCredentials: {
-          username: 'admin',
-          privateKey: '/keys/build-server-key',
-          host: '123.456.890',
-          port: 22,
+          username: 'unknown',
+          host: '127.0.0.1',
+          port: -1,
         },
       },
     },
@@ -820,8 +869,13 @@ export function getFileStoregeByName(
 export function getWorkstationByName(
   name: string,
   ws: WorkstationDescriptor[],
-): WorkstationDescriptor | undefined {
-  return ws.find((workstation) => workstation.name === name);
+): WorkstationDescriptor {
+  const ret = ws.find((workstation) => workstation.name === name);
+  if (!ret) {
+    return defaultWorkstation;
+  } else {
+    return ret;
+  }
 }
 
 export const osPermissions: OperatingSystemPermissionDescriptor = {
@@ -865,232 +919,17 @@ export const osPermissions: OperatingSystemPermissionDescriptor = {
   ],
 };
 
-export const cdApiDependencies: DependencyDescriptor[] = [
-  {
-    name: 'Node.js',
-    version: '18.x',
-    category: 'tool',
-    type: 'development',
-    source: 'npm',
-    scope: 'global',
-    resolution: { method: 'import', path: '/usr/bin/npm' },
-    usage: { context: 'cli' },
-    platformCompatibility: {
-      languages: ['JavaScript', 'Node.js'],
-      os: ['Linux', 'Windows', 'macOS'],
-    },
-    security: { isSecure: true },
-    dependencyMetadata: { description: 'Node package manager', license: 'MIT' },
-  },
-  {
-    name: 'vscode.1.82.0',
-    version: '1.82.0',
-    category: 'tool',
-    type: 'development',
-    source: 'system',
-    scope: 'local',
-    resolution: { method: 'include', path: '/usr/local/bin/code' },
-    usage: { context: 'editor' },
-    platformCompatibility: {
-      os: ['Linux', 'Windows', 'macOS'],
-    },
-    security: { isSecure: true },
-    dependencyMetadata: {
-      description: 'Code editor by Microsoft',
-      license: 'Custom',
-    },
-  },
-  {
-    name: 'pnpm.7.16.0',
-    version: '7.16.0',
-    category: 'tool',
-    type: 'development',
-    source: 'npm',
-    scope: 'global',
-    resolution: { method: 'import', path: '/usr/bin/pnpm' },
-    usage: { context: 'cli' },
-    platformCompatibility: {
-      languages: ['JavaScript', 'Node.js'],
-      os: ['Linux', 'Windows', 'macOS'],
-    },
-    security: { isSecure: true },
-    dependencyMetadata: {
-      description: 'Fast, disk space-efficient package manager',
-      license: 'MIT',
-    },
-  },
-  {
-    name: 'apache.2.4.57',
-    version: '2.4.57',
-    category: 'core',
-    type: 'runtime',
-    source: 'system',
-    scope: 'global',
-    resolution: { method: 'include', path: '/usr/sbin/apache2' },
-    usage: { context: 'api' },
-    platformCompatibility: {
-      os: ['Linux', 'Windows', 'macOS'],
-      architectures: ['x86_64', 'arm64'],
-    },
-    security: { isSecure: true },
-    dependencyMetadata: {
-      description: 'Apache HTTP Server',
-      license: 'Apache-2.0',
-    },
-  },
-  {
-    name: 'incus.1.2.3',
-    version: '1.2.3',
-    category: 'tool',
-    type: 'runtime',
-    source: 'system',
-    scope: 'global',
-    resolution: { method: 'cli', path: '/usr/local/bin/incus' },
-    usage: { context: 'utility' },
-    platformCompatibility: {
-      os: ['Linux'],
-      architectures: ['x86_64', 'arm64'],
-    },
-    security: { isSecure: true },
-    dependencyMetadata: {
-      description: 'Container and VM management',
-      license: 'Apache-2.0',
-    },
-  },
-  {
-    name: 'mysql-server.8.0.34',
-    version: '8.0.34',
-    category: 'core',
-    type: 'runtime',
-    source: 'system',
-    scope: 'global',
-    resolution: { method: 'include', path: '/usr/bin/mysql' },
-    usage: { context: 'service' },
-    platformCompatibility: {
-      os: ['Linux', 'Windows', 'macOS'],
-      architectures: ['x86_64', 'arm64'],
-    },
-    security: { isSecure: true },
-    dependencyMetadata: {
-      description: 'Relational database management system',
-      license: 'GPL',
-    },
-  },
-  {
-    name: 'TypeScript',
-    version: 'latest',
-    category: 'library',
-    type: 'development',
-    source: 'npm',
-    scope: 'global',
-    resolution: { method: 'import', path: '/usr/bin/tsc' },
-    usage: { context: 'cli' },
-    installCommand: 'npm install -g typescript',
-    platformCompatibility: {
-      languages: ['JavaScript', 'TypeScript'],
-      os: ['Linux', 'Windows', 'macOS'],
-    },
-    security: { isSecure: true },
-    dependencyMetadata: {
-      description: 'TypeScript compiler for JavaScript development',
-      license: 'Apache-2.0',
-    },
-  },
-  {
-    name: 'Redis',
-    version: 'latest',
-    category: 'core',
-    type: 'runtime',
-    source: 'system',
-    scope: 'global',
-    resolution: { method: 'include', path: '/usr/bin/redis-server' },
-    usage: { context: 'service' },
-    installCommand: 'sudo apt install redis-server -y',
-    platformCompatibility: {
-      os: ['Linux', 'Windows', 'macOS'],
-      architectures: ['x86_64', 'arm64'],
-    },
-    security: { isSecure: true },
-    dependencyMetadata: {
-      description:
-        'In-memory key-value store for caching and message brokering',
-      license: 'BSD-3-Clause',
-    },
-  },
-  {
-    name: 'Git',
-    version: 'latest',
-    category: 'tool',
-    type: 'development',
-    source: 'system',
-    scope: 'global',
-    resolution: { method: 'cli', path: '/usr/bin/git' },
-    usage: { context: 'version-control' },
-    installCommand: 'sudo apt install git -y',
-    platformCompatibility: {
-      os: ['Linux', 'Windows', 'macOS'],
-      architectures: ['x86_64', 'arm64'],
-    },
-    security: { isSecure: true },
-    dependencyMetadata: {
-      description: 'Distributed version control system',
-      license: 'GPL-2.0',
-    },
-  },
-];
-
 export const cdApiCiCd: CiCdDescriptor = {
   cICdPipeline: {
     name: 'Corpdesk CI/CD - Bash Deployment',
     type: 'deployment',
     stages: [
       {
-        name: 'Deployment',
-        description: 'Deploy Corpdesk using Bash scripts',
-        tasks: [
-          {
-            name: 'Stop existing services',
-            type: {
-              name: 'bash',
-              inlineScript:
-                'systemctl stop corpdesk-api && systemctl stop corpdesk-ui',
-            },
-            executor: 'script',
-            status: 'pending',
-          },
-          {
-            name: 'Pull latest code',
-            type: {
-              name: 'bash',
-              inlineScript: 'git pull origin main',
-            },
-            executor: 'script',
-            status: 'pending',
-          },
-          {
-            name: 'Start services',
-            type: {
-              name: 'bash',
-              inlineScript:
-                'systemctl start corpdesk-api && systemctl start corpdesk-ui',
-            },
-            executor: 'script',
-            status: 'pending',
-          },
-        ],
+        name: 'Setup Environment',
+        description: 'Prepare the development environment',
+        tasks: CdApiSetupTasks,
       },
     ],
-  },
-  cICdTriggers: {
-    type: 'push',
-    branchFilters: ['main'],
-    conditions: { includeTags: true },
-  },
-  cICdEnvironment: {
-    name: 'production',
-    url: 'https://corpdesk.com',
-    type: 'production',
-    deploymentStrategy: 'rolling',
   },
 };
 
@@ -1106,50 +945,16 @@ export const CdApiRepo: VersionControlDescriptor = {
   },
 };
 
-export const emp12Workstation: DevelopmentEnvironmentDescriptor = {
-  workstation: {
-    machineType: {
-      name: 'physical',
-      hostMachine: {
-        systemResources: {
-          cpuCores: 4, // Number of CPU cores
-          memory: { units: 'GB', value: 32 }, // e.g., "32GB"
-          storage: { units: 'TB', value: 1 }, // e.g., "1TB"
-        }, // Total physical resources
-        networkInterfaces: [
-          {
-            hostname: 'localhost', // Hostname of the workstation
-            ip4Addresses: ['127.0.0.1', '192.168.1.6'], // List of IPv4 addresses
-          },
-          {
-            hostname: 'emp-12', // Hostname of the workstation
-            ip4Addresses: ['192.168.1.6'], // List of IPv4 addresses
-          },
-        ], // Resources allocated to this container
-      },
-    },
-    os: {
-      name: 'Ubuntu',
-      version: '22.04',
-      architecture: 'x86_64',
-      kernelVersion: '5.15.0-79-generic',
-      distribution: 'Ubuntu',
-      timezone: 'UTC',
-    },
-    workstationAccess: {
-      accessScope: 'local',
-      physicalAccess: 'direct',
-      interactionType: 'cli',
-    },
-    requiredSoftware: cdApiDependencies,
-  },
+export const emp12DevEnvironment: DevelopmentEnvironmentDescriptor = {
+  workstation: getWorkstationByName('emp-12', workstations),
   versionControl: [CdApiRepo],
   ciCd: [cdApiCiCd],
-  testingFrameworks: ['Jest', 'Mocha'],
+  testingFrameworks: getTestingFrameworkByContext('cd-api', testingFrameworks),
 };
 
 export const emp13DevEnvironment: DevelopmentEnvironmentDescriptor = {
   workstation: {
+    name: 'emp-13',
     machineType: {
       name: 'container',
       hostMachine: {
@@ -1190,7 +995,7 @@ export const emp13DevEnvironment: DevelopmentEnvironmentDescriptor = {
   },
   versionControl: [CdApiRepo],
   ciCd: [cdApiCiCd],
-  testingFrameworks: ['Jest', 'Mocha'],
+  testingFrameworks: getTestingFrameworkByContext('cd-api', testingFrameworks),
 };
 
 export const localProfile: ProfileModel = {
@@ -1200,7 +1005,7 @@ export const localProfile: ProfileModel = {
       userId: 1001,
       groupId: 1001,
     },
-    details: emp12Workstation,
+    details: emp12DevEnvironment,
     cdVault: [],
     permissions: {
       userPermissions: [],

@@ -27,7 +27,7 @@ export interface ContainerManagerDescriptor extends BaseDescriptor {
 // }
 
 // Container Manager Type Descriptor
-export interface ContainerManagerTypeDescriptor {
+export interface ContainerManagerTypeDescriptor extends BaseDescriptor {
   managerType:
     | 'docker'
     | 'kubernetes'
@@ -40,37 +40,17 @@ export interface ContainerManagerTypeDescriptor {
   deploymentMode: 'local' | 'cloud' | 'hybrid'; // Deployment mode
 }
 
-// // Platform Compatibility Descriptor
-// export interface PlatformCompatibilityDescriptor {
-//   supportedOS: string[]; // Compatible operating systems (e.g., ["Linux", "Windows", "macOS"])
-//   supportedArchitectures: string[]; // Supported architectures (e.g., ["x86_64", "arm64"])
-//   cloudProviders?: string[]; // Supported cloud platforms (e.g., ["AWS", "Azure", "GCP"])
-// }
-
 // Container Descriptor
-// export interface ContainerDescriptor {
-//   containerId: string; // Unique identifier for the container
-//   image: string; // Docker image or equivalent
-//   status: 'running' | 'stopped' | 'paused'; // Current status of the container
-//   ports?: number[]; // Ports exposed by the container
-//   environmentVariables?: Record<string, string>; // Environment variables for the container
-//   resourceUsage?: {
-//     cpuUsage: string; // CPU usage (e.g., "50%")
-//     memoryUsage: string; // Memory usage (e.g., "512MB")
-//   };
-// }
-
-// Container Descriptor
-export interface ContainerDescriptor {
+export interface ContainerDescriptor extends BaseDescriptor {
   containerId: string;
   image: string;
-  status?: 'running' | 'stopped' | 'paused';
+  status?: 'running' | 'stopped' | 'paused' | 'unknown';
   allocatedResources: SystemResources; // Resources allocated to this container
   environmentVariables?: Record<string, string>;
 }
 
 // Container Management Features Descriptor
-export interface ContainerManagementFeaturesDescriptor {
+export interface ContainerManagementFeaturesDescriptor extends BaseDescriptor {
   supportsLogging: boolean; // Whether logging is supported
   supportsMonitoring: boolean; // Whether monitoring tools are integrated
   orchestrationSupport?: ('swarm' | 'helm' | 'operator-framework')[]; // Supported orchestration methods

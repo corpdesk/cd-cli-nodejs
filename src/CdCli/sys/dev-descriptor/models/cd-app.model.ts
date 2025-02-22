@@ -136,11 +136,11 @@ export interface AppRoboticsDescriptor extends CdAppDescriptor {
 
 export interface AppPluginDescriptor extends CdAppDescriptor {
   compatibleSoftware: string[]; // VSCode, Photoshop, Figma
-  integrationType?: 'UI' | 'Middleware' | 'API Hook'; // How it integrates
+  integrationType?: 'UI' | 'Middleware' | 'API Hook' | 'unknown'; // How it integrates
 }
 
 export interface AppMicroserviceDescriptor extends CdAppDescriptor {
-  interServiceCommunication?: 'REST' | 'gRPC' | 'Message Queue'; // How it talks to other services
+  interServiceCommunication?: 'REST' | 'gRPC' | 'Message Queue' | 'unknown'; // How it talks to other services
   scalingMethod?: 'Kubernetes' | 'Serverless'; // How it scales
   dependencies?: { databases?: string[]; messageQueues?: string[] }; // Services it relies on
 }

@@ -1,10 +1,10 @@
-/* eslint-disable antfu/if-newline */
-export interface TestingFrameworkDescriptor {
-  name: string; // Name of the testing framework
-  type: 'unit' | 'integration' | 'end-to-end'; // Type of testing it supports
-  language: string; // Programming language (e.g., JavaScript, Python, Java)
+import type { BaseDescriptor } from './base-descriptor.model';
+
+export interface TestingFrameworkDescriptor extends BaseDescriptor {
+  type: 'unit' | 'integration' | 'end-to-end' | 'unknown'; // Type of testing it supports
+  language?: string; // Programming language (e.g., JavaScript, Python, Java)
   tools?: string[]; // Tools or libraries it integrates with (e.g., Puppeteer, Selenium)
-  testingFeatures: TestingFeatures;
+  testingFeatures?: TestingFeatures;
   popularityRank?: number; // An optional rank or popularity index
 }
 
@@ -19,6 +19,8 @@ export interface TestingFeatures {
 export const testingFrameworks: TestingFrameworkDescriptor[] = [
   {
     name: 'Jest',
+    description:
+      'A delightful JavaScript testing framework with a focus on simplicity.',
     type: 'unit',
     language: 'JavaScript',
     tools: ['Puppeteer'],
@@ -29,9 +31,12 @@ export const testingFrameworks: TestingFrameworkDescriptor[] = [
       codeCoverage: true,
     },
     popularityRank: 1,
+    context: ['cd-api', 'cd-cli'],
   },
   {
     name: 'Mocha',
+    description:
+      'A flexible JavaScript test framework for Node.js and the browser.',
     type: 'unit',
     language: 'JavaScript',
     tools: ['Chai', 'Sinon'],
@@ -41,52 +46,53 @@ export const testingFrameworks: TestingFrameworkDescriptor[] = [
       customExtensions: true,
     },
     popularityRank: 2,
+    context: ['cd-api'],
   },
   {
     name: 'Cypress',
+    description: 'An end-to-end testing framework built for the modern web.',
     type: 'end-to-end',
     language: 'JavaScript',
+    tools: ['Cypress Dashboard'],
     testingFeatures: {
       assertions: true,
       mocking: true,
       parallelExecution: true,
     },
     popularityRank: 3,
-  },
-  {
-    name: 'Selenium',
-    type: 'end-to-end',
-    language: 'Multi-language',
-    tools: ['WebDriver'],
-    testingFeatures: {
-      assertions: false,
-      mocking: false,
-      parallelExecution: true,
-    },
-    popularityRank: 4,
+    context: ['cd-ui'],
   },
   {
     name: 'JUnit',
+    description: 'A widely used testing framework for Java applications.',
     type: 'unit',
     language: 'Java',
+    tools: ['JUnit 5'],
     testingFeatures: {
       assertions: true,
       mocking: true,
       parallelExecution: true,
       codeCoverage: true,
     },
-    popularityRank: 5,
+    popularityRank: 4,
+    context: ['cd-backend'],
   },
 ];
 
 export const defaultTestingFramework: TestingFrameworkDescriptor = {
-  name: 'Default Testing Framework',
+  name: 'JUnit',
+  description: 'A widely used testing framework for Java applications.',
   type: 'unit',
-  language: 'JavaScript',
+  language: 'Java',
+  tools: ['JUnit 5'],
   testingFeatures: {
     assertions: true,
     mocking: true,
+    parallelExecution: true,
+    codeCoverage: true,
   },
+  popularityRank: 4,
+  context: ['cd-backend'],
 };
 
 /**
@@ -101,10 +107,17 @@ export const defaultTestingFramework: TestingFrameworkDescriptor = {
 export function getTestingFramework(
   names: string[],
   frameworks: TestingFrameworkDescriptor[],
-): TestingFrameworkDescriptor {
-  for (const name of names) {
-    const found = frameworks.find((framework) => framework.name === name);
-    if (found) return found;
-  }
-  return defaultTestingFramework;
+): TestingFrameworkDescriptor[] {
+  return frameworks.filter(
+    (framework) => framework.name && names.includes(framework.name),
+  );
+}
+
+export function getTestingFrameworkByContext(
+  context: string,
+  frameworks: TestingFrameworkDescriptor[],
+): TestingFrameworkDescriptor[] {
+  return frameworks.filter(
+    (framework) => framework.context && framework.context.includes(context),
+  );
 }

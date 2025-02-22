@@ -81,6 +81,100 @@ export const defaultOs: OperatingSystemDescriptor = {
   // isVirtualized: false,
 };
 
+// export const environmentVariables: { [key: string]: string } = {
+//   NODE_ENV: 'production',
+//   DB_HOST: 'localhost',
+//   API_KEY: '12345-abcdef',
+//   PORT: '3000',
+// };
+
+export const environmentVariables: {
+  [key: string]: { value: string; context: string[] };
+} = {
+  NODE_ENV: { value: 'production', context: ['cd-api', 'cd-frontend'] },
+  DB_HOST: { value: 'localhost', context: ['cd-api'] },
+  API_KEY: { value: '12345-abcdef', context: ['cd-api', 'cd-cli'] },
+  PORT: { value: '3000', context: ['cd-api'] },
+  CLI_TIMEOUT: { value: '5000', context: ['cd-cli'] },
+  LOG_LEVEL: { value: 'verbose', context: ['cd-cli'] },
+  API_URL: { value: 'https://api.corpdesk.com', context: ['cd-frontend'] },
+  APP_MODE: { value: 'spa', context: ['cd-frontend'] },
+};
+
+/**
+ * // Example Usage:
+    const apiVars = getEnvironmentVariablesByContext("cd-api");
+    console.log(apiVars);
+    /*
+    Output:
+    {
+      NODE_ENV: "production",
+      DB_HOST: "localhost",
+      API_KEY: "12345-abcdef",
+      PORT: "3000"
+    }
+
+    const cliVars = getEnvironmentVariablesByContext("cd-cli");
+    console.log(cliVars);
+    /*
+    Output:
+    {
+      API_KEY: "12345-abcdef",
+      CLI_TIMEOUT: "5000",
+      LOG_LEVEL: "verbose"
+    }
+
+ * Retrieves environment variables associated with a given context.
+ * @param context The context for which to fetch environment variables.
+ * @returns Object containing only the variables relevant to the given context.
+ */
+export function getEnvironmentVariablesByContext(context: string): {
+  [key: string]: string;
+} {
+  return Object.entries(environmentVariables)
+    .filter(([_, data]) => data.context.includes(context))
+    .reduce(
+      (acc, [key, data]) => {
+        acc[key] = data.value;
+        return acc;
+      },
+      {} as { [key: string]: string },
+    );
+}
+
+/**
+ * // Example Usage:
+    const selectedVars = getEnvironmentVariablesByNames("cd-api", ["API_KEY", "PORT"]);
+    console.log(selectedVars);
+    /*
+    Output:
+    {
+      API_KEY: "12345-abcdef",
+      PORT: "3000"
+    }
+
+ * Retrieves specific environment variables within a given context.
+ * @param context The context for which to fetch environment variables.
+ * @param names An array of variable names to retrieve.
+ * @returns Object containing only the requested environment variables relevant to the given context.
+ */
+export function getEnvironmentVariablesByNames(
+  context: string,
+  names: string[],
+): { [key: string]: string } {
+  return Object.entries(environmentVariables)
+    .filter(
+      ([key, data]) => data.context.includes(context) && names.includes(key),
+    )
+    .reduce(
+      (acc, [key, data]) => {
+        acc[key] = data.value;
+        return acc;
+      },
+      {} as { [key: string]: string },
+    );
+}
+
 export function getOsByName(
   name: string,
   osStore: OperatingSystemDescriptor[],

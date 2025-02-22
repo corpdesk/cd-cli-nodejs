@@ -1,3 +1,4 @@
+/* eslint-disable style/operator-linebreak */
 /* eslint-disable style/brace-style */
 import type { CdFxReturn } from '../../base/IBase';
 import type {
@@ -46,11 +47,11 @@ export class WorkstationService {
         version: '22.04',
         architecture: 'x86_64',
         timezone: '',
-        allocatedResources: {
-          cpuCores: 4, // Number of CPU cores
-          memory: { units: 'GB', value: 32 }, // e.g., "32GB"
-          storage: { units: 'TB', value: 1 }, // e.g., "1TB"
-        },
+        // allocatedResources: {
+        //   cpuCores: 4, // Number of CPU cores
+        //   memory: { units: 'GB', value: 32 }, // e.g., "32GB"
+        //   storage: { units: 'TB', value: 1 }, // e.g., "1TB"
+        // },
         // hostname: '',
         // ipAddresses: [],
         // isVirtualized: false,
@@ -69,5 +70,56 @@ export class WorkstationService {
         message: `Failed to detect OS: ${(error as Error).message}`,
       };
     }
+  }
+
+  // validateWorkstation(
+  //   ws: WorkstationDescriptor,
+  // ): CdFxReturn<WorkstationDescriptor> {
+  //   if (ws.name === 'unknown') {
+  //     return {
+  //       data: null,
+  //       state: false,
+  //       message: 'This workstation is invalid',
+  //     };
+  //   } else {
+  //     return {
+  //       data: ws,
+  //       state: true,
+  //       message: 'This workstation is valid',
+  //     };
+  //   }
+  // }
+  validateWorkstation(workstation: WorkstationDescriptor): boolean {
+    if (!workstation || workstation.name === 'unknown') {
+      return false;
+    }
+
+    if (
+      !workstation.machineType ||
+      !['physical', 'virtual', 'container'].includes(
+        workstation.machineType.name,
+      )
+    ) {
+      return false;
+    }
+
+    if (
+      !workstation.os ||
+      workstation.os.name === 'unknown' ||
+      workstation.os.version === 'unknown'
+    ) {
+      return false;
+    }
+
+    if (
+      !workstation.workstationAccess ||
+      !workstation.workstationAccess.accessScope ||
+      !workstation.workstationAccess.physicalAccess ||
+      !workstation.workstationAccess.interactionType
+    ) {
+      return false;
+    }
+
+    return true; // Workstation is valid if all checks pass
   }
 }

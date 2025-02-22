@@ -7,6 +7,7 @@ import type {
   // CdServiceDescriptor,
   LicenseDescriptor,
 } from './/service-descriptor.model';
+import type { BaseDescriptor } from './base-descriptor.model';
 import type { CdControllerDescriptor } from './cd-controller-descriptor.model';
 import type { CiCdDescriptor } from './cicd-descriptor.model';
 import type {
@@ -14,7 +15,7 @@ import type {
   VersionControlDescriptor,
 } from './version-control.model';
 
-export interface CdModuleDescriptor {
+export interface CdModuleDescriptor extends BaseDescriptor {
   name: string;
   description: string;
   ctx: CdCtx;
@@ -40,7 +41,8 @@ export interface CdModuleTypeDescriptor {
     | 'cli'
     | 'pwa'
     | 'mobile'
-    | 'mechatronic';
+    | 'mechatronic'
+    | 'unknown';
 }
 
 export enum CdCtx {

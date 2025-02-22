@@ -1,8 +1,9 @@
 // import type { ServiceProviderDescriptor } from './app-descriptor.model';
 
+import type { BaseDescriptor } from './base-descriptor.model';
 import type { BaseServiceDescriptor } from './service-descriptor.model';
 
-export interface ServiceProviderDescriptor {
+export interface ServiceProviderDescriptor extends BaseDescriptor {
   providerName: string; // Name of the service provider (e.g., AWS, Google Cloud, Azure)
   accountId?: string; // Identifier for the user's account with the provider
   credentials: AccountCredentials; // Global credentials for the service provider
@@ -12,7 +13,7 @@ export interface ServiceProviderDescriptor {
 }
 
 // Supporting Interfaces
-export interface AccountCredentials {
+export interface AccountCredentials extends BaseDescriptor {
   apiKey?: string; // API Key for authentication
   oauthToken?: string; // OAuth token
   sshKeyPath?: string; // Path to SSH key for authentication
@@ -20,33 +21,33 @@ export interface AccountCredentials {
   password?: string; // Password for access
 }
 
-export interface DataCenterLocation {
+export interface DataCenterLocation extends BaseDescriptor {
   region: string; // Region of the data center (e.g., us-east-1, europe-west1)
   country: string; // Country where the data center is located
   complianceStandards?: string[]; // Compliance standards met (e.g., GDPR, HIPAA)
 }
 
-export interface UsageMetrics {
+export interface UsageMetrics extends BaseDescriptor {
   currentUsage?: MetricsQuantity; // Current usage (e.g., GB, hours, API calls)
   quota?: MetricsQuantity; // Quota limit
   utilizationPercentage?: MetricsQuantity; // Utilization as a percentage
   billingCost?: MetricsQuantity; // Current cost for this service
 }
 
-export interface MetricsQuantity {
+export interface MetricsQuantity extends BaseDescriptor {
   units: string;
   value: number;
 }
 
-export interface ProviderMetadata {
+export interface ProviderMetadata extends BaseDescriptor {
   description?: string; // Description of the service provider
   website?: string; // URL to the provider's website
   supportContact?: string; // Contact information for support
   integrationNotes?: string; // Notes about integration with the provider
 }
 
-export interface AccountCredentials {
-  type: 'apiKey' | 'usernamePassword' | 'oauth' | 'custom'; // Type of authentication
+export interface AccountCredentials extends BaseDescriptor {
+  type: 'apiKey' | 'usernamePassword' | 'oauth' | 'custom' | 'unknown'; // Type of authentication
   apiKey?: string; // API key, if applicable
   username?: string; // Username, if applicable
   password?: string; // Password, if applicable
@@ -54,7 +55,7 @@ export interface AccountCredentials {
   customAuthConfig?: Record<string, any>; // Custom configurations for provider-specific credentials
 }
 
-export interface ProviderInstruction {
+export interface ProviderInstruction extends BaseDescriptor {
   description: string; // Description of the provider-specific instruction
   configPath: string; // Path to the configuration file or script
   additionalDetails?: Record<string, any>; // Additional details or metadata
