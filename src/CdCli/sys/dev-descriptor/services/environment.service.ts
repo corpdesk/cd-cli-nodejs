@@ -89,6 +89,10 @@ export class EnvironmentService extends BaseService {
     devEnviron: EnvironmentDescriptor,
     steps?: number[],
   ): Promise<CdFxReturn<null>> {
+    CdLogg.debug(
+      `EnvironmentService::setupEnvironment()/devEnviron:${devEnviron}`,
+    );
+    CdLogg.debug(`EnvironmentService::setupEnvironment()/steps:${steps}`);
     try {
       if (!devEnviron.ciCd) {
         return CD_FX_FAIL;
@@ -101,6 +105,10 @@ export class EnvironmentService extends BaseService {
         this.progressTracker,
       );
 
+      CdLogg.debug(
+        `EnvironmentService::setupEnvironment()/resInitStepMap:${resInitStepMap}`,
+      );
+
       if (!resInitStepMap.state) {
         return {
           data: null,
@@ -110,6 +118,9 @@ export class EnvironmentService extends BaseService {
       }
 
       const registeredSteps = this.progressTracker.getSteps();
+      CdLogg.debug(
+        `EnvironmentService::setupEnvironment()/registeredSteps:${registeredSteps}`,
+      );
 
       for (let i = 0; i < registeredSteps.length; i++) {
         if (steps && !steps.includes(i + 1)) continue; // Skip steps not included
@@ -120,6 +131,7 @@ export class EnvironmentService extends BaseService {
         this.progressTracker.updateProgress(key, 'in-progress', totalTasks, 0);
 
         const result = await method();
+        CdLogg.debug(`EnvironmentService::setupEnvironment()/result:${result}`);
 
         if (!result.state) {
           this.progressTracker.updateProgress(key, 'failed');
@@ -654,12 +666,17 @@ export class EnvironmentService extends BaseService {
    */
   async buildEnvironmentData(
     name: string,
-    workstationName: string,
+    workstation: string,
   ): Promise<CdFxReturn<EnvironmentDescriptor>> {
+    CdLogg.debug(`EnvironmentService::buildEnvironmentData()/name:${name}`);
+    CdLogg.debug(
+      `EnvironmentService::buildEnvironmentData()/workstation:${workstation}`,
+    );
     /**
      * pull appropriate profile from the cd-cli.config.json
      */
     const ret = await this.ctlCdCliProfile.getProfileByName(name);
+    CdLogg.debug(`EnvironmentService::buildEnvironmentData()/ret:${ret}`);
     if (!ret.state || !ret.data) {
       CdLogg.debug('could not load profiles');
       return { state: false, data: null, message: 'could not load profile' };
@@ -672,6 +689,9 @@ export class EnvironmentService extends BaseService {
     );
 
     const environment = cdCliProfile.cdCliProfileData?.details;
+    CdLogg.debug(
+      `EnvironmentService::buildEnvironmentData()/environment:${environment}`,
+    );
     if (!environment) {
       return {
         data: null,
@@ -684,6 +704,9 @@ export class EnvironmentService extends BaseService {
     const devEnv = { ...environment };
 
     const resCiCd = [getCiCdByName([name], knownCiCds)];
+    CdLogg.debug(
+      `EnvironmentService::buildEnvironmentData()/resCiCd:${resCiCd}`,
+    );
     if (resCiCd) {
       devEnv.ciCd = resCiCd;
     }
@@ -692,35 +715,55 @@ export class EnvironmentService extends BaseService {
      * use context to pull the relevant environment variables
      */
     const resEnvironmentVariables = getEnvironmentVariablesByContext(name);
+    CdLogg.debug(
+      `EnvironmentService::buildEnvironmentData()/resEnvironmentVariables:${resEnvironmentVariables}`,
+    );
 
     if (resEnvironmentVariables) {
       devEnv.environmentVariables = resEnvironmentVariables;
     }
 
     const resServices = getServiceByName([name], services);
+    CdLogg.debug(
+      `EnvironmentService::buildEnvironmentData()/resServices:${resServices}`,
+    );
     if (resServices) {
       devEnv.services = resServices;
     }
+
     const resTestingFrameworks = getTestingFrameworkByContext(
       name,
       testingFrameworks,
     );
+    CdLogg.debug(
+      `EnvironmentService::buildEnvironmentData()/resTestingFrameworks:${resTestingFrameworks}`,
+    );
     if (resTestingFrameworks) {
       devEnv.testingFrameworks = resTestingFrameworks;
     }
+
     const resVersionControl = getVersionControlByContext(
       name,
       versionControlRepositories,
+    );
+    CdLogg.debug(
+      `EnvironmentService::buildEnvironmentData()/resVersionControl:${resVersionControl}`,
     );
     if (resVersionControl) {
       devEnv.versionControl = resVersionControl;
     }
 
-    const resWorkstation = getWorkstationByName(workstationName, workstations);
+    const resWorkstation = getWorkstationByName(workstation, workstations);
+    CdLogg.debug(
+      `EnvironmentService::buildEnvironmentData()/resWorkstation:${resWorkstation}`,
+    );
     if (resWorkstation) {
       devEnv.workstation = resWorkstation;
     }
     const retValidDevEnv = this.validateEnvironment(devEnv);
+    CdLogg.debug(
+      `EnvironmentService::buildEnvironmentData()/retValidDevEnv:${retValidDevEnv}`,
+    );
     if (!retValidDevEnv) {
       return CD_FX_FAIL;
     }

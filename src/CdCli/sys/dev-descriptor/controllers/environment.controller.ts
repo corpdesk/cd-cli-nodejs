@@ -46,24 +46,32 @@ export class EnvironmentController {
    */
   async createEnvironment(
     name: string,
-    workstationName: string,
+    workstation: string,
   ): Promise<CdFxReturn<null>> {
+    CdLogg.debug(`EnvironmentController::createEnvironment()/name:${name}`);
+    CdLogg.debug(
+      `EnvironmentController::createEnvironment()/workstation:${workstation}`,
+    );
     /**
      * construct environment data via constructDevEnvironment()
      * that will be used to set up the environment
      */
-    const resultDevEnv = await this.svEnvironment.buildEnvironmentData(
+    const resultEnv = await this.svEnvironment.buildEnvironmentData(
       name,
-      workstationName,
+      workstation,
     );
-    if (!resultDevEnv.state || !resultDevEnv.data) {
+    CdLogg.debug(
+      `EnvironmentController::createEnvironment()/resultEnv:${resultEnv}`,
+    );
+    if (!resultEnv.state || !resultEnv.data) {
       return CD_FX_FAIL;
     }
 
     /**
      * use the above result to set up the environment
      */
-    const result = await this.svEnvironment.setupEnvironment(resultDevEnv.data);
+    const result = await this.svEnvironment.setupEnvironment(resultEnv.data);
+    CdLogg.debug(`EnvironmentController::createEnvironment()/result:${result}`);
 
     CdLogg.debug('result:', result);
     return result;

@@ -1,42 +1,49 @@
+import chalk from 'chalk';
 import CdLogg from '@/CdCli/sys/cd-comm/controllers/cd-logger.controller';
 import { EnvironmentController } from '@/CdCli/sys/dev-descriptor/controllers/environment.controller';
 
 export const createCommand = {
   name: 'create',
-  description: 'Synchronize different resources.',
+  description: 'Setup different environments dynamically.',
   options: [
-    { flags: 'dev-env', description: 'development environment' },
-    { flags: 'run-env', description: 'production environment' },
-    { flags: 'name', description: 'name of given item eg dev-env.' },
+    {
+      flags: 'env',
+      description: 'Setup an environment (dev or production equivalent).',
+    },
+    { flags: 'name', description: 'Profile name used as context identifier.' },
+    {
+      flags: 'workstation',
+      description: 'Target workstation for the environment.',
+    },
   ],
   action: {
     execute: async (options: any) => {
-      const resource = options._[0]; // First positional argument (resource type)
+      const resource = options._[0]; // First positional argument (expected: 'env')
 
-      if (!resource) {
-        console.log(chalk.red('Error: Please specify a resource to sync.'));
+      if (!resource || resource.toLowerCase() !== 'env') {
+        console.log(chalk.red('Error: Please specify "env" as the resource.'));
+        return;
+      }
+
+      if (!options.name || !options.workstation) {
+        console.log(
+          chalk.red('Error: Both --name and --workstation are required.'),
+        );
         return;
       }
 
       CdLogg.debug(
-        `DevModeModel::createCommand()/resource:${resource}, name:${options.name}`,
+        `EnvSetup::createCommand()/resource:${resource}, name:${options.name}, workstation:${options.workstation}`,
       );
 
       const ctlEnvironment = new EnvironmentController();
 
-      switch (resource.toLowerCase()) {
-        case 'dev-env':
-          await ctlEnvironment.createEnvironment(options.name, options.wsName);
-          console.log(chalk.green('✔ Setup completed successfully.'));
-          break;
-        case 'run-env':
-          await ctlEnvironment.createEnvironment(options.name, options.wsName);
-          console.log(chalk.green('✔ Synced apps successfully.'));
-          break;
-        default:
-          console.log(chalk.red(`Unknown sync resource: ${resource}`));
-          break;
-      }
+      await ctlEnvironment.createEnvironment(options.name, options.workstation);
+      console.log(
+        chalk.green(
+          `✔ Environment setup completed for profile: ${options.name}`,
+        ),
+      );
     },
   },
 };
