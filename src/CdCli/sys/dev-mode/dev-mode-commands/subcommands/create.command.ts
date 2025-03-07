@@ -1,5 +1,5 @@
 import chalk from 'chalk';
-import CdLogg from '@/CdCli/sys/cd-comm/controllers/cd-logger.controller';
+import CdLog from '@/CdCli/sys/cd-comm/controllers/cd-logger.controller';
 import { EnvironmentController } from '@/CdCli/sys/dev-descriptor/controllers/environment.controller';
 
 export const createCommand = {
@@ -32,7 +32,7 @@ export const createCommand = {
         return;
       }
 
-      CdLogg.debug(
+      CdLog.debug(
         `EnvSetup::createCommand()/resource:${resource}, name:${options.name}, workstation:${options.workstation}`,
       );
 

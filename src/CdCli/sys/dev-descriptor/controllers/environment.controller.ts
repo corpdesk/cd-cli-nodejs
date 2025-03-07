@@ -12,7 +12,7 @@
 import type { CdDescriptor } from '../models/dev-descriptor.model';
 import { CD_FX_FAIL, type CdFxReturn, type IQuery } from '../../base/IBase';
 import { CdCliProfileController } from '../../cd-cli/controllers/cd-cli-profile.cointroller';
-import CdLogg from '../../cd-comm/controllers/cd-logger.controller';
+import CdLog from '../../cd-comm/controllers/cd-logger.controller';
 import {} from '../models/environment.model';
 import { CiCdService } from '../services/ci-cd.service';
 import { EnvironmentService } from '../services/environment.service';
@@ -21,19 +21,19 @@ import { DevDescriptorController } from './dev-descriptor.controller';
 export class EnvironmentController {
   svEnvironment: EnvironmentService;
   ctlDevDescriptor: DevDescriptorController;
-  ctlCdCliProfile: CdCliProfileController;
+  // ctlCdCliProfile: CdCliProfileController;
   svCiCd: CiCdService;
   constructor() {
     this.svEnvironment = new EnvironmentService();
     this.ctlDevDescriptor = new DevDescriptorController();
-    this.ctlCdCliProfile = new CdCliProfileController();
+    // ctlCdCliProfile = new CdCliProfileController();
     this.svCiCd = new CiCdService();
   }
 
   /**
    * Creates a development environment for a given workstation.
    *
-   * @param {string} name - The name of the application (e.g., cd-api).
+   * @param {string} name - The name of the application (e.g., cd-api, cd-frontend).
    *                        This is also referred to as 'context' in BaseDescriptor.
    *                        Since all descriptors inherit BaseDescriptor, this property
    *                        is used to pull descriptors set for a given application.
@@ -48,8 +48,8 @@ export class EnvironmentController {
     name: string,
     workstation: string,
   ): Promise<CdFxReturn<null>> {
-    CdLogg.debug(`EnvironmentController::createEnvironment()/name:${name}`);
-    CdLogg.debug(
+    CdLog.debug(`EnvironmentController::createEnvironment()/name:${name}`);
+    CdLog.debug(
       `EnvironmentController::createEnvironment()/workstation:${workstation}`,
     );
     /**
@@ -60,7 +60,7 @@ export class EnvironmentController {
       name,
       workstation,
     );
-    CdLogg.debug(
+    CdLog.debug(
       `EnvironmentController::createEnvironment()/resultEnv:${resultEnv}`,
     );
     if (!resultEnv.state || !resultEnv.data) {
@@ -71,9 +71,9 @@ export class EnvironmentController {
      * use the above result to set up the environment
      */
     const result = await this.svEnvironment.setupEnvironment(resultEnv.data);
-    CdLogg.debug(`EnvironmentController::createEnvironment()/result:${result}`);
+    CdLog.debug(`EnvironmentController::createEnvironment()/result:${result}`);
 
-    CdLogg.debug('result:', result);
+    CdLog.debug('result:', result);
     return result;
   }
 

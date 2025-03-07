@@ -1,7 +1,7 @@
 import type { CdVault } from './cd-cli-vault.model';
 /* eslint-disable style/brace-style */
 import { fileURLToPath } from 'node:url';
-import CdLogg from '../../cd-comm/controllers/cd-logger.controller';
+import CdLog from '../../cd-comm/controllers/cd-logger.controller';
 import { CdCliProfileController } from '../controllers/cd-cli-profile.cointroller';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -272,12 +272,12 @@ export const PROFILE_CMD = {
           //   'CdCliProfileModel::PROFILE_CMD::action/execute()/options.debug:',
           //   options.debug,
           // );
-          // CdLogg.setDebugLevel(options.debug);
+          // CdLog.setDebugLevel(options.debug);
           // Set the log level dynamically (optional)
           // setLogLevel('debug'); // This will enable debug, info, warn, and error messages
           console.log(
-            'CdCliProfileModel: CdLogg.debugLevel:',
-            CdLogg.getDebugLevel(),
+            'CdCliProfileModel: CdLog.debugLevel:',
+            CdLog.getDebugLevel(),
           );
           const cdCliProfileController = new CdCliProfileController();
           await cdCliProfileController.createProfile(options.file);

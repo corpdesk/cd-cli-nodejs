@@ -14,7 +14,7 @@ export interface CdVault {
 }
 
 export interface EncryptionMeta {
-  name: string; // Identifier for the encryption configuration
+  name?: string; // Identifier for the encryption configuration
   algorithm: string; // Encryption algorithm (e.g., 'aes-256-cbc')
   encoding: BufferEncoding; // Encoding format (e.g., 'hex', 'base64')
   ivLength: number; // Length of the initialization vector
@@ -23,6 +23,7 @@ export interface EncryptionMeta {
   keySalt?: string; // Optional: Salt used for key derivation
   additionalAuthenticatedData?: string; // Optional: For AEAD algorithms
   encryptedAt?: string; // Optional: Timestamp when encryption occurred
+  encryptedToken?: string;
 }
 
 // Encryption configurations

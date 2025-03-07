@@ -9,13 +9,13 @@ import type {
   SshCredentials,
 } from '../models/workstations.model';
 import { NodeSSH } from 'node-ssh';
-import CdLogg from '../../cd-comm/controllers/cd-logger.controller';
+import CdLog from '../../cd-comm/controllers/cd-logger.controller';
 
 export class OsController {
   async detectOs(
     sshCredentials: SshCredentials,
   ): Promise<CdFxReturn<OperatingSystemDescriptor>> {
-    CdLogg.debug('detectOs()/sshCredentials:', sshCredentials);
+    CdLog.debug('detectOs()/sshCredentials:', sshCredentials);
 
     const ssh = new NodeSSH();
     try {
@@ -52,7 +52,7 @@ export class OsController {
         message: `OS detected successfully: ${osInfo.name} ${osInfo.version}`,
       };
     } catch (error) {
-      CdLogg.error(`detectOs()/error: ${error}`);
+      CdLog.error(`detectOs()/error: ${error}`);
       return {
         data: null,
         state: false,

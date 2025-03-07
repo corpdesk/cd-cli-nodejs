@@ -4,11 +4,11 @@ import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { CONFIG_FILE_PATH, loadCdCliConfig } from '../../../../config';
 import CdCliVaultController from '../../cd-cli/controllers/cd-cli-vault.controller';
-import CdLogg from '../../cd-comm/controllers/cd-logger.controller';
+import CdLog from '../../cd-comm/controllers/cd-logger.controller';
 
 export class SessonController {
   init(debugLevel: number): void {
-    CdLogg.setDebugLevel(debugLevel);
+    CdLog.setDebugLevel(debugLevel);
   }
 
   /**
@@ -33,10 +33,10 @@ export class SessonController {
 
       // Write updated configuration back to the file
       writeFileSync(CONFIG_FILE_PATH, JSON.stringify(cdCliConfig, null, 2));
-      CdLogg.success(`Session saved successfully to profile "${profileName}".`);
+      CdLog.success(`Session saved successfully to profile "${profileName}".`);
       return true;
     } catch (error) {
-      CdLogg.error(`Error saving session: ${(error as Error).message}`);
+      CdLog.error(`Error saving session: ${(error as Error).message}`);
       return false;
     }
   }
@@ -46,27 +46,27 @@ export class SessonController {
    */
   getSession(profileName: string): ISessResp | null {
     try {
-      CdLogg.debug('SessionController::getSession()/profileName:', {
+      CdLog.debug('SessionController::getSession()/profileName:', {
         name: profileName,
       });
       // Load configuration
       const cdCliConfig = loadProfiles();
-      CdLogg.debug('SessionController::getSession()/cdCliConfig:', cdCliConfig);
+      CdLog.debug('SessionController::getSession()/cdCliConfig:', cdCliConfig);
 
       const profile = cdCliConfig.items.find(
         (item) => item.cdCliProfileName === profileName,
       );
 
-      CdLogg.debug('SessionController::getSession()/profile:', profile);
+      CdLog.debug('SessionController::getSession()/profile:', profile);
 
       if (!profile || !profile.cdCliProfileData.details.session) {
         throw new Error(`Session not found for profile "${profileName}".`);
       }
 
-      CdLogg.debug('SessionController::getSession()/profile:', profile);
+      CdLog.debug('SessionController::getSession()/profile:', profile);
 
       const session: ISessResp = profile.cdCliProfileData.details.session;
-      CdLogg.debug('SessionController::getSession()/session1:', session);
+      CdLog.debug('SessionController::getSession()/session1:', session);
 
       // Resolve session token from `cdVault` if referenced
       if (session.cd_token?.startsWith('#cdVault[')) {
@@ -81,10 +81,10 @@ export class SessonController {
         }
       }
 
-      CdLogg.debug('SessionController::getSession()/session2:', session);
+      CdLog.debug('SessionController::getSession()/session2:', session);
       return session;
     } catch (error) {
-      CdLogg.error(`Error retrieving session: ${(error as Error).message}`);
+      CdLog.error(`Error retrieving session: ${(error as Error).message}`);
       return null;
     }
   }
@@ -98,12 +98,12 @@ export class SessonController {
       const session: ISessResp | null = this.getSession(profileName);
 
       if (!session) {
-        CdLogg.warning(`No session found for profile "${profileName}".`);
+        CdLog.warning(`No session found for profile "${profileName}".`);
         return false;
       }
 
       if (!session.initTime || !session.ttl) {
-        CdLogg.warning(
+        CdLog.warning(
           `Session for profile "${profileName}" is missing required fields.`,
         );
         return false;
@@ -122,14 +122,14 @@ export class SessonController {
       const isValid = now < expiry;
 
       if (isValid) {
-        CdLogg.info(`Session for profile "${profileName}" is valid.`);
+        CdLog.info(`Session for profile "${profileName}" is valid.`);
         return expiry - now; // Return time remaining in seconds
       } else {
-        CdLogg.warning(`Session for profile "${profileName}" has expired.`);
+        CdLog.warning(`Session for profile "${profileName}" has expired.`);
         return false;
       }
     } catch (error) {
-      CdLogg.error(
+      CdLog.error(
         `Error checking session validity: ${(error as Error).message}`,
       );
       return false;

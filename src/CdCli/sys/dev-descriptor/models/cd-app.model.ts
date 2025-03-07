@@ -3,7 +3,7 @@ import type { BaseDescriptor } from './base-descriptor.model';
 import type { CdModuleDescriptor } from './cd-module-descriptor.model';
 import type { CiCdDescriptor } from './cicd-descriptor.model';
 import type { EnvironmentDescriptor } from './environment.model';
-import CdLogg from '../../cd-comm/controllers/cd-logger.controller';
+import CdLog from '../../cd-comm/controllers/cd-logger.controller';
 // import type { CdModuleDescriptor } from './cd-module-descriptor.model';
 // import type { EnvironmentDescriptor } from './environment.model';
 

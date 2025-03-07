@@ -3,7 +3,7 @@ import type { CdFxReturn, CdRequest, IQuery } from '../../base/IBase';
 import type { CdDescriptor } from '../models/dev-descriptor.model';
 import { BaseService } from '../../base/base.service';
 import { HttpService } from '../../base/http.service';
-import CdLogg from '../../cd-comm/controllers/cd-logger.controller';
+import CdLog from '../../cd-comm/controllers/cd-logger.controller';
 import { CdObjModel } from '../../moduleman/models/cd-obj.model';
 import { DevDescriptorService } from './dev-descriptor.service';
 

@@ -1,6 +1,6 @@
 /* eslint-disable style/operator-linebreak */
 /* eslint-disable no-case-declarations */
-import CdLogg from '@/CdCli/sys/cd-comm/controllers/cd-logger.controller';
+import CdLog from '@/CdCli/sys/cd-comm/controllers/cd-logger.controller';
 import { DevDescriptorController } from '@/CdCli/sys/dev-descriptor/controllers/dev-descriptor.controller';
 import { DevModeController } from '../../controllers/dev-mode.controller';
 
@@ -28,7 +28,7 @@ export const showCommand = {
     execute: async (options) => {
       const ctlDevMode = new DevModeController();
       const ctlDevDescriptor = new DevDescriptorController();
-      CdLogg.debug(
+      CdLog.debug(
         `DevModeModel::eval()/subcommands/options:${JSON.stringify(options)}`,
       );
 
@@ -50,13 +50,13 @@ export const showCommand = {
           break;
         case 'descriptors':
           console.log('Showing descriptors...');
-          CdLogg.debug(
+          CdLog.debug(
             `DEV_MODE_COMMANDS::execute()/show/options?.names:${options.names}`,
           );
           const descriptorNames = options.names
             ? options.names.split(',').map((n) => n.trim())
             : null;
-          CdLogg.debug(
+          CdLog.debug(
             `DEV_MODE_COMMANDS::execute()/show/descriptorNames:${descriptorNames}`,
           );
           await ctlDevDescriptor.showSrcDescriptors({

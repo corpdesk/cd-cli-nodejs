@@ -315,13 +315,57 @@ export interface LsFilter {
 // }
 
 export interface IServiceInput {
-  svInstance: any;
-  serviceModel: any;
-  serviceModelInstance?: any;
+  primaryKey?: string; // primary key of the subject model
+  serviceInstance?: any; // handle of the subject service
+  serviceModel: any; // subject model
+  mapping?: any;
+  serviceModelInstance?: any; // instance of subject model
   docName?: string;
-  cmd?: any;
+  cmd?: Cmd;
   data?: any;
   dSource?: number;
+  extraInfo?: boolean;
+  modelName?: string;
+  modelPath?: string;
+  fetchInput?: IFetchInput;
+}
+
+export interface IFetchInput {
+  url: string;
+  optins?: {
+    method?: string;
+    body?: string;
+    headers?: {
+      'Content-Type'?: string;
+      'X-Parse-Application-Id'?: string;
+      'X-Parse-REST-API-Key'?: string;
+    };
+  };
+}
+
+export interface Cmd {
+  action?: string;
+  query: IQuery | IQbInput;
+}
+
+// query builder input
+export interface IQbInput {
+  select?: string[];
+  update?: object;
+  where: IQbFilter[];
+  distinct?: boolean;
+  take?: number;
+  skip?: number;
+}
+
+// query builder filter
+export interface IQbFilter {
+  field: string;
+  operator: string;
+  val: string;
+  conjType?: string;
+  dataType: string;
+  jPath?: string;
 }
 
 export interface IDoc {
@@ -551,3 +595,9 @@ export interface IUserData {
 }
 
 export type SearchTerm = { term: string } | string;
+
+export interface ExecOptions {
+  cwd?: string; // Optional working directory
+  env?: NodeJS.ProcessEnv; // Optional environment variables
+  mode?: 'sync' | 'async'; // Execution mode
+}

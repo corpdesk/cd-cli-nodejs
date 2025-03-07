@@ -1,11 +1,12 @@
 import { CD_AUTO_GIT_CMD } from '@/CdCli/app/cd-auto-git/models/cd-auto-git.model';
-import { DEV_MODE_COMMANDS } from '../../dev-mode/models/dev-mode.model';
+// import { DEV_MODE_COMMANDS } from '../../dev-mode/models/dev-mode.model';
 import {
   MODULE_CMD,
   TEMPLATE_CMD,
 } from '../../moduleman/models/mod-craft.model';
 import { LOGIN_CMD, LOGOUT_CMD } from '../../user/models/user.model';
 import { PROFILE_CMD } from './cd-cli-profile.model';
+import { DEV_MODE_COMMANDS } from '../../dev-mode/dev-mode-commands';
 
 export const CdCli = {
   commands: [

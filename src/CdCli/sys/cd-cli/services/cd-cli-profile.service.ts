@@ -19,13 +19,14 @@
 import type { ICdRequest, IJsonUpdate, IQuery } from '../../base/IBase';
 import { HttpService } from '../../base/http.service';
 import { DEFAULT_ENVELOPE_CREATE } from '../../base/IBase';
-import CdLogg from '../../cd-comm/controllers/cd-logger.controller';
+import CdLog from '../../cd-comm/controllers/cd-logger.controller';
+import config from '@/config';
 
 export class CdCliProfileService {
-  svServer: any;
+  // svServer: any;
   postData: ICdRequest = DEFAULT_ENVELOPE_CREATE;
   constructor() {
-    this.svServer = new HttpService();
+    // this.svServer = new HttpService();
   }
 
   /**
@@ -53,12 +54,13 @@ export class CdCliProfileService {
    */
   createCdCliProfile(newCdCliProfile: any, cdToken: string) {
     // console.log('starting createCdCliProfile()/01:');
+    const svServer = new HttpService();
     this.setEnvelopeCreateCdCliProfile(newCdCliProfile, cdToken);
     console.log(
       'createCdCliProfile()/this.postData:',
       JSON.stringify(this.postData),
     );
-    return this.svServer.proc(
+    return svServer.proc(
       this.setEnvelopeCreateCdCliProfile(newCdCliProfile, cdToken),
     );
   }
@@ -85,7 +87,7 @@ export class CdCliProfileService {
   }
 
   // async getCdCliProfile(q: IQuery, cdToken: string) {
-  //   CdLogg.debug('starting getCdCliProfile():', { token: cdToken, query: q });
+  //   CdLog.debug('starting getCdCliProfile():', { token: cdToken, query: q });
   //   const httpService = new HttpService();
   //   await httpService.init(config.cdApiLocal); // Ensure axiosInstance is set with preferred profile
   //   this.setEnvelopeGetCountCdCliProfile(q, cdToken);
@@ -93,7 +95,7 @@ export class CdCliProfileService {
   // }
 
   // setEnvelopeGetCountCdCliProfile(q: IQuery, cdToken: string) {
-  //   CdLogg.debug('starting setEnvelopeGetCountCdCliProfile():', {
+  //   CdLog.debug('starting setEnvelopeGetCountCdCliProfile():', {
   //     token: cdToken,
   //     query: q,
   //   });
@@ -115,7 +117,7 @@ export class CdCliProfileService {
   // }
 
   async getCdCliProfile(q: IQuery, cdToken: string): Promise<any> {
-    CdLogg.debug('starting getCdCliProfile():', { token: cdToken, query: q });
+    CdLog.debug('starting getCdCliProfile():', { token: cdToken, query: q });
 
     try {
       // Initialize HttpService with debugging enabled
@@ -123,7 +125,7 @@ export class CdCliProfileService {
 
       // Get the base URL dynamically
       const baseUrl = await httpService.getCdApiUrl(config.cdApiLocal);
-      CdLogg.debug('getCdCliProfile()/baseUrl:', { baseUrl });
+      CdLog.debug('getCdCliProfile()/baseUrl:', { baseUrl });
 
       if (!baseUrl) {
         throw new Error(
@@ -131,7 +133,7 @@ export class CdCliProfileService {
         );
       }
 
-      await httpService.init(baseUrl);
+      await httpService.init();
 
       // Prepare the envelope for the request
       const postData = this.setEnvelopeGetCountCdCliProfile(q, cdToken);
@@ -147,13 +149,13 @@ export class CdCliProfileService {
         },
       });
     } catch (error: any) {
-      CdLogg.error('Error in getCdCliProfile():', error.message);
+      CdLog.error('Error in getCdCliProfile():', error.message);
       throw error; // Re-throw the error for further handling
     }
   }
 
   setEnvelopeGetCountCdCliProfile(q: IQuery, cdToken: string): any {
-    CdLogg.debug('starting setEnvelopeGetCountCdCliProfile():', {
+    CdLog.debug('starting setEnvelopeGetCountCdCliProfile():', {
       token: cdToken,
       query: q,
     });
@@ -175,18 +177,19 @@ export class CdCliProfileService {
       args: {},
     };
 
-    CdLogg.debug('setEnvelopeGetCountCdCliProfile()/Envelope:', envelope);
+    CdLog.debug('setEnvelopeGetCountCdCliProfile()/Envelope:', envelope);
 
     return envelope; // Return the envelope to be used in the request
   }
 
   getCdCliProfileType(q: IQuery, cdToken: string) {
+    const svServer = new HttpService();
     this.setEnvelopeCdCliProfileType(q, cdToken);
     console.log(
       'getCdCliProfile()/this.postData:',
       JSON.stringify(this.postData),
     );
-    return this.svServer.proc(this.postData);
+    return svServer.proc(this.postData);
   }
 
   setEnvelopeGetCdCliProfileProfile(
@@ -229,12 +232,13 @@ export class CdCliProfileService {
   }
 
   updateCdCliProfile(q: IQuery, cdToken: string) {
+    const svServer = new HttpService();
     this.setEnvelopeUpdate(q, cdToken);
     console.log(
       'updateCdCliProfile()/this.postData:',
       JSON.stringify(this.postData),
     );
-    return this.svServer.proc(this.postData);
+    return svServer.proc(this.postData);
   }
 
   setEnvelopeUpdate(q: IQuery, cdToken: string) {
@@ -313,21 +317,19 @@ export class CdCliProfileService {
     jsonUpdate: IJsonUpdate[],
     cdToken: string,
   ) {
-    CdLogg.debug('starting CdAutoGitController::updateCdCliProfileData()');
-    CdLogg.debug('CdAutoGitController::updateCdVault()/q:', q);
-    CdLogg.debug(
-      'CdAutoGitController::updateCdVault()/jsonUpdate:',
-      jsonUpdate,
-    );
-    CdLogg.debug('CdAutoGitController::updateCdVault()/cdToken:', {
+    CdLog.debug('starting CdAutoGitController::updateCdCliProfileData()');
+    CdLog.debug('CdAutoGitController::updateCdVault()/q:', q);
+    CdLog.debug('CdAutoGitController::updateCdVault()/jsonUpdate:', jsonUpdate);
+    CdLog.debug('CdAutoGitController::updateCdVault()/cdToken:', {
       t: cdToken,
     });
+    const svServer = new HttpService();
     this.setEnvelopeUpdateCdCliProfileData(q, jsonUpdate, cdToken);
     console.log(
       'updateCdCliProfileData()/this.postData:',
       JSON.stringify(this.postData),
     );
-    return this.svServer.proc(this.postData);
+    return svServer.proc(this.postData);
   }
 
   setEnvelopeUpdateCdCliProfileData(
@@ -354,12 +356,13 @@ export class CdCliProfileService {
   }
 
   deleteCdCliProfile(q: IQuery, cdToken: string) {
+    const svServer = new HttpService();
     this.setEnvelopeDelete(q, cdToken);
     console.log(
       'deleteCdCliProfile()/this.postData:',
       JSON.stringify(this.postData),
     );
-    return this.svServer.proc(this.postData);
+    return svServer.proc(this.postData);
   }
 
   setEnvelopeDelete(q: IQuery, cdToken: string) {

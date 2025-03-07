@@ -1,8 +1,31 @@
-import { createCommand } from './subcommands/create.command';
-import { exitCommand } from './subcommands/exit.command';
-import { showCommand } from './subcommands/show.command';
-import { syncCommand } from './subcommands/sync.command';
 import { getSubcommand } from './utils/command-utils';
+import repl from 'node:repl';
+import chalk from 'chalk';
+import minimist from 'minimist';
+import CdLog from '../../cd-comm/controllers/cd-logger.controller';
+
+// Branding utility for reusable prompt designs
+export const Branding = {
+  getPrompt: (mode: 'default' | 'py' | 'js' = 'default') => {
+    const branding = {
+      cd: chalk.bgHex('#FF6A00').white.bold('cd'), // Orange background, white text
+      separator: chalk.white(''), // White separator
+    };
+
+    const modes = {
+      default: chalk.bgGray.black.bold(' dev '), // Gray background, black text
+      py: chalk.bgBlue.white.bold(' py '), // Blue background, white text
+      js: chalk.bgYellow.black.bold(' js '), // Yellow background, black text
+    };
+
+    const modeLabel = modes[mode] || modes.default;
+    return `${branding.cd}${branding.separator}${modeLabel} ${chalk.greenBright('>')} `;
+  },
+};
+
+// Main Development Mode Commands
+let inputBuffer: string = '';
+let isCommandIncomplete = false;
 
 export const DEV_MODE_COMMANDS = {
   name: 'dev',
@@ -16,7 +39,7 @@ export const DEV_MODE_COMMANDS = {
         prompt: Branding.getPrompt(currentMode),
         eval: async (input, context, filename, callback) => {
           try {
-            CdLogg.debug(`DevModeModel::eval()/input:${input}`);
+            CdLog.debug(`DevModeModel::eval()/input:${input}`);
             input = input.trim();
             inputBuffer += input;
 
@@ -84,3 +107,57 @@ export const DEV_MODE_COMMANDS = {
     getSubcommand('create'),
   ],
 };
+
+export async function handleInput(input: string) {
+  CdLog.debug(`DevModeModel::handleInput()/input:${input}`);
+
+  if (input.endsWith(';')) {
+    const commands = input.split(';').filter((cmd) => cmd.trim());
+    for (const command of commands) {
+      await executeCommand(command.trim()); // Ensure this is awaited
+    }
+    inputBuffer = ''; // Clear buffer after processing
+  } else {
+    inputBuffer += input; // Append incomplete command
+    console.log('...');
+    isCommandIncomplete = true;
+  }
+}
+
+export async function executeCommand(command: string) {
+  CdLog.debug(`DevModeModel::executeCommand()/command:${command}`);
+  command = command.replace(/;$/, ''); // Remove trailing semicolon
+  const [cmdName, ...args] = command.split(/\s+/);
+
+  const subcommand = DEV_MODE_COMMANDS.subcommands.find(
+    (sub) => sub.name === cmdName,
+  );
+
+  CdLog.debug(`DevModeModel::executeCommand()/subcommand:${subcommand}`);
+  if (!subcommand) {
+    console.log(`Unknown command: ${cmdName}`);
+    return;
+  }
+
+  // Handle options differently based on subcommand
+  const options = minimist(args);
+  CdLog.debug(
+    `DevModeModel::executeCommand()/options:${JSON.stringify(options)}`,
+  );
+
+  try {
+    // Call action.execute with proper options
+    if (subcommand.action?.execute) {
+      await subcommand.action.execute({
+        // Ensure this is awaited
+        ...options,
+        _: args, // Ensure positional arguments are passed
+      });
+    } else {
+      console.log(`No action defined for command: ${cmdName}`);
+    }
+  } catch (error) {
+    console.error(`Error executing command "${cmdName}":`, error);
+    throw error; // Propagate the error to the eval function
+  }
+}

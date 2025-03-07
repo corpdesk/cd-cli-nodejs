@@ -1,5 +1,5 @@
 import type { CdVault } from '@/CdCli/sys/cd-cli/models/cd-cli-vault.model';
-import CdLogg from '@/CdCli/sys/cd-comm/controllers/cd-logger.controller';
+import CdLog from '@/CdCli/sys/cd-comm/controllers/cd-logger.controller';
 import { CdAutoGitController } from '../controllers/cd-auto-git.controller';
 
 export const CD_AUTO_GIT_CMD = {
@@ -37,7 +37,7 @@ export const CD_AUTO_GIT_CMD = {
       ],
       action: {
         execute: async (options) => {
-          CdLogg.info('Executing auto-git create command...', options);
+          CdLog.info('Executing auto-git create command...', options);
           const cdAutoGitController = new CdAutoGitController();
           await cdAutoGitController.createGitHubRepo(
             options.name,
@@ -71,7 +71,7 @@ export const CD_AUTO_GIT_CMD = {
       ],
       action: {
         execute: async (options) => {
-          CdLogg.info('Executing auto-git clone command...', options);
+          CdLog.info('Executing auto-git clone command...', options);
           const cdAutoGitController = new CdAutoGitController();
           await cdAutoGitController.cloneRepoToLocal(
             options.repoName,
@@ -114,7 +114,7 @@ export const CD_AUTO_GIT_CMD = {
       ],
       action: {
         execute: async (options) => {
-          CdLogg.info('Executing auto-git init command...', options);
+          CdLog.info('Executing auto-git init command...', options);
           const cdAutoGitController = new CdAutoGitController();
           await cdAutoGitController.createGitHubRepo(
             options.repoName,

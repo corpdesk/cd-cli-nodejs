@@ -6,8 +6,9 @@ import type { BaseDescriptor } from './base-descriptor.model';
 import type { EnvironmentDescriptor } from './environment.model';
 import type { MigrationDescriptor } from './migration-descriptor.model';
 import type { TestingFrameworkDescriptor } from './testing-framework.model';
-import CdLogg from '../../cd-comm/controllers/cd-logger.controller';
+import CdLog from '../../cd-comm/controllers/cd-logger.controller';
 import { EnvironmentService } from '../services/environment.service';
+import { CdVault } from '../../cd-cli/models/cd-cli-vault.model';
 
 // Main CiCdDescriptor Interface
 export interface CiCdDescriptor extends BaseDescriptor {
@@ -21,7 +22,7 @@ export interface CiCdDescriptor extends BaseDescriptor {
 // Interface for Pipeline
 export interface CICdPipeline extends BaseDescriptor {
   name: string; // Name of the pipeline (e.g., "Build and Deploy Pipeline")
-  type: 'integration' | 'delivery' | 'deployment'; // Type of pipeline
+  type: 'integration' | 'delivery' | 'deployment' | 'dev-env-setup'; // Type of pipeline
   stages: CICdStage[]; // List of stages in the pipeline
 }
 
@@ -49,11 +50,15 @@ export interface CICdStage extends BaseDescriptor {
 
 export interface CICdTask<T = any> extends BaseDescriptor {
   name: string;
-  type: { name: string; inlineScript: string };
-  executor: string;
-  status: string;
-  methodName?: string; // Store method as a string reference
-  method?: (input?: T) => Promise<CdFxReturn<null>>; // Ensure it returns a promise
+  type: 'script-inline' | 'script-file' | 'method';
+  executor: 'bash' | 'cd-cli'; // Defines the execution environment
+  script?: string; // Used for inline scripts
+  scriptFile?: string; // Used when the script is a file
+  className?: string; // Used when calling a cd-cli method
+  methodName?: string; // The method to be executed
+  input?: T; // Optional input for the method
+  status: 'pending' | 'running' | 'completed' | 'failed'; // Task execution status
+  cdVault?: CdVault[];
 }
 
 export const methodRegistry = {
@@ -64,7 +69,7 @@ export const methodRegistry = {
     if (input?.workstation) {
       return this.installDependencies(input.workstation);
     } else {
-      CdLogg.warning('Skipping installDependencies: workstation is undefined.');
+      CdLog.warning('Skipping installDependencies: workstation is undefined.');
       return { state: false, data: null };
     }
   },
@@ -75,7 +80,7 @@ export const methodRegistry = {
     if (input) {
       return this.cloneRepositories(input);
     } else {
-      CdLogg.warning('Skipping cloneRepositories: input is undefined.');
+      CdLog.warning('Skipping cloneRepositories: input is undefined.');
       return { state: false, data: null };
     }
   },
@@ -86,7 +91,7 @@ export const methodRegistry = {
     if (input) {
       return this.configureServices(input);
     } else {
-      CdLogg.warning('Skipping configureServices: input is undefined.');
+      CdLog.warning('Skipping configureServices: input is undefined.');
       return { state: false, data: null };
     }
   },
@@ -97,7 +102,7 @@ export const methodRegistry = {
     if (input) {
       return this.startServices(input);
     } else {
-      CdLogg.warning('Skipping startServices: input is undefined.');
+      CdLog.warning('Skipping startServices: input is undefined.');
       return { state: false, data: null };
     }
   },
@@ -106,29 +111,29 @@ export const methodRegistry = {
 export const CdApiSetupTasks: CICdTask<EnvironmentDescriptor>[] = [
   {
     name: 'installDependencies',
-    type: { name: 'bash', inlineScript: 'npm install' },
-    executor: 'script',
+    type: 'script-inline',
+    executor: 'bash',
     status: 'pending',
     methodName: 'installDependencies',
   },
   {
     name: 'cloneRepositories',
-    type: { name: 'bash', inlineScript: 'git clone <repo_url>' },
-    executor: 'script',
+    type: 'script-inline',
+    executor: 'bash',
     status: 'pending',
     methodName: 'cloneRepositories',
   },
   {
     name: 'configureServices',
-    type: { name: 'bash', inlineScript: 'cp .env.example .env' },
-    executor: 'script',
+    type: 'script-inline',
+    executor: 'bash',
     status: 'pending',
     methodName: 'configureServices',
   },
   {
     name: 'startServices',
-    type: { name: 'bash', inlineScript: 'pm2 start app.js' },
-    executor: 'script',
+    type: 'script-inline',
+    executor: 'bash',
     status: 'pending',
     methodName: 'startServices',
   },
@@ -214,6 +219,147 @@ export interface BashScriptDescriptor extends BaseDescriptor {
 export const knownCiCds: CiCdDescriptor[] = [
   {
     cICdPipeline: {
+      name: 'cd-api-ubuntu',
+      type: 'dev-env-setup',
+      stages: [
+        {
+          name: 'User Setup',
+          tasks: [
+            {
+              name: 'Create devops user',
+              type: 'script-inline',
+              executor: 'bash',
+              script:
+                'if ! id "devops" &>/dev/null; then sudo useradd -m -s /bin/bash devops; echo "devops:#cdVault[\'devopsPassword\']" | sudo chpasswd; fi',
+              status: 'pending',
+              cdVault: [
+                {
+                  name: 'devopsPassword',
+                  description: 'DevOps user password',
+                  isEncrypted: true,
+                  value: null, // The plain value is not stored for security
+                  encryptedValue: null, // Encrypted representation of the password
+                  encryptionMeta: {
+                    name: 'default', // Identifier for the encryption configuration
+                    algorithm: 'aes-256-cbc', // Encryption algorithm used
+                    encoding: 'hex', // Encoding format used for storing the encrypted data
+                    ivLength: 16, // Length of the initialization vector (IV)
+                    iv: 'a1b2c3d4e5f6g7h8', // The IV used during encryption
+                    keyDerivationMethod: 'PBKDF2', // Optional: Method used to derive the key
+                    keySalt: 's0m3s4ltv4lu3', // Optional: Salt used for key derivation
+                    encryptedAt: '2025-03-03T12:00:00Z', // Timestamp of encryption
+                  },
+                },
+              ],
+            },
+            {
+              name: 'Set up home directory',
+              type: 'script-inline',
+              executor: 'bash',
+              script:
+                'sudo cp -r /etc/skel/. /home/devops/ && sudo chown -R devops:devops /home/devops/',
+              status: 'pending',
+            },
+            {
+              name: 'Grant sudo access',
+              type: 'script-file',
+              executor: 'bash',
+              scriptFile: '/src/devops-scripts/cd-api/grant_sudo_access.sh',
+              status: 'pending',
+            },
+          ],
+        },
+        {
+          name: 'System Dependencies',
+          tasks: [
+            {
+              name: 'Update system',
+              type: 'script-inline',
+              executor: 'bash',
+              script: 'sudo apt update && sudo apt upgrade -y',
+              status: 'pending',
+            },
+            {
+              name: 'Install required packages',
+              type: 'script-inline',
+              executor: 'bash',
+              script: 'sudo apt install -y net-tools nodejs npm redis-server',
+              status: 'pending',
+            },
+          ],
+        },
+        {
+          name: 'Node.js & TypeScript',
+          tasks: [
+            {
+              name: 'Install TypeScript globally',
+              type: 'method',
+              executor: 'cd-cli',
+              className: 'CdCliUtils',
+              methodName: 'exec',
+              input: {
+                cmds: ['npm install -g typescript'],
+                options: { mode: 'sync' },
+              },
+              status: 'pending',
+            },
+          ],
+        },
+        {
+          name: 'Clone & Setup cd-api',
+          tasks: [
+            {
+              name: 'Clone cd-api repository',
+              type: 'script-inline',
+              executor: 'bash',
+              script:
+                'git clone https://github.com/corpdesk/cd-api.git /home/devops/cd-api',
+              status: 'pending',
+            },
+            {
+              name: 'Install cd-api dependencies',
+              type: 'script-inline',
+              executor: 'bash',
+              script: 'cd /home/devops/cd-api && npm install',
+              status: 'pending',
+            },
+          ],
+        },
+        {
+          name: 'Start Services',
+          tasks: [
+            {
+              name: 'Start Redis Server',
+              type: 'script-inline',
+              executor: 'bash',
+              script: 'sudo systemctl start redis-server',
+              status: 'pending',
+            },
+            {
+              name: 'Start cd-api',
+              type: 'script-inline',
+              executor: 'bash',
+              script: 'cd /home/devops/cd-api && npm run dev',
+              status: 'pending',
+            },
+          ],
+        },
+      ],
+    },
+    cICdTriggers: {
+      type: 'push',
+      branchFilters: ['main'],
+      conditions: { includeTags: true },
+    },
+    cICdEnvironment: {
+      name: 'production',
+      url: 'https://corpdesk.com',
+      type: 'production',
+      deploymentStrategy: 'rolling',
+    },
+  },
+  {
+    cICdPipeline: {
       name: 'Corpdesk CI/CD - Bash Deployment',
       type: 'deployment',
       stages: [
@@ -223,31 +369,20 @@ export const knownCiCds: CiCdDescriptor[] = [
           tasks: [
             {
               name: 'Stop existing services',
-              type: {
-                name: 'bash',
-                inlineScript:
-                  'systemctl stop corpdesk-api && systemctl stop corpdesk-ui',
-              },
-              executor: 'script',
+              type: 'script-inline',
+              executor: 'bash',
               status: 'pending',
             },
             {
               name: 'Pull latest code',
-              type: {
-                name: 'bash',
-                inlineScript: 'git pull origin main',
-              },
-              executor: 'script',
+              type: 'script-inline',
+              executor: 'bash',
               status: 'pending',
             },
             {
               name: 'Start services',
-              type: {
-                name: 'bash',
-                inlineScript:
-                  'systemctl start corpdesk-api && systemctl start corpdesk-ui',
-              },
-              executor: 'script',
+              type: 'script-inline',
+              executor: 'bash',
               status: 'pending',
             },
           ],
@@ -279,8 +414,8 @@ export const defaultCiCd: CiCdDescriptor = {
         tasks: [
           {
             name: 'Default Build Task',
-            type: { name: 'bash', inlineScript: '' },
-            executor: 'script',
+            type: 'script-inline',
+            executor: 'bash',
             status: 'pending',
           },
         ],
@@ -299,6 +434,13 @@ export const defaultCiCd: CiCdDescriptor = {
   },
 };
 
+/**
+ * The source should eventually be from databse (preferably redis)
+ * For experiments, the data will be set at the model files.
+ * @param names
+ * @param cIcDs
+ * @returns
+ */
 export function getCiCdByName(
   names: string[],
   cIcDs: CiCdDescriptor[],

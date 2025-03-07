@@ -9,7 +9,7 @@ import type {
   WorkstationDescriptor,
 } from '../models/workstations.model';
 import { ProgressTrackerService } from '../../cd-cli/services/progress-tracker.service';
-import CdLogg from '../../cd-comm/controllers/cd-logger.controller';
+import CdLog from '../../cd-comm/controllers/cd-logger.controller';
 import { WorkstationAccessController } from '../controllers/workstation-access.controller';
 import { SshService } from './ssh.service';
 import { WorkstationService } from './workstation.service';
@@ -33,8 +33,8 @@ export class DependencyService {
   //   workstation: WorkstationDescriptor,
   //   dependency: DependencyDescriptor,
   // ): Promise<CdFxReturn<null>> {
-  //   CdLogg.debug('installDependency()/workstation:', workstation);
-  //   CdLogg.debug('installDependency()/dependency:', dependency);
+  //   CdLog.debug('installDependency()/workstation:', workstation);
+  //   CdLog.debug('installDependency()/dependency:', dependency);
 
   //   try {
   //     const isInstalled = await this.isDependencyInstalled(
@@ -90,7 +90,7 @@ export class DependencyService {
   //         message: `Successfully installed ${dependency.name} on ${workstation.name}`,
   //       };
   //     } else {
-  //       CdLogg.error(`Could not get the workstation credentials`);
+  //       CdLog.error(`Could not get the workstation credentials`);
   //       return {
   //         data: null,
   //         state: false,
@@ -98,7 +98,7 @@ export class DependencyService {
   //       };
   //     }
   //   } catch (error) {
-  //     CdLogg.error(`installDependency()/error:${error}`);
+  //     CdLog.error(`installDependency()/error:${error}`);
   //     return {
   //       data: null,
   //       state: false,
@@ -316,8 +316,8 @@ export class DependencyService {
     workstation: WorkstationDescriptor,
     dependency: DependencyDescriptor,
   ): Promise<CdFxReturn<boolean>> {
-    CdLogg.debug('isDependencyInstalled()/workstation:', workstation);
-    CdLogg.debug('isDependencyInstalled()/dependency:', dependency);
+    CdLog.debug('isDependencyInstalled()/workstation:', workstation);
+    CdLog.debug('isDependencyInstalled()/dependency:', dependency);
 
     try {
       // Simulate checking for dependency installation
@@ -329,7 +329,7 @@ export class DependencyService {
         message: `Checked installation status for ${dependency.name}`,
       };
     } catch (error) {
-      CdLogg.error(`isDependencyInstalled()/error:${error}`);
+      CdLog.error(`isDependencyInstalled()/error:${error}`);
       return {
         data: null,
         state: false,
@@ -342,8 +342,8 @@ export class DependencyService {
     dependency: DependencyDescriptor,
     os: OperatingSystemDescriptor,
   ): Promise<CdFxReturn<string>> {
-    CdLogg.debug('getInstallationScript()/dependency:', dependency);
-    CdLogg.debug('getInstallationScript()/os:', os);
+    CdLog.debug('getInstallationScript()/dependency:', dependency);
+    CdLog.debug('getInstallationScript()/os:', os);
 
     try {
       // Simulate fetching script from database
@@ -355,7 +355,7 @@ export class DependencyService {
         message: `Fetched installation script for ${dependency.name}`,
       };
     } catch (error) {
-      CdLogg.error(`getInstallationScript()/error:${error}`);
+      CdLog.error(`getInstallationScript()/error:${error}`);
       return {
         data: null,
         state: false,

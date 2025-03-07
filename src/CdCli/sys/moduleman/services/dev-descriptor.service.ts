@@ -5,7 +5,7 @@ import config from '@/config';
 import { HttpService } from '../../base/http.service';
 import { ISessResp } from '../../base/IBase';
 import { CdCliProfileController } from '../../cd-cli/controllers/cd-cli-profile.cointroller';
-import CdLogg from '../../cd-comm/controllers/cd-logger.controller';
+import CdLog from '../../cd-comm/controllers/cd-logger.controller';
 import { SessonController } from '../../user/controllers/session.controller';
 
 export class CdObjService {
@@ -23,25 +23,23 @@ export class CdObjService {
   }
 
   async init() {
-    CdLogg.debug(' CdObjService::init()/starting...');
+    CdLog.debug(' CdObjService::init()/starting...');
     const createCdCliProfile = new CdCliProfileController();
     // const ctlSession = new SessonController();
     const sid: any = await createCdCliProfile.getSessionData(config.cdApiLocal);
-    CdLogg.debug('DevDescritorService::init()/sid:', sid);
+    CdLog.debug('DevDescritorService::init()/sid:', sid);
     if (sid) {
-      CdLogg.debug('DevDescritorService::init()/sid2:', sid);
+      CdLog.debug('DevDescritorService::init()/sid2:', sid);
       this.cdToken = sid;
       this.httpService = new HttpService(true); // Enable debug mode
       const ret = await this.httpService.getCdApiUrl(config.cdApiLocal);
-      CdLogg.debug('DevDescritorService::init()/ret:', ret);
+      CdLog.debug('DevDescritorService::init()/ret:', ret);
       if (ret) {
         this.baseUrl = ret;
-        CdLogg.debug(
-          `DevDescritorService::init()/this.baseUrl:${this.baseUrl}`,
-        );
+        CdLog.debug(`DevDescritorService::init()/this.baseUrl:${this.baseUrl}`);
       }
     } else {
-      CdLogg.error('Session is invalid');
+      CdLog.error('Session is invalid');
     }
   }
 
@@ -70,7 +68,7 @@ export class CdObjService {
   //  * @param res
   //  */
   async getCdObj(q: IQuery) {
-    CdLogg.debug(' CdObjService::getCdObj()/starting...');
+    CdLog.debug(' CdObjService::getCdObj()/starting...');
     const payload = this.setEnvelopeGetCdObj(q);
     this.headers.data = payload;
 
@@ -80,7 +78,7 @@ export class CdObjService {
   }
 
   setEnvelopeGetCdObj(q: IQuery) {
-    CdLogg.debug(' CdObjService::setEnvelopeGetCdObj()/starting...');
+    CdLog.debug(' CdObjService::setEnvelopeGetCdObj()/starting...');
     return {
       ctx: 'Sys',
       m: 'Moduleman',

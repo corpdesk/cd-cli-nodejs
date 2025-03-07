@@ -8,7 +8,7 @@ import config from './config';
 import { name, version } from '../package.json';
 import 'zx/globals';
 import { setLogLevel } from './CdCli/sys/cd-comm/controllers/cd-winston';
-import CdLogg from './CdCli/sys/cd-comm/controllers/cd-logger.controller';
+import CdLog from './CdCli/sys/cd-comm/controllers/cd-logger.controller';
 import { CdCli } from './CdCli/sys/cd-cli/models/cd-cli.model';
 // import { logger } from './CdCli/sys/cd-comm/controllers/cd-winston';
 
@@ -45,7 +45,7 @@ export class App {
       (level: any) => {
         // Parse the level and set it
         setLogLevel(level);
-        CdLogg.setDebugLevel(level);
+        CdLog.setDebugLevel(level);
         return level; // Return the level to be used internally
       },
       'info', // Default level
@@ -62,7 +62,7 @@ export class App {
       }),
     );
 
-    // CdLogg.info('config:', config);
+    // CdLog.info('config:', config);
     // Command registration: Ensuring that we register commands properly
     // console.log('CdCli.commands:', CdCli.commands);
     for (const command of CdCli.commands) {
@@ -79,7 +79,7 @@ export class App {
       // Check for subcommands
       if (command.subcommands) {
         for (const subcommand of command.subcommands) {
-          // CdLogg.debug('subcommand.name:', subcommand.name);
+          // CdLog.debug('subcommand.name:', subcommand.name);
           const subCmd = cmd
             .command(subcommand.name)
             .description(subcommand.description);

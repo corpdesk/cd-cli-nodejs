@@ -5,7 +5,7 @@ import {
 } from '../models/cicd-descriptor.model';
 /* eslint-disable style/brace-style */
 import { CD_FX_FAIL, type CdFxReturn } from '../../base/IBase';
-import CdLogg from '../../cd-comm/controllers/cd-logger.controller';
+import CdLog from '../../cd-comm/controllers/cd-logger.controller';
 
 export class CiCdService {
   static async initializeStepMap<T extends { ciCd: CiCdDescriptor[] }>(
@@ -31,14 +31,14 @@ export class CiCdService {
                   const result = await method(input); // ✅ Await method call
                   if (!result.state) {
                     allSuccessful = false; // If any task fails, mark overall failure
-                    CdLogg.error(
+                    CdLog.error(
                       `Task "${task.name}" failed: ${result.message || 'Unknown error'}`,
                     );
                   }
                   return result;
                 } catch (error) {
                   allSuccessful = false; // Mark failure on exception
-                  CdLogg.error(
+                  CdLog.error(
                     `Task "${task.name}" encountered an error: ${error}`,
                   );
                   return {
@@ -51,7 +51,7 @@ export class CiCdService {
               0,
             );
           } else {
-            CdLogg.warning(
+            CdLog.warning(
               `Skipping task "${task.name}": No valid method found.`,
             );
             allSuccessful = false;

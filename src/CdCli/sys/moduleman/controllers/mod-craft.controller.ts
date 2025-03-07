@@ -15,7 +15,7 @@ import util, { promisify } from 'node:util';
 import { CONFIG_FILE_PATH } from '@/config';
 import inquirer from 'inquirer';
 import CdCliVaultController from '../../cd-cli/controllers/cd-cli-vault.controller';
-import CdLogg from '../../cd-comm/controllers/cd-logger.controller';
+import CdLog from '../../cd-comm/controllers/cd-logger.controller';
 import { SSH_TO_DEV_PROMPT_DATA } from '../models/mod-craft.model';
 
 const execPromise = promisify(exec);
@@ -63,21 +63,21 @@ export class ModCraftController {
       }
 
       // Clone the repository
-      CdLogg.info(`Cloning template from ${gitRepo}...`, {
+      CdLog.info(`Cloning template from ${gitRepo}...`, {
         module: 'moduleman',
         controller: 'ModCraftController',
         action: 'initTemplate',
       });
       await execPromise(`git clone ${gitRepo} ${targetDir}`);
-      CdLogg.info(`Template cloned to ${targetDir}.`);
+      CdLog.info(`Template cloned to ${targetDir}.`);
 
       // Update configuration files if necessary
       console.log(`Configuring the module...`);
       this.updateConfigFiles(targetDir, moduleName);
 
-      CdLogg.success(`✨ Module ${moduleName} initialized successfully.`);
+      CdLog.success(`✨ Module ${moduleName} initialized successfully.`);
     } catch (error) {
-      CdLogg.error(`Error initializing module: ${(error as Error).message}`);
+      CdLog.error(`Error initializing module: ${(error as Error).message}`);
     }
   }
 
@@ -129,7 +129,7 @@ export class ModCraftController {
   // import { checkProfileAndLogin } from '../../utils/profileHelper'; // Assuming the helper is in utils
 
   async initModuleFromRepo(gitRepo: string, profileName?: string) {
-    CdLogg.debug('starting initModuleFromRepo():', {
+    CdLog.debug('starting initModuleFromRepo():', {
       repo: gitRepo,
       pName: profileName,
       configPath: CONFIG_FILE_PATH,
@@ -162,7 +162,7 @@ export class ModCraftController {
           throw new Error(`Profile '${profileName}' not found.`);
         }
         profileDetails = profile.cdCliProfileData?.details;
-        CdLogg.debug('profileDetails:', profileDetails);
+        CdLog.debug('profileDetails:', profileDetails);
 
         // Decrypt sensitive data using CdCliVaultController
         if (profileDetails?.['cd-vault']) {
@@ -170,10 +170,10 @@ export class ModCraftController {
             profileDetails['cd-vault'],
           );
         }
-        CdLogg.info(`Using profile: ${profileName}`);
+        CdLog.info(`Using profile: ${profileName}`);
       }
 
-      CdLogg.debug(`profileDetails: ${JSON.stringify(profileDetails)}`);
+      CdLog.debug(`profileDetails: ${JSON.stringify(profileDetails)}`);
       // If no profile or details found, prompt the user
       if (!profileDetails) {
         const answers = await inquirer.prompt(SSH_TO_DEV_PROMPT_DATA);
@@ -188,14 +188,14 @@ export class ModCraftController {
 
       // Step 3: Construct SSH command
       const { remoteUser, sshKey, remoteServer, cdApiDir } = profileDetails;
-      CdLogg.debug(`remoteUser: ${remoteUser}, remoteServer: ${remoteServer}`);
+      CdLog.debug(`remoteUser: ${remoteUser}, remoteServer: ${remoteServer}`);
 
       const command = sshKey
         ? `ssh -i "${sshKey}" "${remoteUser}@${remoteServer}" "sudo -H -u ${remoteUser} bash -c 'git clone ${gitRepo} ${cdApiDir}/src/CdApi/app/cd-geo'"`
         : `ssh "${remoteUser}@${remoteServer}" "sudo -H -u ${remoteUser} bash -c 'git clone ${gitRepo} ${cdApiDir}/src/CdApi/app/cd-geo'"`;
 
       // Step 4: Execute SSH command and log output
-      CdLogg.info(
+      CdLog.info(
         `Executing SSH command to clone repository from ${gitRepo} on server ${remoteServer}...`,
       );
 
@@ -225,15 +225,15 @@ export class ModCraftController {
 
       process.on('close', (code) => {
         if (code === 0) {
-          CdLogg.success(
+          CdLog.success(
             `Module successfully cloned into ${cdApiDir}/src/CdApi/app.`,
           );
         } else {
-          CdLogg.error(`Git clone process exited with code ${code}.`);
+          CdLog.error(`Git clone process exited with code ${code}.`);
         }
       });
     } catch (error) {
-      CdLogg.error(
+      CdLog.error(
         `Error initializing module from repository: ${(error as Error).message}`,
       );
     }

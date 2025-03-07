@@ -23,7 +23,7 @@ import {
 import { CD_FX_FAIL, type CdFxReturn, type IQuery } from '../../base/IBase';
 import { CdCliProfileController } from '../../cd-cli/controllers/cd-cli-profile.cointroller';
 import { ProgressTrackerService } from '../../cd-cli/services/progress-tracker.service';
-import CdLogg from '../../cd-comm/controllers/cd-logger.controller';
+import CdLog from '../../cd-comm/controllers/cd-logger.controller';
 import { ServiceController } from '../controllers/service.controller';
 import { WorkstationAccessController } from '../controllers/workstation-access.controller';
 import { getEnvironmentVariablesByContext } from '../models/os.model';
@@ -51,7 +51,7 @@ export class EnvironmentService extends BaseService {
   svSsh: SshService;
   progressTracker = new ProgressTrackerService();
   ctlService: ServiceController;
-  ctlCdCliProfile: CdCliProfileController;
+  // ctlCdCliProfile: CdCliProfileController;
   svCiCd: CiCdService;
 
   stepMap: {
@@ -70,7 +70,7 @@ export class EnvironmentService extends BaseService {
     this.svSsh = new SshService();
     this.ctlService = new ServiceController();
     this.svCiCd = new CiCdService();
-    this.ctlCdCliProfile = new CdCliProfileController();
+    // ctlCdCliProfile = new CdCliProfileController();
   }
 
   /**
@@ -89,10 +89,10 @@ export class EnvironmentService extends BaseService {
     devEnviron: EnvironmentDescriptor,
     steps?: number[],
   ): Promise<CdFxReturn<null>> {
-    CdLogg.debug(
+    CdLog.debug(
       `EnvironmentService::setupEnvironment()/devEnviron:${devEnviron}`,
     );
-    CdLogg.debug(`EnvironmentService::setupEnvironment()/steps:${steps}`);
+    CdLog.debug(`EnvironmentService::setupEnvironment()/steps:${steps}`);
     try {
       if (!devEnviron.ciCd) {
         return CD_FX_FAIL;
@@ -105,7 +105,7 @@ export class EnvironmentService extends BaseService {
         this.progressTracker,
       );
 
-      CdLogg.debug(
+      CdLog.debug(
         `EnvironmentService::setupEnvironment()/resInitStepMap:${resInitStepMap}`,
       );
 
@@ -118,7 +118,7 @@ export class EnvironmentService extends BaseService {
       }
 
       const registeredSteps = this.progressTracker.getSteps();
-      CdLogg.debug(
+      CdLog.debug(
         `EnvironmentService::setupEnvironment()/registeredSteps:${registeredSteps}`,
       );
 
@@ -131,7 +131,7 @@ export class EnvironmentService extends BaseService {
         this.progressTracker.updateProgress(key, 'in-progress', totalTasks, 0);
 
         const result = await method();
-        CdLogg.debug(`EnvironmentService::setupEnvironment()/result:${result}`);
+        CdLog.debug(`EnvironmentService::setupEnvironment()/result:${result}`);
 
         if (!result.state) {
           this.progressTracker.updateProgress(key, 'failed');
@@ -165,7 +165,7 @@ export class EnvironmentService extends BaseService {
   ): Promise<CdFxReturn<null>> {
     const retValidWS = this.svWorkstation.validateWorkstation(workstation);
     if (!retValidWS) {
-      CdLogg.error('This workstation is invalid!');
+      CdLog.error('This workstation is invalid!');
       return CD_FX_FAIL;
     }
     const stepKey = 'installDependencies';
@@ -379,10 +379,10 @@ export class EnvironmentService extends BaseService {
       }
 
       for (const service of devEnviron.services) {
-        CdLogg.info(`Configuring service: ${service.serviceName}`);
+        CdLog.info(`Configuring service: ${service.serviceName}`);
 
         if (!service.configuration) {
-          CdLogg.warning(
+          CdLog.warning(
             `Skipping ${service.serviceName}: No configuration found.`,
           );
           continue;
@@ -399,7 +399,7 @@ export class EnvironmentService extends BaseService {
         // Apply configuration (Placeholder for actual implementation)
         await this.applyServiceConfiguration(service);
 
-        CdLogg.success(`Successfully configured ${service.serviceName}`);
+        CdLog.success(`Successfully configured ${service.serviceName}`);
       }
 
       this.progressTracker.updateProgress(stepKey, 'completed', 1, 1);
@@ -427,29 +427,27 @@ export class EnvironmentService extends BaseService {
 
     switch (credentials.type) {
       case 'apiKey':
-        CdLogg.info(`Authenticating ${service.serviceName} using API key...`);
+        CdLog.info(`Authenticating ${service.serviceName} using API key...`);
         return !!credentials.apiKey;
 
       case 'usernamePassword':
-        CdLogg.info(
+        CdLog.info(
           `Authenticating ${service.serviceName} with username/password...`,
         );
         return !!credentials.username && !!credentials.password;
 
       case 'oauth':
-        CdLogg.info(
-          `Authenticating ${service.serviceName} with OAuth token...`,
-        );
+        CdLog.info(`Authenticating ${service.serviceName} with OAuth token...`);
         return !!credentials.token;
 
       case 'custom':
-        CdLogg.info(
+        CdLog.info(
           `Authenticating ${service.serviceName} with custom method...`,
         );
         return !!credentials.customAuthConfig;
 
       default:
-        CdLogg.warning(
+        CdLog.warning(
           `Unknown authentication method for ${service.serviceName}`,
         );
         return false;
@@ -460,7 +458,7 @@ export class EnvironmentService extends BaseService {
     service: BaseServiceDescriptor,
   ): Promise<void> {
     // Placeholder for actual configuration logic
-    CdLogg.debug(
+    CdLog.debug(
       `Applying configuration for ${service.serviceName}:`,
       service.configuration,
     );
@@ -482,10 +480,10 @@ export class EnvironmentService extends BaseService {
       }
 
       for (const service of devEnviron.services) {
-        CdLogg.info(`Starting service: ${service.serviceName}`);
+        CdLog.info(`Starting service: ${service.serviceName}`);
 
         if (!service.configuration) {
-          CdLogg.warning(
+          CdLog.warning(
             `Skipping ${service.serviceName}: No configuration found.`,
           );
           continue;
@@ -502,7 +500,7 @@ export class EnvironmentService extends BaseService {
         // Start service based on its type
         await this.ctlService.startService(service);
 
-        CdLogg.success(`Successfully started ${service.serviceName}`);
+        CdLog.success(`Successfully started ${service.serviceName}`);
       }
 
       this.progressTracker.updateProgress(stepKey, 'completed', 1, 1);
@@ -668,28 +666,29 @@ export class EnvironmentService extends BaseService {
     name: string,
     workstation: string,
   ): Promise<CdFxReturn<EnvironmentDescriptor>> {
-    CdLogg.debug(`EnvironmentService::buildEnvironmentData()/name:${name}`);
-    CdLogg.debug(
+    CdLog.debug(`EnvironmentService::buildEnvironmentData()/name:${name}`);
+    CdLog.debug(
       `EnvironmentService::buildEnvironmentData()/workstation:${workstation}`,
     );
     /**
-     * pull appropriate profile from the cd-cli.config.json
+     * pull appropriate profile from the cd-cli.config.json (which is a session storage from database)
      */
-    const ret = await this.ctlCdCliProfile.getProfileByName(name);
-    CdLogg.debug(`EnvironmentService::buildEnvironmentData()/ret:${ret}`);
+    const ctlCdCliProfile = new CdCliProfileController();
+    const ret = await ctlCdCliProfile.getProfileByName(name);
+    CdLog.debug(`EnvironmentService::buildEnvironmentData()/ret:${ret}`);
     if (!ret.state || !ret.data) {
-      CdLogg.debug('could not load profiles');
+      CdLog.debug('could not load profiles');
       return { state: false, data: null, message: 'could not load profile' };
     }
 
     const cdCliProfile: ProfileModel = ret.data;
-    CdLogg.debug(
+    CdLog.debug(
       'CdAutoGitController::getGitHubProfile()/cdCliProfile:',
       cdCliProfile,
     );
 
     const environment = cdCliProfile.cdCliProfileData?.details;
-    CdLogg.debug(
+    CdLog.debug(
       `EnvironmentService::buildEnvironmentData()/environment:${environment}`,
     );
     if (!environment) {
@@ -703,8 +702,12 @@ export class EnvironmentService extends BaseService {
     // const devEnv = { ...defaultEnvironment };
     const devEnv = { ...environment };
 
+    /**
+     * The source should eventually be from databse (preferably redis)
+     * For experiments, the data will be set at the model files.
+     */
     const resCiCd = [getCiCdByName([name], knownCiCds)];
-    CdLogg.debug(
+    CdLog.debug(
       `EnvironmentService::buildEnvironmentData()/resCiCd:${resCiCd}`,
     );
     if (resCiCd) {
@@ -712,10 +715,12 @@ export class EnvironmentService extends BaseService {
     }
 
     /**
-     * use context to pull the relevant environment variables
+     * Use context to pull the relevant environment variables
+     * The source should eventually be from databse (preferably redis)
+     * For experiments, the data will be set at the model files.
      */
     const resEnvironmentVariables = getEnvironmentVariablesByContext(name);
-    CdLogg.debug(
+    CdLog.debug(
       `EnvironmentService::buildEnvironmentData()/resEnvironmentVariables:${resEnvironmentVariables}`,
     );
 
@@ -724,7 +729,7 @@ export class EnvironmentService extends BaseService {
     }
 
     const resServices = getServiceByName([name], services);
-    CdLogg.debug(
+    CdLog.debug(
       `EnvironmentService::buildEnvironmentData()/resServices:${resServices}`,
     );
     if (resServices) {
@@ -735,7 +740,7 @@ export class EnvironmentService extends BaseService {
       name,
       testingFrameworks,
     );
-    CdLogg.debug(
+    CdLog.debug(
       `EnvironmentService::buildEnvironmentData()/resTestingFrameworks:${resTestingFrameworks}`,
     );
     if (resTestingFrameworks) {
@@ -746,7 +751,7 @@ export class EnvironmentService extends BaseService {
       name,
       versionControlRepositories,
     );
-    CdLogg.debug(
+    CdLog.debug(
       `EnvironmentService::buildEnvironmentData()/resVersionControl:${resVersionControl}`,
     );
     if (resVersionControl) {
@@ -754,14 +759,14 @@ export class EnvironmentService extends BaseService {
     }
 
     const resWorkstation = getWorkstationByName(workstation, workstations);
-    CdLogg.debug(
+    CdLog.debug(
       `EnvironmentService::buildEnvironmentData()/resWorkstation:${resWorkstation}`,
     );
     if (resWorkstation) {
       devEnv.workstation = resWorkstation;
     }
     const retValidDevEnv = this.validateEnvironment(devEnv);
-    CdLogg.debug(
+    CdLog.debug(
       `EnvironmentService::buildEnvironmentData()/retValidDevEnv:${retValidDevEnv}`,
     );
     if (!retValidDevEnv) {

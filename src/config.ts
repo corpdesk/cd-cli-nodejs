@@ -2,7 +2,7 @@ import type { ISessResp } from './CdCli/sys/base/IBase';
 import { existsSync } from 'node:fs';
 /* eslint-disable node/prefer-global/process */
 import path, { join } from 'node:path';
-import CdLogg from './CdCli/sys/cd-comm/controllers/cd-logger.controller';
+import CdLog from './CdCli/sys/cd-comm/controllers/cd-logger.controller';
 
 export const CONFIG_FILE_PATH = join(
   process.env.HOME || '~/',

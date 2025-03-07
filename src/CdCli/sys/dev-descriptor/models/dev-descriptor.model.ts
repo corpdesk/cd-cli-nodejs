@@ -1,4 +1,9 @@
+import { CdObjModel } from '../../moduleman/models/cd-obj.model';
 import type { BaseDescriptor } from './base-descriptor.model';
+
+export interface CdDescriptor extends CdObjModel {
+  jDetails?: TypeDescriptor[];
+}
 
 export interface TypeDescriptor extends BaseDescriptor {
   field: string;
@@ -17,9 +22,17 @@ export interface TypeDetails extends BaseDescriptor {
   extend?: number;
 }
 
-export interface CdDescriptor extends BaseDescriptor {
-  cdObjId: number;
-  cdObjName: string;
-  cdObjGuid?: string;
-  jDetails?: TypeDescriptor[];
+/**
+ * Utility function to convert CdDescriptor into CdObjModel
+ */
+export function mapDescriptorToCdObj(descriptor: CdDescriptor): CdObjModel {
+  console.log('DevDescriptorModel::mapDescriptorToCdObj()/starting...');
+  const cdObj = new CdObjModel();
+  cdObj.cdObjId = descriptor.cdObjId;
+  cdObj.cdObjName = descriptor.cdObjName;
+  cdObj.cdObjGuid = descriptor.cdObjGuid;
+  cdObj.jDetails = descriptor.jDetails
+    ? JSON.stringify(descriptor.jDetails)
+    : null;
+  return cdObj;
 }

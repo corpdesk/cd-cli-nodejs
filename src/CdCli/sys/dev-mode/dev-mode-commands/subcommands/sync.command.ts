@@ -1,5 +1,9 @@
-import CdLogg from '@/CdCli/sys/cd-comm/controllers/cd-logger.controller';
+/**
+ * sync descriptor-data --name knownCiCds  --type CiCdDescriptor --db redis;
+ */
+import CdLog from '@/CdCli/sys/cd-comm/controllers/cd-logger.controller';
 import { DevDescriptorController } from '@/CdCli/sys/dev-descriptor/controllers/dev-descriptor.controller';
+import chalk from 'chalk';
 
 export const syncCommand = {
   name: 'sync',
@@ -8,38 +12,78 @@ export const syncCommand = {
     { flags: 'descriptors', description: 'Sync descriptors.' },
     { flags: 'apps', description: 'Sync apps.' },
     { flags: 'modules', description: 'Sync modules.' },
+    {
+      flags: '--db <type>',
+      description: "Specify database type: 'mysql', 'redis', or 'all'.",
+    },
+    {
+      flags: '--name <name>',
+      description: 'Specify the name of the descriptor to sync.',
+    },
+    {
+      flags: '--type <type>',
+      description: 'Specify the descriptor type (e.g., CiCdDescriptor).',
+    },
   ],
   action: {
     execute: async (options: any) => {
       const resource = options._[0]; // First positional argument (resource type)
-      const names = options._.slice(1); // Additional positional arguments (list of names)
+      const db = options.db || 'all'; // Get the --db flag value, default to 'all'
+      const name = options.name || null;
+      const type = options.type || null;
 
       if (!resource) {
         console.log(chalk.red('Error: Please specify a resource to sync.'));
         return;
       }
 
-      CdLogg.debug(
-        `DevModeModel::syncCommand()/resource:${resource}, names:${JSON.stringify(names)}`,
+      if (!['mysql', 'redis', 'all'].includes(db)) {
+        console.log(
+          chalk.red(
+            "Error: Invalid database type. Use 'mysql', 'redis', or 'all'.",
+          ),
+        );
+        return;
+      }
+
+      CdLog.debug(
+        `DevModeModel::syncCommand()/resource:${resource}, name:${name}, type:${type}, dbType:${db}`,
       );
 
       const devDescriptor = new DevDescriptorController();
 
       switch (resource.toLowerCase()) {
         case 'descriptors':
-          await devDescriptor.syncDescriptors(names);
+          await devDescriptor.syncDescriptors([name], db);
           console.log(chalk.green('✔ Synced descriptors successfully.'));
           break;
+        case 'descriptor-data':
+          if (!name || !type) {
+            console.log(
+              chalk.red(
+                'Error: --name and --type are required for descriptor-data.',
+              ),
+            );
+            return;
+          }
+          await devDescriptor.syncDescriptorData(name, type, db);
+          console.log(
+            chalk.green(
+              `✔ Synced descriptor data for ${name} of type ${type}.`,
+            ),
+          );
+          break;
         case 'apps':
-          await devDescriptor.syncApps(names);
+          await devDescriptor.syncApps([name], db);
           console.log(chalk.green('✔ Synced apps successfully.'));
           break;
         case 'modules':
-          await devDescriptor.syncModules(names);
+          await devDescriptor.syncModules([name], db);
           console.log(chalk.green('✔ Synced modules successfully.'));
           break;
         default:
-          console.log(chalk.red(`Unknown sync resource: ${resource}`));
+          console.log(`resource length: ${resource.length}`);
+          console.log(chalk.red(`Unknown sync resource: '${resource}'`));
           break;
       }
     },

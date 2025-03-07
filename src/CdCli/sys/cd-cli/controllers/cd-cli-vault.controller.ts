@@ -14,7 +14,7 @@ import path, { join } from 'node:path';
 // import { loadCdCliConfig } from '@/config';
 import axios from 'axios';
 import inquirer from 'inquirer';
-import CdLogg from '../../cd-comm/controllers/cd-logger.controller';
+import CdLog from '../../cd-comm/controllers/cd-logger.controller';
 import {
   ENCRYPTION_CONFIGS,
   VAULT_DIRECTORY,
@@ -27,16 +27,16 @@ if (!existsSync(VAULT_DIRECTORY)) {
 }
 
 class CdCliVaultController {
-  ctlCdCliProfile: CdCliProfileController;
+  // ctlCdCliProfile: CdCliProfileController;
   constructor() {
-    this.ctlCdCliProfile = new CdCliProfileController();
+    // ctlCdCliProfile = new CdCliProfileController();
   }
 
   static async getEncryptionKey(): Promise<Buffer> {
     let encryptionKey = process.env.CD_CLI_ENCRYPT_KEY;
 
     if (!encryptionKey) {
-      CdLogg.warning('Encryption key not found in environment variables.');
+      CdLog.warning('Encryption key not found in environment variables.');
 
       // Prompt user for action
       const answers = await inquirer.prompt([
@@ -102,7 +102,7 @@ class CdCliVaultController {
   static createEncryptionKey(): string {
     const newKey = crypto.randomBytes(32).toString('hex');
     this.saveEncryptionKey(newKey);
-    CdLogg.success('New encryption key created and saved.');
+    CdLog.success('New encryption key created and saved.');
     return newKey;
   }
 
@@ -117,7 +117,7 @@ class CdCliVaultController {
 
     // Ensure the .env file exists or create it
     if (!existsSync(envFilePath)) {
-      CdLogg.info('Creating .env file for storing the encryption key...');
+      CdLog.info('Creating .env file for storing the encryption key...');
       fs.writeFileSync(envFilePath, '');
     }
 
@@ -131,7 +131,7 @@ class CdCliVaultController {
       : `${envFileContent}\nCD_CLI_ENCRYPT_KEY=${encryptionKey}`.trim();
 
     fs.writeFileSync(envFilePath, updatedContent, 'utf-8');
-    CdLogg.success('Encryption key saved to .env file.');
+    CdLog.success('Encryption key saved to .env file.');
   }
 
   /**
@@ -142,9 +142,7 @@ class CdCliVaultController {
       const encryptionKeyBuffer = this.getEncryptionKey();
       console.log('Encryption Key Buffer:', encryptionKeyBuffer);
     } catch (error) {
-      CdLogg.error(
-        `Error fetching encryption key: ${(error as Error).message}`,
-      );
+      CdLog.error(`Error fetching encryption key: ${(error as Error).message}`);
     }
   }
 
@@ -162,12 +160,12 @@ class CdCliVaultController {
     text: string,
     metaName: string,
   ): Promise<CdVault | null> {
-    CdLogg.debug('starting CdCliVaultController::encrypt()');
+    CdLog.debug('starting CdCliVaultController::encrypt()');
     try {
       const meta = this.getEncryptionMetaByName(metaName);
-      CdLogg.debug('CdCliVaultController::encrypt()/meta:', meta);
+      CdLog.debug('CdCliVaultController::encrypt()/meta:', meta);
       const iv = crypto.randomBytes(meta.ivLength);
-      CdLogg.debug('CdCliVaultController::encrypt()/iv:', iv);
+      CdLog.debug('CdCliVaultController::encrypt()/iv:', iv);
       const cipher = crypto.createCipheriv(
         meta.algorithm,
         await this.getEncryptionKey(),
@@ -194,7 +192,7 @@ class CdCliVaultController {
         } as EncryptionMeta & { iv: string; encryptedAt: string },
       };
     } catch (e) {
-      CdLogg.error(`Could not complete encryption: ${(e as Error).message}`);
+      CdLog.error(`Could not complete encryption: ${(e as Error).message}`);
       return null;
     }
   }
@@ -224,9 +222,9 @@ class CdCliVaultController {
     vault: CdVault,
     metaName = 'default',
   ): Promise<CdVault | null> {
-    CdLogg.debug('starting CdCliVaultController::encryptValue()');
-    CdLogg.debug('CdCliVaultController::encryptValue()/vault:', vault);
-    CdLogg.debug('CdCliVaultController::encryptValue()/metaName:', {
+    CdLog.debug('starting CdCliVaultController::encryptValue()');
+    CdLog.debug('CdCliVaultController::encryptValue()/vault:', vault);
+    CdLog.debug('CdCliVaultController::encryptValue()/metaName:', {
       mn: metaName,
     });
     if (vault.isEncrypted || !vault.value) {
@@ -236,7 +234,7 @@ class CdCliVaultController {
     }
 
     const encryptedVault = await this.encrypt(vault.value, metaName);
-    CdLogg.debug('CdCliVaultController::encryptValue()/encryptedVault:', {
+    CdLog.debug('CdCliVaultController::encryptValue()/encryptedVault:', {
       encryptV: encryptedVault,
     });
 
@@ -257,12 +255,12 @@ class CdCliVaultController {
     encryptionMeta: EncryptionMeta & { iv: string },
     encryptedValue: string,
   ): Promise<string | null> {
-    CdLogg.debug('starting CdCliValutController::decrypt()');
-    CdLogg.debug(
+    CdLog.debug('starting CdCliValutController::decrypt()');
+    CdLog.debug(
       'CdCliValutController::decrypt()/encryptionMeta:',
       encryptionMeta,
     );
-    CdLogg.debug('CdCliValutController::decrypt()/encryptedValue:', {
+    CdLog.debug('CdCliValutController::decrypt()/encryptedValue:', {
       e: encryptedValue,
     });
 
@@ -274,7 +272,7 @@ class CdCliVaultController {
       }
 
       const iv = Buffer.from(encryptionMeta.iv, encryptionMeta.encoding);
-      CdLogg.debug('CdCliValutController::decrypt()/iv:', { vector: iv });
+      CdLog.debug('CdCliValutController::decrypt()/iv:', { vector: iv });
 
       const encryptionKey = await this.getEncryptionKey();
       const decipher = crypto.createDecipheriv(
@@ -282,7 +280,7 @@ class CdCliVaultController {
         encryptionKey,
         iv,
       );
-      CdLogg.debug('CdCliValutController::decrypt()/decipher:', decipher);
+      CdLog.debug('CdCliValutController::decrypt()/decipher:', decipher);
 
       let decrypted = decipher.update(
         encryptedValue,
@@ -290,14 +288,52 @@ class CdCliVaultController {
         'utf8',
       );
       decrypted += decipher.final('utf8');
-      CdLogg.debug('CdCliValutController::decrypt()/07');
+      CdLog.debug('CdCliValutController::decrypt()/07');
 
       return await decrypted;
     } catch (e) {
-      CdLogg.error('Error at CdCliValutController::decrypt()/e:', {
+      CdLog.error('Error at CdCliValutController::decrypt()/e:', {
         e: (e as Error).message,
       });
       return await null;
+    }
+  }
+
+  static async decryptValue(secret: CdVault): Promise<string | null> {
+    try {
+      if (!secret.encryptionMeta) {
+        console.error(`Missing encryption metadata for ${secret.name}`);
+        return null;
+      }
+
+      if (!secret.encryptedValue) {
+        console.error(`No encrypted value found for ${secret.name}`);
+        return null;
+      }
+
+      const encryptionKey = await this.getEncryptionKey();
+      const { iv, encoding, algorithm } = secret.encryptionMeta;
+
+      if (!iv) {
+        console.error(`Missing IV for ${secret.name}`);
+        return null;
+      }
+
+      const ivBuffer = Buffer.from(iv, encoding);
+      const encryptedValueBuffer = Buffer.from(secret.encryptedValue, encoding);
+
+      const decipher = crypto.createDecipheriv(
+        algorithm,
+        encryptionKey,
+        ivBuffer,
+      );
+      let decrypted = decipher.update(encryptedValueBuffer);
+      decrypted = Buffer.concat([decrypted, decipher.final()]);
+
+      return decrypted.toString();
+    } catch (error) {
+      console.error(`Decryption failed for ${secret.name}:`, error);
+      return null;
     }
   }
 
@@ -377,7 +413,7 @@ class CdCliVaultController {
 
   public static async fetchAndSaveProfiles(cdToken: string): Promise<void> {
     if (!cdToken) {
-      CdLogg.error('No valid cdToken found. Cannot fetch profiles.');
+      CdLog.error('No valid cdToken found. Cannot fetch profiles.');
       return;
     }
 
@@ -392,12 +428,12 @@ class CdCliVaultController {
         const profiles = response.data.profiles || { items: [], count: 0 };
         const profilesPath = join(VAULT_DIRECTORY, 'profile.json');
         this.storeSensitiveData(profilesPath, JSON.stringify(profiles));
-        CdLogg.success('Profiles saved successfully.');
+        CdLog.success('Profiles saved successfully.');
       } else {
-        CdLogg.error(`Failed to fetch profiles: ${response.data.message}`);
+        CdLog.error(`Failed to fetch profiles: ${response.data.message}`);
       }
     } catch (error) {
-      CdLogg.error('Error fetching profiles:', {
+      CdLog.error('Error fetching profiles:', {
         error: (error as Error).message,
       });
     }
@@ -424,14 +460,14 @@ class CdCliVaultController {
     profileName: string | null = null,
     jPath: string | null = null,
   ): Promise<any> {
-    this.ctlCdCliProfile = new CdCliProfileController();
-    const profileRet = await this.ctlCdCliProfile.loadProfiles();
+    const ctlCdCliProfile = new CdCliProfileController();
+    const profileRet = await ctlCdCliProfile.loadProfiles();
     if (!profileRet.state || !profileRet.data) {
-      CdLogg.error(`Failed to load profiles: ${profileRet.message}`);
+      CdLog.error(`Failed to load profiles: ${profileRet.message}`);
       return null; // Handle the failure case properly
     }
 
-    // const cdCliConfig = this.ctlCdCliProfile.loadProfiles();
+    // const cdCliConfig = ctlCdCliProfile.loadProfiles();
     const cdCliConfig = profileRet.data;
 
     if (!profileName && !jPath) {

@@ -11,7 +11,7 @@ import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { promisify } from 'node:util';
 import { CdCliProfileController } from '@/CdCli/sys/cd-cli/controllers/cd-cli-profile.cointroller';
-import CdLogg from '@/CdCli/sys/cd-comm/controllers/cd-logger.controller';
+import CdLog from '@/CdCli/sys/cd-comm/controllers/cd-logger.controller';
 import { CONFIG_FILE_PATH } from '@/config';
 import inquirer from 'inquirer';
 // import { CdCliProfileController } from '../../cd-cli/controllers/cd-cli-profile.cointroller';
@@ -20,7 +20,7 @@ import {
   DEFAULT_PROMPT_DATA,
   InitModuleFromRepoPromptData,
 } from '../models/mod-craft.model';
-// import CdLogg from '@/CdCli/sys/cd-comm/controllers/cd-logger.controller';
+// import CdLog from '@/CdCli/sys/cd-comm/controllers/cd-logger.controller';
 
 const execPromise = promisify(exec);
 // Construct __dirname for ES Modules
@@ -67,21 +67,21 @@ export class ModCraftController {
       }
 
       // Clone the repository
-      CdLogg.info(`Cloning template from ${gitRepo}...`, {
+      CdLog.info(`Cloning template from ${gitRepo}...`, {
         module: 'moduleman',
         controller: 'ModCraftController',
         action: 'initTemplate',
       });
       await execPromise(`git clone ${gitRepo} ${targetDir}`);
-      CdLogg.info(`Template cloned to ${targetDir}.`);
+      CdLog.info(`Template cloned to ${targetDir}.`);
 
       // Update configuration files if necessary
       console.log(`Configuring the module...`);
       this.updateConfigFiles(targetDir, moduleName);
 
-      CdLogg.success(`✨ Module ${moduleName} initialized successfully.`);
+      CdLog.success(`✨ Module ${moduleName} initialized successfully.`);
     } catch (error) {
-      CdLogg.error(`Error initializing module: ${(error as Error).message}`);
+      CdLog.error(`Error initializing module: ${(error as Error).message}`);
     }
   }
 
@@ -154,7 +154,7 @@ export class ModCraftController {
         if (!profileDetails) {
           throw new Error(`Profile '${profileName}' not found.`);
         }
-        CdLogg.info(`Using profile name: ${profileName}`);
+        CdLog.info(`Using profile name: ${profileName}`);
       }
 
       // If no profile data found, prompt for connection details
@@ -184,7 +184,7 @@ export class ModCraftController {
       }
 
       // Execute the SSH command and display real-time output
-      CdLogg.info(
+      CdLog.info(
         `Executing SSH command to clone repository from ${gitRepo} on server ${devServer}...`,
       );
 
@@ -219,15 +219,15 @@ export class ModCraftController {
 
       process.on('close', (code) => {
         if (code === 0) {
-          CdLogg.success(
+          CdLog.success(
             `Module successfully cloned into ${cdApiDir}/src/CdApi/app.`,
           );
         } else {
-          CdLogg.error(`Git clone process exited with code ${code}.`);
+          CdLog.error(`Git clone process exited with code ${code}.`);
         }
       });
     } catch (error) {
-      CdLogg.error(
+      CdLog.error(
         `Error initializing module from repository: ${(error as Error).message}`,
       );
     }

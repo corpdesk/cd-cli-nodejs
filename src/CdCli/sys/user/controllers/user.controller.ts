@@ -5,17 +5,13 @@ import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import path, { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import inquirer from 'inquirer';
-import {
-  CONFIG_FILE_PATH,
-  DEFAULT_SESS,
-  loadCdCliConfig,
-} from '../../../../config';
+import config, { CONFIG_FILE_PATH, DEFAULT_SESS } from '../../../../config';
 // Import the environment config
 import { HttpService } from '../../base/http.service';
 import { CdCliProfileController } from '../../cd-cli/controllers/cd-cli-profile.cointroller';
 import CdCliVaultController from '../../cd-cli/controllers/cd-cli-vault.controller';
 import { VAULT_DIRECTORY } from '../../cd-cli/models/cd-cli-vault.model';
-import CdLogg from '../../cd-comm/controllers/cd-logger.controller';
+import CdLog from '../../cd-comm/controllers/cd-logger.controller';
 import { DEFAULT_ENVELOPE_LOGIN } from '../models/user.model';
 import { SessonController } from './session.controller';
 
@@ -23,25 +19,31 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
 export class UserController {
-  svServer = new HttpService();
+  // svServer = new HttpService();
   ctlSession = new SessonController();
+  ctlCdCliProfile = new CdCliProfileController();
   // private SESSION_FILE_STORE = join(__dirname, SESSION_FILE_STORE);
 
   init(debugLevel) {
-    CdLogg.setDebugLevel(debugLevel);
+    CdLog.setDebugLevel(debugLevel);
   }
 
   async auth(userName: string, password: string): Promise<void> {
     try {
+      const ctlCdCliProfile = new CdCliProfileController();
       // Load the configuration file
-      const cdCliConfig = loadProfiles();
+      const resultProfile = await ctlCdCliProfile.loadProfiles();
+      if (!resultProfile.state || !resultProfile.data) {
+        return;
+      }
 
+      const cdCliConfig = resultProfile.data;
       // Find the profile named config.cdApiLocal
       const profile = cdCliConfig.items.find(
         (item: any) => item.cdCliProfileName === config.cdApiLocal,
       );
 
-      CdLogg.debug('UserController::auth()/profile:', profile);
+      CdLog.debug('UserController::auth()/profile:', profile);
 
       if (!profile || !profile.cdCliProfileData?.details?.consumerToken) {
         throw new Error(
@@ -51,7 +53,7 @@ export class UserController {
 
       // Handle deferred value in consumerToken
       let consumerGuid = profile.cdCliProfileData.details.consumerToken;
-      CdLogg.debug('UserController::auth()/consumerGuid:', {
+      CdLog.debug('UserController::auth()/consumerGuid:', {
         ct: consumerGuid,
       });
 
@@ -71,7 +73,7 @@ export class UserController {
           (vault: any) => vault.name === vaultName,
         );
 
-        CdLogg.debug('UserController::auth()/cdVaultItem:', cdVaultItem);
+        CdLog.debug('UserController::auth()/cdVaultItem:', cdVaultItem);
 
         if (!cdVaultItem) {
           throw new Error(`cdVault item '${vaultName}' not found.`);
@@ -110,22 +112,26 @@ export class UserController {
       payload.dat.f_vals[0].data.password = password;
       payload.dat.f_vals[0].data.consumerGuid = consumerGuid;
 
-      CdLogg.info('Authenticating...');
-      CdLogg.info('Payload:', payload);
+      CdLog.info('Authenticating...');
+      CdLog.info('Payload:', payload);
 
       // Initialize HttpService
       const httpService = new HttpService(true); // Enable debug mode
       const baseUrl = await httpService.getCdApiUrl(config.cdApiLocal);
 
       if (baseUrl) {
-        await httpService.init(baseUrl);
-        const response: ICdResponse = await httpService.proc2({
+        await httpService.init();
+        const responseResult = await httpService.proc2({
           method: 'POST',
           url: '/',
           data: payload,
         });
+        if (!responseResult.state || !responseResult.data) {
+          return;
+        }
 
-        CdLogg.info('Response:', response);
+        const response = responseResult.data;
+        CdLog.info('Response:', response);
 
         if (response.app_state?.success) {
           if (response.app_state?.sess) {
@@ -140,13 +146,11 @@ export class UserController {
             if (cdToken) {
               await profileController.fetchAndSaveProfiles(cdToken);
             } else {
-              CdLogg.error(
-                'Could not save profiles due to an invalid session.',
-              );
+              CdLog.error('Could not save profiles due to an invalid session.');
             }
           }
         } else {
-          CdLogg.error(
+          CdLog.error(
             'Login failed:',
             response.app_state?.info || { error: 'Unknown error' },
           );
@@ -155,10 +159,10 @@ export class UserController {
           );
         }
       } else {
-        CdLogg.error('Could not get base url for HTTP connection.');
+        CdLog.error('Could not get base url for HTTP connection.');
       }
     } catch (error: any) {
-      CdLogg.error('Error during login:', error.message);
+      CdLog.error('Error during login:', error.message);
     }
   }
 
@@ -169,7 +173,7 @@ export class UserController {
       try {
         attempts++;
 
-        CdLogg.info(`Attempt ${attempts} of 3: Please log in.`);
+        CdLog.info(`Attempt ${attempts} of 3: Please log in.`);
 
         // Prompt for username
         const usernameAnswer = await inquirer.prompt([
@@ -185,18 +189,18 @@ export class UserController {
 
         // Check if login was successful by verifying session
         if (this.ctlSession.getSession(config.cdApiLocal)) {
-          CdLogg.success('Login successful!');
+          CdLog.success('Login successful!');
           return; // Exit login retry loop if successful
         } else {
-          CdLogg.error('Login failed. Please try again.');
+          CdLog.error('Login failed. Please try again.');
         }
       } catch (error: any) {
-        CdLogg.error('Error during login attempt:', error.message);
+        CdLog.error('Error during login attempt:', error.message);
       }
 
       // If the user exceeds 3 attempts, exit with an error message
       if (attempts >= 3) {
-        CdLogg.error('Too many failed login attempts. Exiting.');
+        CdLog.error('Too many failed login attempts. Exiting.');
         break;
       }
     }
@@ -214,12 +218,12 @@ export class UserController {
 
         // Write updated config to file
         writeFileSync(CONFIG_FILE_PATH, JSON.stringify(config, null, 2));
-        CdLogg.info('Logged out successfully and session cleared.');
+        CdLog.info('Logged out successfully and session cleared.');
       } else {
-        CdLogg.error('Config file not found.');
+        CdLog.error('Config file not found.');
       }
     } catch (error) {
-      CdLogg.error(`Error during logout: ${(error as Error).message}`);
+      CdLog.error(`Error during logout: ${(error as Error).message}`);
     }
   }
 }

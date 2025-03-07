@@ -6,15 +6,15 @@ import type {
   SshCredentials,
   WorkstationDescriptor,
 } from '../models/workstations.model';
-import CdLogg from '../../cd-comm/controllers/cd-logger.controller';
+import CdLog from '../../cd-comm/controllers/cd-logger.controller';
 
 export class WorkstationService {
   async executeScript(
     sshCredentials: SshCredentials,
     script: string,
   ): Promise<CdFxReturn<string>> {
-    CdLogg.debug('executeScript()/sshCredentials:', sshCredentials);
-    CdLogg.debug(`executeScript()/script: ${script}`);
+    CdLog.debug('executeScript()/sshCredentials:', sshCredentials);
+    CdLog.debug(`executeScript()/script: ${script}`);
 
     try {
       // Simulate SSH execution (replace with actual SSH library logic)
@@ -26,7 +26,7 @@ export class WorkstationService {
         message: 'Script executed successfully',
       };
     } catch (error) {
-      CdLogg.error(`executeScript()/error:${error}`);
+      CdLog.error(`executeScript()/error:${error}`);
       return {
         data: null,
         state: false,
@@ -38,7 +38,7 @@ export class WorkstationService {
   async detectOs(
     sshCredentials: SshCredentials,
   ): Promise<CdFxReturn<OperatingSystemDescriptor>> {
-    CdLogg.debug('detectOs()/sshCredentials:', sshCredentials);
+    CdLog.debug('detectOs()/sshCredentials:', sshCredentials);
 
     try {
       // Simulate OS detection (replace with actual SSH logic)
@@ -63,7 +63,7 @@ export class WorkstationService {
         message: 'OS detected successfully',
       };
     } catch (error) {
-      CdLogg.error(`detectOs()/error:${error}`);
+      CdLog.error(`detectOs()/error:${error}`);
       return {
         data: null,
         state: false,

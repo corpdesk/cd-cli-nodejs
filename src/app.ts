@@ -8,7 +8,7 @@ import nodeCleanup from 'node-cleanup';
 import updateNotifier from 'update-notifier';
 import { name, version } from '../package.json';
 import { CdCli } from './CdCli/sys/cd-cli/models/cd-cli.model';
-import CdLogg from './CdCli/sys/cd-comm/controllers/cd-logger.controller';
+import CdLog from './CdCli/sys/cd-comm/controllers/cd-logger.controller';
 import { setLogLevel } from './CdCli/sys/cd-comm/controllers/cd-winston';
 import config from './config';
 import 'zx/globals';
@@ -37,7 +37,7 @@ export class App {
       'Set the debug level dynamically during production',
       (level) => {
         setLogLevel(level);
-        CdLogg.setDebugLevel(Number(level));
+        CdLog.setDebugLevel(Number(level));
         return level;
       },
       'info',

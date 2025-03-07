@@ -18,7 +18,7 @@ import repl from 'node:repl';
 import chalk from 'chalk';
 import minimist from 'minimist';
 import { CdCli } from '../../cd-cli/models/cd-cli.model';
-import CdLogg from '../../cd-comm/controllers/cd-logger.controller';
+import CdLog from '../../cd-comm/controllers/cd-logger.controller';
 import { DevDescriptorController } from '../../dev-descriptor/controllers/dev-descriptor.controller';
 import { DevModeController } from '../controllers/dev-mode.controller';
 
@@ -57,10 +57,10 @@ export const DEV_MODE_COMMANDS = {
         prompt: Branding.getPrompt(currentMode),
         eval: async (input, context, filename, callback) => {
           try {
-            CdLogg.debug(`DevModeModel::eval()/input:${input}`);
+            CdLog.debug(`DevModeModel::eval()/input:${input}`);
             input = input.trim();
             inputBuffer += input;
-            CdLogg.debug(`DevModeModel::eval()/inputBuffer:${inputBuffer}`);
+            CdLog.debug(`DevModeModel::eval()/inputBuffer:${inputBuffer}`);
 
             const hasDelimiterAtEnd = inputBuffer.endsWith(';');
             const lastPart = inputBuffer.split(';').pop();
@@ -74,12 +74,12 @@ export const DEV_MODE_COMMANDS = {
             }
 
             const commands = inputBuffer.split(';').filter((cmd) => cmd.trim());
-            CdLogg.debug(`DevModeModel::eval()/commands:${commands}`);
+            CdLog.debug(`DevModeModel::eval()/commands:${commands}`);
             inputBuffer = '';
 
             // **Create an array of promises** to track command execution
             const executionPromises = commands.map(async (fullCommand) => {
-              CdLogg.debug(`DevModeModel::eval()/fullCommand:${fullCommand}`);
+              CdLog.debug(`DevModeModel::eval()/fullCommand:${fullCommand}`);
               return handleInput(`${fullCommand.trim()};`);
             });
 
@@ -158,7 +158,7 @@ export const DEV_MODE_COMMANDS = {
         execute: async (options) => {
           const ctlDevMode = new DevModeController();
           const ctlDevDescriptor = new DevDescriptorController();
-          CdLogg.debug(
+          CdLog.debug(
             `DevModeModel::eval()/subcommands/options:${JSON.stringify(options)}`,
           );
 
@@ -180,13 +180,13 @@ export const DEV_MODE_COMMANDS = {
               break;
             case 'descriptors':
               console.log('Showing descriptors...');
-              CdLogg.debug(
+              CdLog.debug(
                 `DEV_MODE_COMMANDS::execute()/show/options?.names:${options.names}`,
               );
               const descriptorNames = options.names
                 ? options.names.split(',').map((n) => n.trim())
                 : null;
-              CdLogg.debug(
+              CdLog.debug(
                 `DEV_MODE_COMMANDS::execute()/show/descriptorNames:${descriptorNames}`,
               );
               await ctlDevDescriptor.showSrcDescriptors({
@@ -203,50 +203,50 @@ export const DEV_MODE_COMMANDS = {
         },
       },
     },
-    {
-      name: 'sync',
-      description: 'Synchronize different resources.',
-      options: [
-        { flags: 'descriptors', description: 'Sync descriptors.' },
-        { flags: 'apps', description: 'Sync apps.' },
-        { flags: 'modules', description: 'Sync modules.' },
-      ],
-      action: {
-        execute: async (options: any) => {
-          const resource = options._[0]; // First positional argument (resource type)
-          const names = options._.slice(1); // Additional positional arguments (list of names)
+    // {
+    //   name: 'sync',
+    //   description: 'Synchronize different resources.',
+    //   options: [
+    //     { flags: 'descriptors', description: 'Sync descriptors.' },
+    //     { flags: 'apps', description: 'Sync apps.' },
+    //     { flags: 'modules', description: 'Sync modules.' },
+    //   ],
+    //   action: {
+    //     execute: async (options: any) => {
+    //       const resource = options._[0]; // First positional argument (resource type)
+    //       const names = options._.slice(1); // Additional positional arguments (list of names)
 
-          if (!resource) {
-            console.log(chalk.red('Error: Please specify a resource to sync.'));
-            return;
-          }
+    //       if (!resource) {
+    //         console.log(chalk.red('Error: Please specify a resource to sync.'));
+    //         return;
+    //       }
 
-          CdLogg.debug(
-            `DevModeModel::syncCommand()/resource:${resource}, names:${JSON.stringify(names)}`,
-          );
+    //       CdLog.debug(
+    //         `DevModeModel::syncCommand()/resource:${resource}, names:${JSON.stringify(names)}`,
+    //       );
 
-          const devDescriptor = new DevDescriptorController();
+    //       const devDescriptor = new DevDescriptorController();
 
-          switch (resource.toLowerCase()) {
-            case 'descriptors':
-              await devDescriptor.syncDescriptors(names);
-              console.log(chalk.green('✔ Synced descriptors successfully.'));
-              break;
-            case 'apps':
-              await devDescriptor.syncApps(names);
-              console.log(chalk.green('✔ Synced apps successfully.'));
-              break;
-            case 'modules':
-              await devDescriptor.syncModules(names);
-              console.log(chalk.green('✔ Synced modules successfully.'));
-              break;
-            default:
-              console.log(chalk.red(`Unknown sync resource: ${resource}`));
-              break;
-          }
-        },
-      },
-    },
+    //       switch (resource.toLowerCase()) {
+    //         case 'descriptors':
+    //           await devDescriptor.syncDescriptors(names);
+    //           console.log(chalk.green('✔ Synced descriptors successfully.'));
+    //           break;
+    //         case 'apps':
+    //           await devDescriptor.syncApps(names);
+    //           console.log(chalk.green('✔ Synced apps successfully.'));
+    //           break;
+    //         case 'modules':
+    //           await devDescriptor.syncModules(names);
+    //           console.log(chalk.green('✔ Synced modules successfully.'));
+    //           break;
+    //         default:
+    //           console.log(chalk.red(`Unknown sync resource: ${resource}`));
+    //           break;
+    //       }
+    //     },
+    //   },
+    // },
     {
       name: 'exit',
       description: 'Exit development mode.',
@@ -261,7 +261,7 @@ export const DEV_MODE_COMMANDS = {
 };
 
 export async function handleInput(input: string) {
-  CdLogg.debug(`DevModeModel::handleInput()/input:${input}`);
+  CdLog.debug(`DevModeModel::handleInput()/input:${input}`);
 
   if (input.endsWith(';')) {
     const commands = input.split(';').filter((cmd) => cmd.trim());
@@ -277,7 +277,7 @@ export async function handleInput(input: string) {
 }
 
 export async function executeCommand(command: string) {
-  CdLogg.debug(`DevModeModel::executeCommand()/command:${command}`);
+  CdLog.debug(`DevModeModel::executeCommand()/command:${command}`);
   command = command.replace(/;$/, ''); // Remove trailing semicolon
   const [cmdName, ...args] = command.split(/\s+/);
 
@@ -285,7 +285,7 @@ export async function executeCommand(command: string) {
     (sub) => sub.name === cmdName,
   );
 
-  CdLogg.debug(`DevModeModel::executeCommand()/subcommand:${subcommand}`);
+  CdLog.debug(`DevModeModel::executeCommand()/subcommand:${subcommand}`);
   if (!subcommand) {
     console.log(`Unknown command: ${cmdName}`);
     return;
@@ -293,7 +293,7 @@ export async function executeCommand(command: string) {
 
   // Handle options differently based on subcommand
   const options = minimist(args);
-  CdLogg.debug(
+  CdLog.debug(
     `DevModeModel::executeCommand()/options:${JSON.stringify(options)}`,
   );
 

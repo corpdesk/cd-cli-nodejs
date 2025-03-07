@@ -2,7 +2,7 @@
 /* eslint-disable style/operator-linebreak */
 import type { CdFxReturn } from '../../base/IBase';
 import type { WorkstationAccessDescriptor } from '../models/workstations.model';
-import CdLogg from '../../cd-comm/controllers/cd-logger.controller';
+import CdLog from '../../cd-comm/controllers/cd-logger.controller';
 import { WorkstationAccessService } from '../services/workstation-access.service';
 
 export class WorkstationAccessController {
@@ -18,7 +18,7 @@ export class WorkstationAccessController {
     workstationAccess: WorkstationAccessDescriptor,
     command: string,
   ): Promise<CdFxReturn<string>> {
-    CdLogg.debug('Executing remote command:', { command, workstationAccess });
+    CdLog.debug('Executing remote command:', { command, workstationAccess });
 
     if (
       workstationAccess.accessScope !== 'remote' ||

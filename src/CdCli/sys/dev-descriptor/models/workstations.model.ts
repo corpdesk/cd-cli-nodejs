@@ -21,7 +21,7 @@ import {
 import type { EnvironmentDescriptor } from './environment.model';
 import type { MetricsQuantity } from './service-provider.model';
 import type { VersionControlDescriptor } from './version-control.model';
-import CdLogg from '../../cd-comm/controllers/cd-logger.controller';
+import CdLog from '../../cd-comm/controllers/cd-logger.controller';
 import { defaultOs, getOsByName, operatingSystems } from './os.model';
 import {
   getPermissionsByName,

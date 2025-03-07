@@ -3,7 +3,7 @@
 import chalk from 'chalk';
 import dayjs from 'dayjs';
 
-class CdLogg {
+class CdLog {
   // Default debug level (0 means no logs, 4 means all logs will be displayed)
   static debugLevel: number = 0;
 
@@ -30,7 +30,7 @@ class CdLogg {
 
   // Info level
   static info(message: string, context?: object | string | null) {
-    if (CdLogg.debugLevel >= CdLogg.LOG_LEVELS.INFO) {
+    if (CdLog.debugLevel >= CdLog.LOG_LEVELS.INFO) {
       const formattedMessage = context
         ? `${message} | Context: ${JSON.stringify(context)}`
         : message;
@@ -40,7 +40,7 @@ class CdLogg {
 
   // Success level
   static success(message: string, context?: object) {
-    if (CdLogg.debugLevel >= CdLogg.LOG_LEVELS.INFO) {
+    if (CdLog.debugLevel >= CdLog.LOG_LEVELS.INFO) {
       const formattedMessage = context
         ? `${message} | Context: ${JSON.stringify(context)}`
         : message;
@@ -52,7 +52,7 @@ class CdLogg {
 
   // Warning level
   static warning(message: string, context?: object) {
-    if (CdLogg.debugLevel >= CdLogg.LOG_LEVELS.WARNING) {
+    if (CdLog.debugLevel >= CdLog.LOG_LEVELS.WARNING) {
       const formattedMessage = context
         ? `${message} | Context: ${JSON.stringify(context)}`
         : message;
@@ -62,7 +62,7 @@ class CdLogg {
 
   // Error level
   static error(message: string, context?: object) {
-    if (CdLogg.debugLevel >= CdLogg.LOG_LEVELS.ERROR) {
+    if (CdLog.debugLevel >= CdLog.LOG_LEVELS.ERROR) {
       const formattedMessage = context
         ? `${message} | Context: ${JSON.stringify(context)}`
         : message;
@@ -72,7 +72,7 @@ class CdLogg {
 
   // Debug level
   // static debug(message: string, context?: object) {
-  //   if (CdLogg.debugLevel >= CdLogg.LOG_LEVELS.DEBUG) {
+  //   if (CdLog.debugLevel >= CdLog.LOG_LEVELS.DEBUG) {
   //     const formattedMessage = context
   //       ? `${message} | Context: ${JSON.stringify(context)}`
   //       : message;
@@ -80,7 +80,7 @@ class CdLogg {
   //   }
   // }
   static debug(message: string, context?: object) {
-    if (CdLogg.debugLevel >= CdLogg.LOG_LEVELS.DEBUG) {
+    if (CdLog.debugLevel >= CdLog.LOG_LEVELS.DEBUG) {
       const formattedMessage = context
         ? `${message} | Context: ${JSON.stringify(context)}`
         : message;
@@ -92,16 +92,16 @@ class CdLogg {
   static setDebugLevel(level: number): void {
     try {
       level = Number(level);
-      console.log('CdLogg::setDebugLevel()/log level:', level);
-      CdLogg.info(`starting NotifierController:setDebugLevel()/${level}`);
+      console.log('CdLog::setDebugLevel()/log level:', level);
+      CdLog.info(`starting NotifierController:setDebugLevel()/${level}`);
       if (typeof level !== 'number' || level > 4 || level < 0) {
-        console.log('CdLogg::setDebugLevel()/02:');
-        CdLogg.error('Invalid debug level. Using default level (0).');
-        CdLogg.debugLevel = 0; // Default to NONE if invalid level is provided
+        console.log('CdLog::setDebugLevel()/02:');
+        CdLog.error('Invalid debug level. Using default level (0).');
+        CdLog.debugLevel = 0; // Default to NONE if invalid level is provided
       } else {
-        console.log('CdLogg::setDebugLevel()/03:');
-        CdLogg.info(`debug level set to ${level}`);
-        CdLogg.debugLevel = level;
+        console.log('CdLog::setDebugLevel()/03:');
+        CdLog.info(`debug level set to ${level}`);
+        CdLog.debugLevel = level;
       }
     } catch (e) {
       console.error(
@@ -111,7 +111,7 @@ class CdLogg {
   }
 
   static getDebugLevel(): number {
-    return CdLogg.debugLevel;
+    return CdLog.debugLevel;
   }
 
   static safeStringify(obj: any, space = 2) {
@@ -130,4 +130,4 @@ class CdLogg {
   }
 }
 
-export default CdLogg;
+export default CdLog;

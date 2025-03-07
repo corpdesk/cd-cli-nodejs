@@ -1,10 +1,11 @@
 /* eslint-disable brace-style */
 /* eslint-disable node/prefer-global/process */
-import type {
-  CdFxReturn,
-  ICdResponse,
-  IQuery,
-  ISessResp,
+import {
+  CD_FX_FAIL,
+  type CdFxReturn,
+  type ICdResponse,
+  type IQuery,
+  type ISessResp,
 } from '../../base/IBase';
 import type {
   CdDescriptor,
@@ -18,17 +19,15 @@ import util from 'node:util';
 /* eslint-disable style/operator-linebreak */
 import chalk from 'chalk';
 import Table from 'cli-table3';
-import inquirer from 'inquirer';
 import ts from 'typescript';
 import { HttpService } from '../../base/http.service';
-import { CdCliProfileController } from '../../cd-cli/controllers/cd-cli-profile.cointroller';
-import CdCliVaultController from '../../cd-cli/controllers/cd-cli-vault.controller';
-import CdLogg from '../../cd-comm/controllers/cd-logger.controller';
+import CdLog from '../../cd-comm/controllers/cd-logger.controller';
 
 import { CdObjService } from '../../moduleman/services/dev-descriptor.service';
 import { SessonController } from '../../user/controllers/session.controller';
-import { DEFAULT_ENVELOPE_LOGIN } from '../../user/models/user.model';
 import { DevDescriptorService } from '../services/dev-descriptor.service';
+import { CdObjTypeModel } from '../../moduleman/models/cd-obj-type.model';
+import { CdCliStoreService } from '../../cd-cli/services/cd-cli-store.service';
 
 // Fix for __dirname in ES modules
 const __filename = fileURLToPath(import.meta.url);
@@ -38,6 +37,7 @@ export class DevDescriptorController {
   svServer = new HttpService();
   svDevDescriptor = new DevDescriptorService();
   ctlSession = new SessonController();
+
   isDev = false;
   modelsDir = '';
   savedDescriptors: CdDescriptor[] = [];
@@ -47,10 +47,10 @@ export class DevDescriptorController {
   }
 
   async getSrcDescriptors(): Promise<CdFxReturn<CdDescriptor[]>> {
-    CdLogg.debug('DevDescriptorController::getSrcDescriptors()/starting...');
+    CdLog.debug('DevDescriptorController::getSrcDescriptors()/starting...');
     try {
       this.savedDescriptors = await this.fetchSavedDescriptors();
-      CdLogg.debug(
+      CdLog.debug(
         `DevDescriptorController::getSrcDescriptors()/this.savedDescriptors.length:${this.savedDescriptors.length}`,
       );
 
@@ -77,17 +77,22 @@ export class DevDescriptorController {
             );
 
             const jDetails: TypeDescriptor[] = this.extractTypeDetails(node);
-            srcDescriptors.push({ cdObjId, cdObjName, jDetails });
+            srcDescriptors.push({
+              cdObjId,
+              cdObjName,
+              jDetails,
+              cdObjTypeGuid: '',
+            });
           }
         });
       }
 
-      CdLogg.debug(
+      CdLog.debug(
         `DevDescriptorController::getSrcDescriptors()/srcDescriptors.length:${srcDescriptors.length}`,
       );
       return { data: srcDescriptors, state: true }; // Standardized return object
     } catch (e) {
-      CdLogg.error(
+      CdLog.error(
         `Encountered an error while compiling descriptors. Error: ${(e as Error).message}`,
       );
       return { data: null, state: false }; // On failure, return null
@@ -115,58 +120,6 @@ export class DevDescriptorController {
     return typeDescriptors;
   }
 
-  // private mapTypeToDetails(
-  //   typeNode: ts.TypeNode,
-  //   // descriptors: CdDescriptor[],
-  // ): TypeDetails {
-  //   const typeDetails: TypeDetails = { cdObjId: -1 }; // Default value
-
-  //   if (!typeNode) {
-  //     return typeDetails; // Return default if typeNode is undefined
-  //   }
-
-  //   // Handle array types
-  //   if (ts.isArrayTypeNode(typeNode)) {
-  //     const elementType = typeNode.elementType;
-  //     typeDetails.isArray = true;
-  //     typeDetails.cdObjId = this.getCdObjId(elementType);
-  //   }
-  //   // Handle union types (e.g., AppType | AppType[])
-  //   else if (ts.isUnionTypeNode(typeNode)) {
-  //     for (const subtype of typeNode.types) {
-  //       if (ts.isArrayTypeNode(subtype)) {
-  //         typeDetails.isArray = true;
-  //         typeDetails.cdObjId = this.getCdObjId(subtype.elementType);
-  //       } else {
-  //         typeDetails.cdObjId = this.getCdObjId(subtype);
-  //       }
-  //     }
-  //   }
-  //   // Handle primitive types (number, string, boolean, etc.)
-  //   else if (
-  //     typeNode.kind >= ts.SyntaxKind.FirstKeyword &&
-  //     typeNode.kind <= ts.SyntaxKind.LastKeyword
-  //   ) {
-  //     typeDetails.isPrimitive = true;
-  //     typeDetails.cdObjId = this.getCdObjId(typeNode);
-  //   }
-
-  //   // Handle interface or descriptor types
-  //   else if (ts.isTypeReferenceNode(typeNode)) {
-  //     const typeName = typeNode.typeName.getText();
-  //     const referencedDescriptor = this.savedDescriptors.find(
-  //       (d) => d.cdObjName === typeName,
-  //     );
-
-  //     if (referencedDescriptor) {
-  //       typeDetails.cdObjId = referencedDescriptor.cdObjId;
-  //       typeDetails.isInterface = true;
-  //       typeDetails.isDescriptor = true; // If it’s a descriptor type
-  //     }
-  //   }
-
-  //   return typeDetails;
-  // }
   private mapTypeToDetails(typeNode: ts.TypeNode): TypeDetails {
     const typeDetails: TypeDetails = { cdObjId: -1 }; // Default value
 
@@ -221,7 +174,7 @@ export class DevDescriptorController {
     return typeDetails;
   }
 
-  private getCdObjId(typeNode: ts.TypeNode): number {
+  private getCdObjId(typeNode: ts.TypeNode): number | undefined {
     const typeName = typeNode.getText();
     const descriptor = this.savedDescriptors.find(
       (d) => d.cdObjName === typeName,
@@ -270,7 +223,10 @@ export class DevDescriptorController {
   }
 
   // generateObjectId
-  getCdObjIdByName(name: string, descriptors: CdDescriptor[]): number {
+  getCdObjIdByName(
+    name: string,
+    descriptors: CdDescriptor[],
+  ): number | undefined {
     const found = descriptors.find((desc) => desc.cdObjName === name);
     return found ? found.cdObjId : -1;
   }
@@ -282,23 +238,23 @@ export class DevDescriptorController {
   }) {
     let result: CdFxReturn<CdDescriptor[]>;
 
-    CdLogg.debug(
+    CdLog.debug(
       `DevDescriptorController::showSrcDescriptors()/options?.names:${options?.names}`,
     );
-    CdLogg.debug(
+    CdLog.debug(
       `DevDescriptorController::showSrcDescriptors()/options.names.length:${options?.names?.length}`,
     );
     // Fetch descriptors based on whether names are provided
     if (options?.names && options.names.length > 0) {
-      CdLogg.debug(
+      CdLog.debug(
         `DevDescriptorController::showSrcDescriptors()/selecting by names...`,
       );
-      CdLogg.debug(
+      CdLog.debug(
         `DevDescriptorController::showSrcDescriptors()/options?.names:${options?.names}`,
       );
       result = await this.getDescriptorsByNames(options.names);
     } else {
-      CdLogg.debug(
+      CdLog.debug(
         `DevDescriptorController::showSrcDescriptors()/getting all...`,
       );
       result = await this.getAllDescriptors();
@@ -316,7 +272,7 @@ export class DevDescriptorController {
     }
 
     const srcDescriptors: CdDescriptor[] = result.data;
-    CdLogg.debug(
+    CdLog.debug(
       `DevDescriptorController::showSrcDescriptors()/srcDescriptors:${srcDescriptors.length}`,
     );
 
@@ -400,72 +356,190 @@ export class DevDescriptorController {
       where: { cdObjTypeGuid: '5ab9a944-1014-4664-ad96-8ceb737d1857' },
     };
     const svCdObj = new CdObjService();
-    const res: ICdResponse = await svCdObj.getCdObj(q);
-    CdLogg.debug(`DevDescriptorController::fetchSavedDescriptors()/res:${res}`);
-    if (res.app_state.success) {
-      const descriptors: CdDescriptor[] = res.data.items;
-      return descriptors;
-    } else {
-      CdLogg.error(
-        `There was an error syncing descriptors:${res.app_state.info?.app_msg}`,
+    const res = await svCdObj.getCdObj(q);
+    CdLog.debug(`DevDescriptorController::fetchSavedDescriptors()/res:${res}`);
+
+    if (!res.state || !res.data) {
+      CdLog.error(`There was an error syncing descriptors`);
+      return [];
+    }
+
+    if (res.data && !res.data.app_state.success) {
+      CdLog.error(
+        `There was an error syncing descriptors:${res.data.app_state.info?.app_msg}`,
       );
       return [];
     }
+
+    const descriptors: CdDescriptor[] = res.data.data.items;
+    return descriptors;
   }
 
-  async syncDescriptors(names?: string[]): Promise<void> {
+  async syncDescriptors(
+    names?: string[],
+    db?: 'mysql' | 'redis' | 'all',
+  ): Promise<CdFxReturn<null>> {
+    let ret: any = null;
     try {
-      CdLogg.debug(
+      CdLog.debug(
         `DevDescriptorController::syncDescriptors()/starting... names: ${JSON.stringify(names)}`,
       );
 
       let result: CdFxReturn<CdDescriptor[]>;
 
+      // Fetch descriptors based on provided names
       if (names && names.length > 0) {
         result = await this.getDescriptorsByNames(names);
       } else {
         result = await this.getSrcDescriptors();
       }
 
-      if (!result.state) {
-        const e = result.message || 'Unknown error';
-        CdLogg.error(`Failed to fetch descriptors:${e}`);
-        throw new Error(result.message || 'Failed to fetch descriptors.');
+      // Handle failure in fetching descriptors
+      if (!result.state || !result.data) {
+        const errorMsg =
+          result.message || 'Unknown error fetching descriptors.';
+        CdLog.error(`Failed to fetch descriptors: ${errorMsg}`);
+        return { data: null, state: false, message: errorMsg };
       }
 
-      CdLogg.debug(
-        `DevDescriptorController::syncDescriptors()/Fetched ${result.data?.length} descriptors`,
+      CdLog.debug(
+        `DevDescriptorController::syncDescriptors()/Fetched ${result.data.length} descriptors`,
       );
 
+      // Sync descriptors
       const response = await this.svDevDescriptor.syncDescriptors(
-        result.data || [],
+        result.data,
+        db,
       );
 
-      CdLogg.debug(
+      CdLog.debug(
         'DevDescriptorController::syncDescriptors()/response:',
         response,
       );
 
-      if (response.app_state?.success) {
-        CdLogg.success('✔ Descriptors successfully synced.');
+      if (!response.state || !response.data) {
+        CdLog.error('Error: Sync failed or response data is empty.');
+        return CD_FX_FAIL;
+      } else if (Array.isArray(response.data)) {
+        // It's of type CdObjModel[]
+        CdLog.debug('Sync returned invalid data:', response.data);
+        return CD_FX_FAIL;
+      } else if ('app_state' in response.data) {
+        // It's of type ICdResponse (assuming app_state is unique to ICdResponse)
+        CdLog.debug('Sync returned an ICdResponse object:', response.data);
+        // Check sync success
+        if (response.state && response.data?.app_state?.success) {
+          CdLog.success('✔ Descriptors successfully synced.');
+          ret = {
+            data: null,
+            state: true,
+            message: 'Descriptors synced successfully.',
+          };
+        } else {
+          const errorInfo = response.data?.app_state?.info || {
+            error: 'Unknown sync error',
+          };
+          CdLog.error('Sync failed:', errorInfo);
+          ret = {
+            data: null,
+            state: false,
+            message: 'Sync failed. Please check and try again.',
+          };
+        }
       } else {
-        CdLogg.error(
-          'Sync failed:',
-          response.app_state?.info || { error: 'Unknown error' },
-        );
-        throw new Error('Sync failed. Please check and try again.');
+        CdLog.error('Unknown response type:', response.data);
+        return CD_FX_FAIL;
       }
+      return ret;
     } catch (error: any) {
-      CdLogg.error('Error during descriptor syncing:', error.message);
-      throw error;
+      CdLog.error('Error during descriptor syncing:', error.message);
+      return { data: null, state: false, message: `Error: ${error.message}` };
     }
   }
 
-  async syncApps(names: string[]): Promise<void> {
-    CdLogg.debug('names:', names);
+  async syncDescriptorData(
+    name: string,
+    type: string,
+    db: 'mysql' | 'redis' | 'all',
+  ): Promise<CdFxReturn<null>> {
+    let ret: any = null;
+    try {
+      CdLog.debug(
+        `DevDescriptorController::syncDescriptorData()/starting... name: ${name}, type: ${type}`,
+      );
+
+      // Fetch descriptor data based on name and type
+      const result = await this.svDevDescriptor.getDescriptorDataByNameAndType(
+        name,
+        type,
+      );
+
+      if (!result.state || !result.data) {
+        const errorMsg =
+          result.message || 'Unknown error fetching descriptor data.';
+        CdLog.error(`Failed to fetch descriptor data: ${errorMsg}`);
+        return { data: null, state: false, message: errorMsg };
+      }
+
+      CdLog.debug(
+        `DevDescriptorController::syncDescriptorData()/Fetched descriptor data for ${name}`,
+      );
+
+      // Sync descriptor data
+      const response = await this.svDevDescriptor.syncDescriptorData(
+        result.data,
+        db,
+      );
+
+      CdLog.debug(
+        'DevDescriptorController::syncDescriptorData()/response:',
+        response,
+      );
+
+      if (!response.state || !response.data) {
+        CdLog.error('Error: Sync failed or response data is empty.');
+        return CD_FX_FAIL;
+      } else if ('app_state' in response.data) {
+        if (response.data.app_state.success) {
+          CdLog.success('✔ Descriptor data successfully synced.');
+          ret = {
+            data: null,
+            state: true,
+            message: 'Descriptor data synced successfully.',
+          };
+        } else {
+          const errorInfo = response.data.app_state.info || {
+            error: 'Unknown sync error',
+          };
+          CdLog.error('Sync failed:', errorInfo);
+          ret = {
+            data: null,
+            state: false,
+            message: 'Sync failed. Please check and try again.',
+          };
+        }
+      } else {
+        CdLog.error('Unknown response type:', response.data);
+        return CD_FX_FAIL;
+      }
+      return ret;
+    } catch (error: any) {
+      CdLog.error('Error during descriptor data syncing:', error.message);
+      return { data: null, state: false, message: `Error: ${error.message}` };
+    }
   }
 
-  async syncModules(names: string[]): Promise<void> {
-    CdLogg.debug('names:', names);
+  async syncApps(
+    names: string[],
+    db: 'mysql' | 'redis' | 'all',
+  ): Promise<void> {
+    CdLog.debug('names:', names);
+  }
+
+  async syncModules(
+    names: string[],
+    db: 'mysql' | 'redis' | 'all',
+  ): Promise<void> {
+    CdLog.debug('names:', names);
   }
 }

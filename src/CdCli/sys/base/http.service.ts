@@ -4,10 +4,10 @@
 import https from 'node:https';
 /* eslint-disable style/brace-style */
 import type { AxiosRequestConfig } from 'axios';
-import type { CdFxReturn, ICdRequest } from './IBase';
+import type { CdFxReturn, ICdRequest, ICdResponse } from './IBase';
 import axios from 'axios';
 import { CdCliProfileController } from '../cd-cli/controllers/cd-cli-profile.cointroller';
-import CdLogg from '../cd-comm/controllers/cd-logger.controller';
+import CdLog from '../cd-comm/controllers/cd-logger.controller';
 
 export class HttpService {
   private axiosInstance: any;
@@ -23,9 +23,10 @@ export class HttpService {
 
   async init(): Promise<void> {
     try {
-      const ret = await this.ctlCdCliProfile.getEndPoint();
+      const ctlCdCliProfile = new CdCliProfileController();
+      const ret = await ctlCdCliProfile.getEndPoint();
       if (!ret.state) {
-        CdLogg.error('error occured while getting end point data');
+        CdLog.error('error occured while getting end point data');
         return;
       }
       const baseURL = ret.data;
@@ -37,12 +38,12 @@ export class HttpService {
           }),
         });
       } else {
-        CdLogg.error('Could not get baseUrl!');
+        CdLog.error('Could not get baseUrl!');
       }
 
-      CdLogg.info(`HttpService initialized with endpoint: ${baseURL}`);
+      CdLog.info(`HttpService initialized with endpoint: ${baseURL}`);
     } catch (error) {
-      CdLogg.error(
+      CdLog.error(
         `Error initializing HttpService: ${(error as Error).message}`,
       );
       throw error;
@@ -52,10 +53,11 @@ export class HttpService {
   async getCdApiUrl(profileName: string): Promise<string | null> {
     try {
       // Load the configuration file
-      const ret = await this.ctlCdCliProfile.loadProfiles();
+      const ctlCdCliProfile = new CdCliProfileController();
+      const ret = await ctlCdCliProfile.loadProfiles();
 
       if (!ret.state || !ret.data) {
-        CdLogg.error('error occured while loading profiles');
+        CdLog.error('error occured while loading profiles');
         return null;
       }
 
@@ -71,12 +73,12 @@ export class HttpService {
         );
       }
 
-      CdLogg.info(
+      CdLog.info(
         `HttpService initialized with endpoint: ${profile.cdCliProfileData.details.cdEndpoint}`,
       );
       return profile.cdCliProfileData.details.cdEndpoint;
     } catch (error) {
-      CdLogg.error(
+      CdLog.error(
         `Error initializing HttpService: ${(error as Error).message}`,
       );
       return null;
@@ -94,30 +96,65 @@ export class HttpService {
       // const url = await this.getCdApiUrl(config.cdApiLocal);
 
       await this.init();
-      CdLogg.debug('starting proc():', {
+      CdLog.debug('starting proc():', {
         p: params,
       });
       if (!this.axiosInstance) {
         throw new Error('HttpService is not initialized.');
       }
 
-      CdLogg.debug('Sending request:', params);
+      CdLog.debug('Sending request:', params);
       const response = await this.axiosInstance.post('/', params);
       return response.data;
     } catch (error: any) {
-      CdLogg.error('Error during HTTP request:', error.message);
+      CdLog.error('Error during HTTP request:', error.message);
       throw new Error(`HTTP Request Failed: ${error.message}`);
     }
   }
 
-  async proc2(params: AxiosRequestConfig): Promise<any> {
+  // async proc2(params: AxiosRequestConfig): Promise<any> {
+  //   if (!this.axiosInstance) {
+  //     throw new Error('HttpService is not initialized.');
+  //   }
+
+  //   if (this.debugMode) {
+  //     // Log detailed request data
+  //     CdLog.debug('HttpService::proc()/Request:', {
+  //       method: params.method,
+  //       url: params.url,
+  //       headers: params.headers,
+  //       data: params.data,
+  //     });
+  //   }
+
+  //   try {
+  //     const response = await this.axiosInstance.request(params);
+
+  //     if (this.debugMode) {
+  //       // Log detailed response data
+  //       CdLog.debug('HttpService::proc()/Response:', {
+  //         status: response.status,
+  //         data: response.data,
+  //       });
+  //     }
+
+  //     return response.data;
+  //   } catch (error: any) {
+  //     CdLog.error(
+  //       'HttpService::proc()/Error during HTTP request:',
+  //       error.response ? error.response.data : error.message,
+  //     );
+  //     throw new Error(`HTTP Request Failed: ${error.message}`);
+  //   }
+  // }
+  async proc2(params: AxiosRequestConfig): Promise<CdFxReturn<ICdResponse>> {
     if (!this.axiosInstance) {
       throw new Error('HttpService is not initialized.');
     }
 
     if (this.debugMode) {
       // Log detailed request data
-      CdLogg.debug('HttpService::proc()/Request:', {
+      CdLog.debug('HttpService::proc2()/Request:', {
         method: params.method,
         url: params.url,
         headers: params.headers,
@@ -126,23 +163,35 @@ export class HttpService {
     }
 
     try {
-      const response = await this.axiosInstance.request(params);
+      const response: ICdResponse = await this.axiosInstance.request(params);
 
       if (this.debugMode) {
         // Log detailed response data
-        CdLogg.debug('HttpService::proc()/Response:', {
-          status: response.status,
+        CdLog.debug('HttpService::proc2()/Response:', {
+          status: response.app_state.success,
           data: response.data,
         });
       }
 
-      return response.data;
+      return {
+        data: response,
+        state: true,
+        message:
+          response.data?.app_state?.info?.app_msg || 'Request successful',
+      };
     } catch (error: any) {
-      CdLogg.error(
-        'HttpService::proc()/Error during HTTP request:',
+      CdLog.error(
+        'HttpService::proc2()/Error during HTTP request:',
         error.response ? error.response.data : error.message,
       );
-      throw new Error(`HTTP Request Failed: ${error.message}`);
+
+      return {
+        data: null,
+        state: false,
+        message:
+          error.response?.data?.app_state?.info?.app_msg ||
+          `HTTP Request Failed: ${error.message}`,
+      };
     }
   }
 
@@ -156,7 +205,7 @@ export class HttpService {
     }
 
     if (this.debugMode) {
-      CdLogg.debug('HttpService::proc2()/Request:', {
+      CdLog.debug('HttpService::proc2()/Request:', {
         method: params.method,
         url: params.url,
         headers: params.headers,
@@ -169,7 +218,7 @@ export class HttpService {
       const response = await this.axiosInstance.request(params);
 
       if (this.debugMode) {
-        CdLogg.debug('HttpService::proc2()/Response:', {
+        CdLog.debug('HttpService::proc2()/Response:', {
           status: response.status,
           data: response.data,
         });
@@ -179,7 +228,7 @@ export class HttpService {
     } catch (error: any) {
       const errorMessage = error.response ? error.response.data : error.message;
 
-      CdLogg.error(
+      CdLog.error(
         'HttpService::proc2()/Error during HTTP request:',
         errorMessage,
       );
