@@ -1,10 +1,11 @@
 /* eslint-disable style/brace-style */
-import type { ICdResponse, ISessResp } from '../../base/IBase';
+import { CD_FX_FAIL, type ICdResponse, type ISessResp } from '../../base/IBase';
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { CONFIG_FILE_PATH, loadCdCliConfig } from '../../../../config';
+import { CONFIG_FILE_PATH } from '../../../../config';
 import CdCliVaultController from '../../cd-cli/controllers/cd-cli-vault.controller';
 import CdLog from '../../cd-comm/controllers/cd-logger.controller';
+import { CdCliProfileController } from '../../cd-cli/controllers/cd-cli-profile.cointroller';
 
 export class SessonController {
   init(debugLevel: number): void {
@@ -18,13 +19,19 @@ export class SessonController {
   async saveSession(session: ISessResp, profileName: string): Promise<boolean> {
     try {
       // Load existing configuration
-      const cdCliConfig = loadProfiles();
+      const ctlCdCliProfile = new CdCliProfileController();
+      const resultCliConfig = await ctlCdCliProfile.loadProfiles();
 
+      if (!resultCliConfig.state || !resultCliConfig.data) {
+        return false;
+      }
+
+      const cdCliConfig = resultCliConfig.data;
       const profile = cdCliConfig.items.find(
         (item) => item.cdCliProfileName === profileName,
       );
 
-      if (!profile) {
+      if (!profile || !profile.cdCliProfileData) {
         throw new Error(`Profile "${profileName}" not found.`);
       }
 
@@ -44,22 +51,31 @@ export class SessonController {
   /**
    * Retrieve the current session.
    */
-  getSession(profileName: string): ISessResp | null {
+  async getSession(profileName: string): Promise<ISessResp | null> {
     try {
       CdLog.debug('SessionController::getSession()/profileName:', {
         name: profileName,
       });
       // Load configuration
-      const cdCliConfig = loadProfiles();
-      CdLog.debug('SessionController::getSession()/cdCliConfig:', cdCliConfig);
+      const ctlCdCliProfile = new CdCliProfileController();
+      const resultCliConfig = await ctlCdCliProfile.loadProfiles();
+      CdLog.debug(
+        'SessionController::getSession()/resultCliConfig:',
+        resultCliConfig,
+      );
 
+      if (!resultCliConfig.state || !resultCliConfig.data) {
+        return null;
+      }
+
+      const cdCliConfig = resultCliConfig.data;
       const profile = cdCliConfig.items.find(
         (item) => item.cdCliProfileName === profileName,
       );
 
       CdLog.debug('SessionController::getSession()/profile:', profile);
 
-      if (!profile || !profile.cdCliProfileData.details.session) {
+      if (!profile || !profile.cdCliProfileData) {
         throw new Error(`Session not found for profile "${profileName}".`);
       }
 
@@ -75,7 +91,7 @@ export class SessonController {
           const tokenVault = profile.cdCliProfileData.cdVault.find(
             (vault) => vault.name === tokenKey,
           );
-          if (tokenVault) {
+          if (tokenVault && tokenVault.encryptedValue) {
             session.cd_token = tokenVault.value || tokenVault.encryptedValue;
           }
         }
@@ -95,7 +111,7 @@ export class SessonController {
   async isSessionValid(profileName: string): Promise<boolean | number> {
     try {
       // Retrieve the session
-      const session: ISessResp | null = this.getSession(profileName);
+      const session: ISessResp | null = await this.getSession(profileName);
 
       if (!session) {
         CdLog.warning(`No session found for profile "${profileName}".`);

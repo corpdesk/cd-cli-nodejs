@@ -7,8 +7,13 @@ import type {
   WorkstationDescriptor,
 } from '../models/workstations.model';
 import CdLog from '../../cd-comm/controllers/cd-logger.controller';
+import { CdObjModel } from '../../moduleman/models/cd-obj.model';
+import { GenericService } from '../../base/generic-service';
 
-export class WorkstationService {
+export class WorkstationService extends GenericService<CdObjModel> {
+  constructor() {
+    super(CdObjModel);
+  }
   async executeScript(
     sshCredentials: SshCredentials,
     script: string,

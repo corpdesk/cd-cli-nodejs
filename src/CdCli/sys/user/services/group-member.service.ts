@@ -1,0 +1,168 @@
+// import { SqliteStore } from "../store/SqliteStore";
+// import { GroupMemberModel } from "../entities/GroupMemberModel";
+
+import { ObjectLiteral } from 'typeorm';
+import {
+  CD_FX_FAIL,
+  CdFxReturn,
+  CreateIParams,
+  IQuery,
+} from '../../base/IBase';
+import { GroupMemberModel } from '../models/group-member.model';
+import CdLog from '../../cd-comm/controllers/cd-logger.controller';
+import { BaseService } from '../../base/base.service';
+import config from '@/config';
+import { GenericService } from '../../base/generic-service';
+
+export class GroupMemberService extends GenericService<GroupMemberModel> {
+  // private b = new BaseService<GroupMemberModel>();
+
+  defaultDs = config.ds.sqlite;
+  serviceModel = GroupMemberModel;
+  // Define validation rules
+  /*
+   * create rules
+   */
+  cRules = {
+    required: ['memberGuid', 'groupGuidParent', 'cdObjTypeId'],
+    noDuplicate: ['memberGuid', 'groupGuidParent'],
+  };
+
+  ///////////////////////////////////////////////////////////////////////////////////////////////
+  // ADAPTATION FROM GENERIC SERVICE
+  constructor() {
+    super(GroupMemberModel);
+  }
+
+  async createI(
+    req,
+    res,
+    createIParams: CreateIParams<GroupMemberModel>,
+  ): Promise<GroupMemberModel | boolean> {
+    // const svSess = new SessionService()
+    // if (this.validateCreateI(req, res, createIParams)) {
+    //     return await this.b.createI(req, res, createIParams)
+    // } else {
+    //     this.b.setAlertMessage(`could not join group`, svSess, false);
+    // }
+    return await this.b.createI(req, res, createIParams);
+  }
+
+  /**
+   * Validate input before processing create
+   */
+  async validateCreate(pl: GroupMemberModel): Promise<CdFxReturn<boolean>> {
+    const retState = true;
+    // Ensure required fields exist
+    for (const field of this.cRules.required) {
+      if (!pl[field]) {
+        return {
+          data: false,
+          state: false,
+          message: `Missing required field: ${field}`,
+        };
+      }
+    }
+
+    // Check for duplicates
+    const query = {
+      where: {
+        memberGuid: pl.memberGuid,
+        groupGuidParent: pl.groupGuidParent,
+      },
+    };
+    const serviceInput = {
+      serviceModel: GroupMemberModel,
+      docName: 'Validate Duplicate GroupMember',
+      dSource: this.defaultDs,
+      cmd: { query },
+    };
+
+    const existingRecords = await this.b.read(null, null, serviceInput);
+    if ('state' in existingRecords && 'data' in existingRecords) {
+      if (!existingRecords.state || !existingRecords.data) {
+        return { data: false, state: false, message: 'Validation failed' };
+      }
+
+      if (existingRecords.data.length > 0) {
+        return { data: true, state: true, message: 'Validation passed' };
+      } else {
+        return { data: false, state: false, message: 'Validation failed' };
+      }
+    }
+
+    return { data: false, state: false, message: 'Validation failed' };
+  }
+
+  /**
+   * Fetch newly created record by guid
+   */
+  async afterCreate(
+    pl: GroupMemberModel,
+  ): Promise<CdFxReturn<GroupMemberModel | ObjectLiteral>> {
+    const query = {
+      where: { groupMemberGuid: pl.groupMemberGuid },
+    };
+
+    const serviceInput = {
+      serviceModel: GroupMemberModel,
+      docName: 'Fetch Created GroupMember',
+      dSource: this.defaultDs,
+      cmd: { query },
+    };
+
+    const retResult = await this.b.read(null, null, serviceInput);
+    if ('state' in retResult) {
+      return retResult;
+    } else {
+      return CD_FX_FAIL;
+    }
+  }
+
+  async getGroupMember(
+    q: IQuery,
+  ): Promise<CdFxReturn<GroupMemberModel[] | ObjectLiteral[] | unknown>> {
+    // Validate query input
+    if (!q || !q.where || Object.keys(q.where).length === 0) {
+      return {
+        data: null,
+        state: false,
+        message: 'Invalid query: "where" condition is required',
+      };
+    }
+
+    const serviceInput = {
+      serviceModel: GroupMemberModel,
+      docName: 'GroupMemberService::getGroupMember',
+      cmd: {
+        action: 'find',
+        query: q,
+      },
+      dSource: this.defaultDs,
+    };
+
+    try {
+      const retResult = await this.b.read(null, null, serviceInput);
+
+      if ('state' in retResult) {
+        return retResult;
+      } else {
+        return CD_FX_FAIL;
+      }
+    } catch (e: any) {
+      CdLog.error(`GroupMemberService.getGroupMember() - Error: ${e.message}`);
+      return {
+        data: null,
+        state: false,
+        message: `Error retrieving GroupMember: ${e.message}`,
+      };
+    }
+  }
+
+  beforeUpdate(q: any) {
+    if (q.update.CoopEnabled === '') {
+      q.update.CoopEnabled = null;
+    }
+    return q;
+  }
+}

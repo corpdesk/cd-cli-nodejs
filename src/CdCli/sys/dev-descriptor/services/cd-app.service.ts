@@ -1,17 +1,17 @@
 /* eslint-disable style/brace-style */
 import type { CdFxReturn, CdRequest, IQuery } from '../../base/IBase';
 import type { CdDescriptor } from '../models/dev-descriptor.model';
-import { BaseService } from '../../base/base.service';
 import { HttpService } from '../../base/http.service';
 import CdLog from '../../cd-comm/controllers/cd-logger.controller';
 import { CdObjModel } from '../../moduleman/models/cd-obj.model';
 import { DevDescriptorService } from './dev-descriptor.service';
+import { GenericService } from '../../base/generic-service';
 
-export class CdAppService extends BaseService {
+export class CdAppService extends GenericService<CdObjModel> {
   cdToken;
   svDevDescriptors;
   constructor() {
-    super();
+    super(CdObjModel);
     this.svDevDescriptors = new DevDescriptorService();
   }
 

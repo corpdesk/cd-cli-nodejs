@@ -41,8 +41,10 @@ import { DevDescriptorService } from './dev-descriptor.service';
 import { SshService } from './ssh.service';
 import { WorkstationService } from './workstation.service';
 import { ProfileModel } from '../../cd-cli/models/cd-cli-profile.model';
+import { CdObjModel } from '../../moduleman/models/cd-obj.model';
+import { GenericService } from '../../base/generic-service';
 
-export class EnvironmentService extends BaseService {
+export class EnvironmentService extends GenericService<CdObjModel> {
   cdToken: string = '';
   svDevDescriptors: DevDescriptorService;
   svWorkstation: WorkstationService;
@@ -62,7 +64,7 @@ export class EnvironmentService extends BaseService {
   }[] = [];
 
   constructor() {
-    super();
+    super(CdObjModel);
     this.svDevDescriptors = new DevDescriptorService();
     this.svWorkstation = new WorkstationService();
     this.svDependency = new DependencyService();

@@ -1,8 +1,61 @@
+import {
+  DataSource,
+  DeleteResult,
+  FindOptionsWhere,
+  ObjectLiteral,
+  UpdateResult,
+} from 'typeorm';
+import { CompanyModel } from '../moduleman/models/company.model';
+import { ConsumerModel } from '../moduleman/models/consumer.model';
+import { SessionModel } from '../user/models/session.model';
+import { IUserProfile, UserModel } from '../user/models/user.model';
+
 export interface BaseServiceInterface<T> {
-  create: (data: T) => Promise<CdFxReturn<null>>;
-  read: (q?: IQuery) => Promise<CdFxReturn<T[]>>; // q is optional. If not providedx, get all the data
-  update: (q: IQuery) => Promise<CdFxReturn<null>>;
-  delete: (q: IQuery) => Promise<CdFxReturn<null>>;
+  create: (
+    req: Request | null,
+    res: Response | null,
+    serviceInput: IServiceInput<T>,
+  ) => Promise<CdFxReturn<T> | T | ICdResponse>;
+  read: (
+    req: Request | null,
+    res: Response | null,
+    serviceInput: IServiceInput<T>,
+  ) => Promise<CdFxReturn<T[]> | T[] | ICdResponse>;
+  update: (
+    req: Request | null,
+    res: Response | null,
+    serviceInput: IServiceInput<T>,
+  ) => Promise<CdFxReturn<UpdateResult> | UpdateResult | ICdResponse>;
+  delete: (
+    req: Request | null,
+    res: Response | null,
+    serviceInput: IServiceInput<T>,
+  ) => Promise<CdFxReturn<DeleteResult> | DeleteResult | ICdResponse>;
+}
+
+export abstract class AbstractBaseService<T>
+  implements BaseServiceInterface<T>
+{
+  abstract create(
+    req: Request | null,
+    res: Response | null,
+    serviceInput: IServiceInput<T>,
+  ): Promise<CdFxReturn<T> | T | ICdResponse>;
+  abstract read(
+    req: Request | null,
+    res: Response | null,
+    serviceInput: IServiceInput<T>,
+  ): Promise<CdFxReturn<T[]> | T[] | ICdResponse>;
+  abstract update(
+    req: Request | null,
+    res: Response | null,
+    serviceInput: IServiceInput<T>,
+  ): Promise<CdFxReturn<UpdateResult> | UpdateResult | ICdResponse>;
+  abstract delete(
+    req: Request | null,
+    res: Response | null,
+    serviceInput: IServiceInput<T>,
+  ): Promise<CdFxReturn<DeleteResult> | DeleteResult | ICdResponse>;
 }
 
 /**
@@ -48,14 +101,6 @@ export interface EnvelopFValItem {
   data?: any;
   extData?: any;
   jsonUpdate?: any;
-}
-
-export interface IQuery {
-  select?: string[];
-  update?: object | null;
-  where: object;
-  take?: number;
-  skip?: number;
 }
 
 export interface ICdResponse {
@@ -314,45 +359,87 @@ export interface LsFilter {
 //     room?: string;
 // }
 
-export interface IServiceInput {
-  primaryKey?: string; // primary key of the subject model
-  serviceInstance?: any; // handle of the subject service
-  serviceModel: any; // subject model
+// export interface IServiceInput {
+//   primaryKey?: string; // primary key of the subject model
+//   serviceInstance?: any; // handle of the subject service
+//   serviceModel: any; // subject model
+//   mapping?: any;
+//   serviceModelInstance?: any; // instance of subject model
+//   docName?: string;
+//   cmd?: Cmd;
+//   data?: any;
+//   dSource?: DataSource;
+//   extraInfo?: boolean;
+//   modelName?: string;
+//   modelPath?: string;
+//   fetchInput?: IFetchInput;
+// }
+export interface IServiceInput<T> {
+  primaryKey?: string;
+  serviceInstance?: any;
+  serviceModel: new () => T; // Ensure serviceModel is a class
   mapping?: any;
-  serviceModelInstance?: any; // instance of subject model
+  serviceModelInstance?: T;
   docName?: string;
-  cmd?: Cmd;
-  data?: any;
-  dSource?: number;
+  cmd?: Cmd<T>;
+  data?: Partial<T>;
+  dSource?: DataSource; // Now accepts a TypeORM DataSource instance
   extraInfo?: boolean;
   modelName?: string;
   modelPath?: string;
   fetchInput?: IFetchInput;
 }
 
-export interface IFetchInput {
-  url: string;
-  optins?: {
-    method?: string;
-    body?: string;
-    headers?: {
-      'Content-Type'?: string;
-      'X-Parse-Application-Id'?: string;
-      'X-Parse-REST-API-Key'?: string;
-    };
-  };
+export interface Cmd<T> {
+  action?: string;
+  query: IQuery | IQbInput<T>;
 }
 
-export interface Cmd {
-  action?: string;
-  query: IQuery | IQbInput;
+// export interface IQuery {
+//   select?: string[];
+//   update?: object | null;
+//   where: object;
+//   take?: number;
+//   skip?: number;
+// }
+export interface IQuery {
+  select?: string[];
+  update?: Partial<ObjectLiteral> | null;
+  where: Partial<ObjectLiteral>;
+  distinct?: boolean;
+  take?: number;
+  skip?: number;
+}
+
+export interface QueryInput {
+  select?: string[];
+  where?: any; // Already exists, but we'll use it for dynamic WHERE conditions
+  update?: Record<string, any>; // New property to specify which fields to update
+  take?: number;
+  skip?: number;
 }
 
 // query builder input
-export interface IQbInput {
+// export interface IQbInput {
+//   select?: string[];
+//   update?: object;
+//   where: IQbFilter[];
+//   distinct?: boolean;
+//   take?: number;
+//   skip?: number;
+// }
+
+/**
+ * This interface was designed to handle QueryBuilder based input
+ * 10/10/2025
+ * Note that FindOptionsWhere<T>; has replaced IQbFilter[]
+ * At the time of writing this, the modification is yet to be tested.
+ * Confirmation of this change will be done after testing.
+ */
+export interface IQbInput<T> {
   select?: string[];
   update?: object;
-  where: IQbFilter[];
+  where: FindOptionsWhere<T>; // Change from IQbFilter[] to FindOptionsWhere<T>
   distinct?: boolean;
   take?: number;
   skip?: number;
@@ -366,6 +453,19 @@ export interface IQbFilter {
   conjType?: string;
   dataType: string;
   jPath?: string;
+}
+
+export interface IFetchInput {
+  url: string;
+  optins?: {
+    method?: string;
+    body?: string;
+    headers?: {
+      'Content-Type'?: string;
+      'X-Parse-Application-Id'?: string;
+      'X-Parse-REST-API-Key'?: string;
+    };
+  };
 }
 
 export interface IDoc {
@@ -600,4 +700,36 @@ export interface ExecOptions {
   cwd?: string; // Optional working directory
   env?: NodeJS.ProcessEnv; // Optional environment variables
   mode?: 'sync' | 'async'; // Execution mode
+}
+
+export interface ISessionDataExt {
+  currentUser: UserModel;
+  currentUserProfile: IUserProfile;
+  currentSession: SessionModel;
+  currentConsumer: ConsumerModel;
+  currentCompany: CompanyModel;
+}
+
+export interface CreateIParams<T> {
+  serviceInput: IServiceInput<T>;
+  controllerData: any;
+}
+
+export interface ObjectItem {
+  key: string;
+  value: any;
+}
+
+/**
+ * triggerEvent: the servier event to handle a given message
+ * emittEvent: the event that handles message at the client
+ * sFx: server function that handles a given message
+ * cFx: client function that handles a given message
+ * extDat: extra data
+ */
+export interface PushEvent {
+  triggerEvent: string;
+  emittEvent: string;
+  sFx?: string;
+  cFx?: string;
 }

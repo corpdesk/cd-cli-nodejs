@@ -188,7 +188,7 @@ export class UserController {
         await this.auth(usernameAnswer.userName, '');
 
         // Check if login was successful by verifying session
-        if (this.ctlSession.getSession(config.cdApiLocal)) {
+        if (await this.ctlSession.getSession(config.cdApiLocal)) {
           CdLog.success('Login successful!');
           return; // Exit login retry loop if successful
         } else {

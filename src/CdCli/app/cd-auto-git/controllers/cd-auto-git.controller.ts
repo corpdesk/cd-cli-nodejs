@@ -35,13 +35,16 @@ import config from '@/config';
 import axios from 'axios';
 import inquirer from 'inquirer';
 import { GitHubRepoCreatePromptData } from '../models/cd-auto-git.model';
+import { DocModel } from '@/CdCli/sys/moduleman/models/doc.model';
 
 const execAsync = util.promisify(exec);
 
 const execPromise = promisify(exec);
 
 export class CdAutoGitController {
-  b: BaseService = new BaseService();
+  // b: BaseService = new BaseService();
+  private b = new BaseService<DocModel>();
+
   cdToken = '';
   ctlSession = new SessonController();
   // ctlCdCliProfile = new CdCliProfileController();
@@ -59,9 +62,9 @@ export class CdAutoGitController {
       return null; // Handle the failure case properly
     }
 
-    const r = await this.ctlSession.getSession(config.cdApiLocal)?.cd_token;
-    if (r) {
-      this.cdToken = r;
+    const r = await this.ctlSession.getSession(config.cdApiLocal);
+    if (r && r.cd_token) {
+      this.cdToken = r.cd_token;
       CdLog.info('cdToken has been set');
     } else {
       CdLog.error('There is a problem setting cdToken');
@@ -167,7 +170,7 @@ export class CdAutoGitController {
         }
 
         gitProfileData.details.gitAccess.gitHubToken = decryptedToken;
-      } catch (e) {
+      } catch (e: any) {
         CdLog.error(`Decryption failed: ${(e as Error).message}`);
         await this.handleMissingToken(); // Prompt the user to set the token
         return null;
@@ -530,7 +533,7 @@ export class CdAutoGitController {
         CdLog.error(error);
         return ret;
       }
-    } catch (e) {
+    } catch (e: any) {
       const error = (e as Error).toString();
       this.b.err.push(error);
       CdLog.error(`Error in updateCdVault: ${error}`);

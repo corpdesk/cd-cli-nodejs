@@ -191,7 +191,7 @@ class CdCliVaultController {
           encryptedAt: new Date().toISOString(),
         } as EncryptionMeta & { iv: string; encryptedAt: string },
       };
-    } catch (e) {
+    } catch (e: any) {
       CdLog.error(`Could not complete encryption: ${(e as Error).message}`);
       return null;
     }
@@ -291,7 +291,7 @@ class CdCliVaultController {
       CdLog.debug('CdCliValutController::decrypt()/07');
 
       return await decrypted;
-    } catch (e) {
+    } catch (e: any) {
       CdLog.error('Error at CdCliValutController::decrypt()/e:', {
         e: (e as Error).message,
       });

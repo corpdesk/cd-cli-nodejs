@@ -13,7 +13,7 @@
       "@/*": ["./src/*"]
     },
     "resolveJsonModule": true,
-    "typeRoots": ["./src", "./node_modules/@types"],
+    "typeRoots": ["./node_modules/@types"],
     "strict": true,
     "strictNullChecks": true,
     "noImplicitAny": false,
@@ -25,7 +25,12 @@
     "forceConsistentCasingInFileNames": true,
     "skipLibCheck": true
   },
-  "include": ["src/**/*", "src/types.d.ts", "src/**/*.spec.ts"],
+  "include": [
+    "src/**/*",
+    "src/types.d.ts",
+    "src/**/*.spec.ts",
+    "src/devops-scripts/migration/**/*"
+  ],
   "exclude": ["node_modules", "dist"],
   "ts-node": {
     "esm": true

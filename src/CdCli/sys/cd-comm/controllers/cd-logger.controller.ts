@@ -103,7 +103,7 @@ class CdLog {
         CdLog.info(`debug level set to ${level}`);
         CdLog.debugLevel = level;
       }
-    } catch (e) {
+    } catch (e: any) {
       console.error(
         `could not set the Debug level. Error: ${(e as Error).message}`,
       );

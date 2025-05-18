@@ -26,7 +26,7 @@ export class CdObjService {
     CdLog.debug(' CdObjService::init()/starting...');
     const createCdCliProfile = new CdCliProfileController();
     // const ctlSession = new SessonController();
-    const sid: any = await createCdCliProfile.getSessionData(config.cdApiLocal);
+    const sid: any = await createCdCliProfile.getSessionData();
     CdLog.debug('DevDescritorService::init()/sid:', sid);
     if (sid) {
       CdLog.debug('DevDescritorService::init()/sid2:', sid);

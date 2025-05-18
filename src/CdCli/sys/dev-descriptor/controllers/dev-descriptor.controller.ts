@@ -91,7 +91,7 @@ export class DevDescriptorController {
         `DevDescriptorController::getSrcDescriptors()/srcDescriptors.length:${srcDescriptors.length}`,
       );
       return { data: srcDescriptors, state: true }; // Standardized return object
-    } catch (e) {
+    } catch (e: any) {
       CdLog.error(
         `Encountered an error while compiling descriptors. Error: ${(e as Error).message}`,
       );

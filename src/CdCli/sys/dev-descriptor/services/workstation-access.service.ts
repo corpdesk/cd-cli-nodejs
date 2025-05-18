@@ -7,10 +7,13 @@ import type {
 /* eslint-disable style/operator-linebreak */
 import type { CdFxReturn } from '../../base/IBase';
 import { SshService } from './ssh.service';
+import { CdObjModel } from '../../moduleman/models/cd-obj.model';
+import { GenericService } from '../../base/generic-service';
 
-export class WorkstationAccessService {
+export class WorkstationAccessService extends GenericService<CdObjModel> {
   svSsh: SshService;
   constructor() {
+    super(CdObjModel);
     this.svSsh = new SshService();
   }
 

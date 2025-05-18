@@ -1,5 +1,5 @@
 import { ObjectLiteral } from 'typeorm';
-import { CdFxReturn, IQuery } from '../../base/IBase';
+import { CdFxReturn, IQuery, IServiceInput } from '../../base/IBase';
 import { CdObjModel } from '../models/cd-obj.model';
 import { CdObjService } from '../services/cd-obj.service';
 
@@ -7,9 +7,11 @@ export class CdObjController {
   private svCdObj = new CdObjService();
 
   async create(
-    pl: CdObjModel,
+    req,
+    res,
+    serviceInput: IServiceInput<CdObjModel>,
   ): Promise<CdFxReturn<CdObjModel | ObjectLiteral | null>> {
-    return await this.svCdObj.create(pl);
+    return await this.svCdObj.create(null, null, serviceInput);
   }
 
   async getCdObj(
@@ -18,11 +20,19 @@ export class CdObjController {
     return await this.svCdObj.getCdObj(q);
   }
 
-  async update(q: IQuery): Promise<CdFxReturn<ObjectLiteral[] | unknown>> {
-    return await this.svCdObj.update(q);
+  async update(
+    req,
+    res,
+    serviceInput: IServiceInput<CdObjModel>,
+  ): Promise<CdFxReturn<ObjectLiteral[] | unknown>> {
+    return await this.svCdObj.update(req, res, serviceInput);
   }
 
-  async delete(q: IQuery): Promise<CdFxReturn<ObjectLiteral[] | unknown>> {
-    return await this.svCdObj.delete(q);
+  async delete(
+    req,
+    res,
+    serviceInput: IServiceInput<CdObjModel>,
+  ): Promise<CdFxReturn<ObjectLiteral[] | unknown>> {
+    return await this.svCdObj.delete(req, res, serviceInput);
   }
 }

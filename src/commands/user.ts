@@ -1,7 +1,7 @@
 /* eslint-disable style/brace-style */
-import fs from 'node:fs';
+import fs, { existsSync } from 'node:fs';
 import https from 'node:https'; // Use `import` instead of `require`
-import path from 'node:path';
+import path, { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import axios from 'axios';
 

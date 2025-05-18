@@ -116,9 +116,8 @@ export class CdCliProfileController {
       };
 
       // Step 5: Prepare the payload to send to the API
-      const cdToken = await this.ctlSession.getSession(config.cdApiLocal)
-        ?.cd_token;
-      if (!cdToken) {
+      const sessResp = await this.ctlSession.getSession(config.cdApiLocal);
+      if (!sessResp || !sessResp.cd_token) {
         CdLog.error('Invalid session. Please log in again.');
         return;
       }
@@ -136,7 +135,7 @@ export class CdCliProfileController {
 
       // Step 6: Send the profile data to the API for profile creation
       const response: ICdResponse =
-        await this.svCdCliProfile.createCdCliProfile(d, cdToken);
+        await this.svCdCliProfile.createCdCliProfile(d, sessResp.cd_token);
       if (response.app_state?.success) {
         CdLog.success(`Profile '${answers.profileName}' created successfully.`);
       } else {
@@ -146,22 +145,6 @@ export class CdCliProfileController {
       CdLog.error(`Error creating profile: ${(error as Error).message}`);
     }
   }
-
-  // loadProfiles(): any {
-  //   CdLog.debug('starting loadProfiles()');
-  //   try {
-  //     if (!existsSync(CONFIG_FILE_PATH)) {
-  //       throw new Error(`Configuration file not found at ${CONFIG_FILE_PATH}.`);
-  //     }
-
-  //     const configContent = fs.readFileSync(CONFIG_FILE_PATH, 'utf-8');
-  //     return JSON.parse(configContent);
-  //   } catch (error) {
-  //     throw new Error(
-  //       `Error loading configuration: ${(error as Error).message}`,
-  //     );
-  //   }
-  // }
 
   async loadProfiles(): Promise<CdFxReturn<ProfileContainer>> {
     CdLog.debug('starting loadCdCliConfig()');

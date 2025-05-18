@@ -3,55 +3,38 @@
 
 import { ObjectLiteral } from 'typeorm';
 import { CD_FX_FAIL, CdFxReturn, IQuery } from '../../base/IBase';
-import { SqliteStore } from '../../base/sqlite-store';
 import { CdObjModel } from '../models/cd-obj.model';
-import { CdObjTypeModel } from '../models/cd-obj-type.model';
 import CdLog from '../../cd-comm/controllers/cd-logger.controller';
+import { BaseService } from '../../base/base.service';
+import config from '@/config';
+import { GenericService } from '../../base/generic-service';
 
-export class CdObjService {
-  private sqlightStore = new SqliteStore();
+export class CdObjService extends GenericService<CdObjModel> {
+  // private b = new BaseService<CdObjModel>();
 
+  defaultDs = config.ds.sqlite;
   // Define validation rules
   cRules: any = {
     required: ['cdObjName', 'cdObjTypeGuid', 'cdObjGuid'],
     noDuplicate: ['cdObjName', 'cdObjTypeGuid'],
   };
 
-  async create(
-    pl: CdObjModel,
-  ): Promise<CdFxReturn<CdObjModel | ObjectLiteral | null>> {
-    // Validate input
-    const validation = await this.validateCreate(pl);
-    if (!validation.state) {
-      return validation; // Return validation error if failed
-    }
-
-    const serviceInput = {
-      serviceModel: CdObjModel,
-      docName: 'Create CdObj',
-      dSource: 1,
-      data: pl,
-    };
-
-    const result = await this.sqlightStore.create(serviceInput);
-
-    // If create was successful, fetch the new record
-    if (result.state) {
-      return await this.afterCreate(pl);
-    } else {
-      return CD_FX_FAIL;
-    }
+  ///////////////////////////////////////////////////////////////////////////////////////////////
+  // ADAPTATION FROM GENERIC SERVICE
+  constructor() {
+    super(CdObjModel);
   }
 
   /**
    * Validate input before processing create
    */
-  private async validateCreate(pl: CdObjModel): Promise<CdFxReturn<null>> {
+  async validateCreate(pl: CdObjModel): Promise<CdFxReturn<boolean>> {
+    const retState = true;
     // Ensure required fields exist
     for (const field of this.cRules.required) {
       if (!pl[field]) {
         return {
-          data: null,
+          data: false,
           state: false,
           message: `Missing required field: ${field}`,
         };
@@ -68,26 +51,30 @@ export class CdObjService {
     const serviceInput = {
       serviceModel: CdObjModel,
       docName: 'Validate Duplicate CdObj',
-      dSource: 1,
+      dSource: this.defaultDs,
       cmd: { query },
     };
 
-    const existingRecords = await this.sqlightStore.read(serviceInput);
-    if (existingRecords.state && existingRecords.data!.length > 0) {
-      return {
-        data: null,
-        state: false,
-        message: 'Duplicate record found for cdObjName and cdObjTypeId',
-      };
+    const existingRecords = await this.b.read(null, null, serviceInput);
+    if ('state' in existingRecords && 'data' in existingRecords) {
+      if (!existingRecords.state || !existingRecords.data) {
+        return { data: false, state: false, message: 'Validation failed' };
+      }
+
+      if (existingRecords.data.length > 0) {
+        return { data: true, state: true, message: 'Validation passed' };
+      } else {
+        return { data: false, state: false, message: 'Validation failed' };
+      }
     }
 
-    return { data: null, state: true, message: 'Validation passed' };
+    return { data: false, state: false, message: 'Validation failed' };
   }
 
   /**
    * Fetch newly created record by guid
    */
-  private async afterCreate(
+  async afterCreate(
     pl: CdObjModel,
   ): Promise<CdFxReturn<CdObjModel | ObjectLiteral>> {
     const query = {
@@ -97,11 +84,16 @@ export class CdObjService {
     const serviceInput = {
       serviceModel: CdObjModel,
       docName: 'Fetch Created CdObj',
-      dSource: 1,
+      dSource: this.defaultDs,
       cmd: { query },
     };
 
-    return await this.sqlightStore.read(serviceInput);
+    const retResult = await this.b.read(null, null, serviceInput);
+    if ('state' in retResult) {
+      return retResult;
+    } else {
+      return CD_FX_FAIL;
+    }
   }
 
   async getCdObj(
@@ -123,58 +115,23 @@ export class CdObjService {
         action: 'find',
         query: q,
       },
-      dSource: 1,
+      dSource: this.defaultDs,
     };
 
     try {
-      const result = await this.sqlightStore.read(serviceInput);
+      const retResult = await this.b.read(null, null, serviceInput);
 
-      if (!result.state || !result.data!.length) {
-        return {
-          data: [],
-          state: false,
-          message: 'No matching records found',
-        };
+      if ('state' in retResult) {
+        return retResult;
+      } else {
+        return CD_FX_FAIL;
       }
-
-      return result; // Successfully return fetched records
-    } catch (error: any) {
-      CdLog.error(`CdObjService.getCdObj() - Error: ${error.message}`);
+    } catch (e: any) {
+      CdLog.error(`CdObjService.getCdObj() - Error: ${e.message}`);
       return {
         data: null,
         state: false,
-        message: `Error retrieving CdObj: ${error.message}`,
-      };
-    }
-  }
-
-  async update(q: IQuery): Promise<CdFxReturn<ObjectLiteral[] | unknown>> {
-    const serviceInput = {
-      serviceModel: CdObjModel,
-      docName: 'CoopService::update',
-      cmd: {
-        action: 'update',
-        query: q,
-      },
-      dSource: 1,
-    };
-
-    try {
-      const result = await this.sqlightStore.update(serviceInput);
-      if (!result.state || !result.data!.length) {
-        return {
-          data: [],
-          state: false,
-          message: 'No matching records found',
-        };
-      }
-      return result; // Successfully return status
-    } catch (error: any) {
-      CdLog.error(`CdObjTypeService.update() - Error: ${error.message}`);
-      return {
-        data: null,
-        state: false,
-        message: `Error updating CdObj: ${error.message}`,
+        message: `Error retrieving CdObj: ${e.message}`,
       };
     }
   }
@@ -184,36 +141,5 @@ export class CdObjService {
       q.update.CoopEnabled = null;
     }
     return q;
-  }
-
-  async delete(q: IQuery): Promise<CdFxReturn<ObjectLiteral[] | unknown>> {
-    const serviceInput = {
-      serviceModel: CdObjModel,
-      docName: 'CoopService::delete',
-      cmd: {
-        action: 'delete',
-        query: q,
-      },
-      dSource: 1,
-    };
-
-    try {
-      const result = await this.sqlightStore.delete(serviceInput);
-      if (!result.state || !result.data!.length) {
-        return {
-          data: [],
-          state: false,
-          message: 'No matching records found',
-        };
-      }
-      return result; // Successfully return status
-    } catch (error: any) {
-      CdLog.error(`CdObjTypeService.update() - Error: ${error.message}`);
-      return {
-        data: null,
-        state: false,
-        message: `Error deleting CdObj: ${error.message}`,
-      };
-    }
   }
 }

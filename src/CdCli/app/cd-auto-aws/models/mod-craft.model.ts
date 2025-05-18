@@ -1,4 +1,5 @@
-import { CdCliProfileController } from '../../cd-cli/controllers/cd-cli-profile.cointroller';
+// import { CdCliProfileController } from '../../cd-cli/controllers/cd-cli-profile.cointroller';
+import { CdCliProfileController } from '@/CdCli/sys/cd-cli/controllers/cd-cli-profile.cointroller';
 import { ModCraftController } from '../controllers/mod-craft.controller';
 
 export const InitModuleFromRepoPromptData: any = [
@@ -48,7 +49,7 @@ export const CREATE_SSH_PROFILE_CMD = {
   action: {
     execute: async () => {
       const cdCliProfileController = new CdCliProfileController();
-      await cdCliProfileController.createSshProfile();
+      await cdCliProfileController.createProfile('create-ssh');
     },
   },
 };

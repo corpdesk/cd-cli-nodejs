@@ -14,14 +14,17 @@ import { WorkstationAccessController } from '../controllers/workstation-access.c
 import { SshService } from './ssh.service';
 import { WorkstationService } from './workstation.service';
 import { WorkstationAccessService } from './workstation-access.service';
+import { CdObjModel } from '../../moduleman/models/cd-obj.model';
+import { GenericService } from '../../base/generic-service';
 
-export class DependencyService {
+export class DependencyService extends GenericService<CdObjModel> {
   svWorkstation: WorkstationService;
   progressTracker: ProgressTrackerService;
   svSsh: SshService;
   svWorkstationAccess: WorkstationAccessService;
   ctlWorkstationAccess: WorkstationAccessController;
   constructor() {
+    super(CdObjModel);
     this.svWorkstation = new WorkstationService();
     this.progressTracker = new ProgressTrackerService();
     this.svSsh = new SshService();

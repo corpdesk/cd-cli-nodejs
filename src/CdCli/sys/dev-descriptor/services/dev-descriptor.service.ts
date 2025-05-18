@@ -16,14 +16,16 @@ import {
 } from '../../moduleman/models/cd-obj.model';
 import { CdCliStoreService } from '../../cd-cli/services/cd-cli-store.service';
 import { CdObjTypeModel } from '../../moduleman/models/cd-obj-type.model';
+import { GenericService } from '../../base/generic-service';
 
-export class DevDescriptorService {
+export class DevDescriptorService extends GenericService<CdObjModel> {
   cdToken = '';
   baseUrl = '';
   httpService;
   svCdCliStore = new CdCliStoreService();
   private redisService = new CdCliStoreService();
   constructor() {
+    super(CdObjModel);
     this.init();
   }
 

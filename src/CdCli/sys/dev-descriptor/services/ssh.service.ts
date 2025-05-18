@@ -1,10 +1,15 @@
 /* eslint-disable style/operator-linebreak */
 /* eslint-disable style/brace-style */
 import { NodeSSH } from 'node-ssh';
+import { CdObjModel } from '../../moduleman/models/cd-obj.model';
+import { GenericService } from '../../base/generic-service';
 
-export class SshService {
+export class SshService extends GenericService<CdObjModel> {
   private ssh = new NodeSSH();
 
+  constructor() {
+    super(CdObjModel);
+  }
   /**
    * Establishes an SSH connection and executes a command.
    */
