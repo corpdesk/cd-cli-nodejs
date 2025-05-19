@@ -8,7 +8,6 @@ export class Comm {
 
   @Column({
     length: 36,
-    default: uuidv4(),
   })
   commGuid?: string;
 

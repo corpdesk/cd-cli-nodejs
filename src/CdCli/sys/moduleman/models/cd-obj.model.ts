@@ -37,7 +37,6 @@ export class CdObjModel {
   @Column({
     name: 'cd_obj_guid',
     length: 36,
-    default: uuidv4(),
   })
   cdObjGuid?: string;
 

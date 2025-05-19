@@ -15,7 +15,6 @@ export class JwtModel {
   @Column({
     name: 'jwt_guid',
     length: 36,
-    default: uuidv4(),
   })
   jwtGuid?: string;
 

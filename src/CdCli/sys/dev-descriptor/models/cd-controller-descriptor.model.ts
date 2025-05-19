@@ -9,4 +9,5 @@ export interface CdControllerDescriptor extends BaseDescriptor {
   parent?: string; // Parent controller (if part of a hierarchical structure)
   dependencies?: DependencyDescriptor[]; // Other controllers or services this controller depends on
   actions: FunctionDescriptor[]; // Array of actions represented as FunctionDescriptors
+  view: ViewModelDescriptor; // View model descriptor for the controller
 }

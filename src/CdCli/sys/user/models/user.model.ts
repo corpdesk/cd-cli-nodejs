@@ -79,8 +79,6 @@ export const LOGOUT_CMD = {
 })
 // @CdModel
 export class UserModel {
-  b?: BaseService;
-
   @PrimaryGeneratedColumn({
     name: 'user_id',
   })
@@ -89,7 +87,6 @@ export class UserModel {
   @Column({
     name: 'user_guid',
     length: 36,
-    default: uuidv4(),
   })
   userGuid?: string;
 
@@ -202,7 +199,6 @@ export class UserModel {
   @Column({
     name: 'activation_key',
     length: 36,
-    default: uuidv4(),
   })
   activationKey?: string;
 

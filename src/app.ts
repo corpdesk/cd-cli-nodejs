@@ -48,75 +48,7 @@ export class App {
       updateNotifier({ pkg: { name, version } }).notify({ isGlobal: true });
     });
 
-    // Register commands and subcommands
-    // for (const command of CdCli.commands) {
-    //   console.log('Processing command:', command.name);
-    //   const cmd = program
-    //     .command(command.name)
-    //     .description(command.description);
-    //   console.log('1. App::command.options1:', command);
-    //   if (command.options) {
-    //     console.log('1.1. App::command.options1:', command.options);
-    //     for (const option of command.options) {
-    //       console.log('1.2. App::command.options1:', command.options);
-    //       cmd.option(option.flags, option.description);
-    //     }
-    //   }
-
-    //   if (command.subcommands) {
-    //     console.log('2. App::command.subcommands:', command.subcommands);
-    //     for (const subcommand of command.subcommands) {
-    //       console.log('2.1. App::subcommand:', subcommand);
-    //       const subCmd = cmd
-    //         .command(subcommand.name)
-    //         .description(subcommand.description);
-
-    //       console.log('2.2. App::subCmd.parent.name:', subCmd.parent?.name);
-    //       if (subcommand.options) {
-    //         console.log('2.3. App::subcommand.options:', subcommand.options);
-    //         for (const option of subcommand.options) {
-    //           console.log('2.4. App::option:', option);
-    //           subCmd.option(option.flags, option.description);
-    //         }
-    //       }
-
-    //       console.log('2.5. App::subCmd.action:', subCmd.action);
-    //       subCmd.action(async (options) => {
-    //         console.log('2.6. App::options:', options);
-    //         try {
-    //           console.log('2.7 App::options.name:', options.name);
-    //           await subcommand.action.execute(options);
-    //         } catch (error) {
-    //           console.log('2.8 App::error:');
-    //           console.error(
-    //             `${chalk.red.bold('error')} ${(error as Error).message}`,
-    //           );
-    //         }
-    //       });
-    //     }
-    //   } else {
-    //     console.log('3. App::cmd.commands:', cmd.commands);
-    //     console.log('4. App::cmd.options:', cmd.options);
-    //     console.log('5. App::cmd.action:', cmd.action);
-    //     cmd.action(async (options) => {
-    //       console.log(`Executing command: ${command.name}`);
-    //       console.log('6. App::options:', options);
-    //       try {
-    //         await command.action.execute(options);
-    //       } catch (error) {
-    //         console.error(
-    //           `${chalk.red.bold('error')} ${(error as Error).message}`,
-    //         );
-    //       }
-    //     });
-    //   }
-    // }
     for (const command of CdCli.commands) {
-      // console.log('Processing command:', command.name);
-      // if (command.name === 'dev') {
-      //   console.log('Processing command:', command);
-      // }
-
       const cmd = program
         .command(command.name)
         .description(command.description)

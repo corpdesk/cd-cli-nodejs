@@ -75,6 +75,7 @@ export interface CdFxReturn<T> {
   message?: string; // Optional error/success message
 }
 
+// default return on failure
 export const CD_FX_FAIL = {
   data: null,
   state: false,

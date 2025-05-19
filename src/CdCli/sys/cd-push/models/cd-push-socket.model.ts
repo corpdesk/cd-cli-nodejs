@@ -18,7 +18,6 @@ export class CdPushSocketModel {
   @Column({
     name: 'cd_push_socket_guid',
     length: 36,
-    default: uuidv4(),
   })
   cdPushSocketGuid?: string;
 

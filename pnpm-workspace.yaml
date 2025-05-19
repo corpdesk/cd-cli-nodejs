@@ -1,0 +1,9 @@
+onlyBuiltDependencies:
+  - '@nestjs/core'
+  - '@swc/core'
+  - bcrypt
+  - cpu-features
+  - esbuild
+  - puppeteer
+  - sqlite3
+  - ssh2

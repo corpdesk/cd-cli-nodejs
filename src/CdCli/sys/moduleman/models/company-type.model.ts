@@ -26,7 +26,6 @@ export class CompanyTypeModel {
   @Column({
     name: 'company_type_guid',
     length: 36,
-    default: uuidv4(),
   })
   companyTypeGuid?: string;
 

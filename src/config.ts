@@ -1,7 +1,12 @@
 import type { ISessResp } from './CdCli/sys/base/IBase';
+import { fileURLToPath } from 'url';
+import { dirname } from 'path';
 /* eslint-disable node/prefer-global/process */
 import path, { join } from 'node:path';
 import { DataSource, DataSourceOptions } from 'typeorm';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 export const CONFIG_FILE_PATH = join(
   process.env.HOME || '~/',
@@ -118,16 +123,6 @@ const mysqlConfig2 = {
   ],
 };
 
-// export const sqliteConfig: DataSourceOptions = {
-//   name: process.env.SQLITE_NAME,
-//   // type: 'sqlite',
-//   database: __dirname + '/database.sqlite',
-//   synchronize: false,
-//   // keepConnectionAlive: true,
-//   logging: false,
-//   entities: ENTITIES,
-// };
-
 const sqliteConfig: DataSourceOptions = {
   name: 'default',
   type: 'sqlite', // Ensures TypeORM understands it's MySQL and not Aurora MySQL
@@ -148,22 +143,6 @@ export async function sqliteConfigFx(connName): Promise<any> {
     entities: ENTITIES,
   };
 }
-
-// export const SqliteDataSource = new DataSource({
-//   type: 'sqlite',
-//   database: 'cd-cli.db', // SQLite file name
-//   entities: ENTITIES, // Adjust path based on your project
-//   synchronize: true, // Auto-create tables based on entities
-//   logging: false,
-// });
-
-// export const MysqLDataSource = new DataSource({
-//   type: 'mysql',
-//   database: 'cd1213', // SQLite file name
-//   entities: ENTITIES, // Adjust path based on your project
-//   synchronize: true, // Auto-create tables based on entities
-//   logging: false,
-// });
 
 // config.cdApiLocal
 export default {

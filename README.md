@@ -1,7 +1,148 @@
 # cd-cli
 This is a modern Command-Line-Tool template repository base on Node.js. You can quickly set up your cli apps with this project.
 
-## Quick Start
+REPL-based Dev Mode CLI, including the `dev` command and its `create` subcommand.
+
+---
+
+# 📘 Corpdesk CLI Reference – Development Mode
+
+This document serves as the official reference for the Corpdesk Dev Mode CLI commands. It provides usage instructions, expected parameters, and examples for each available command.
+
+---
+
+## 🔧 Command: `dev`
+
+Enters interactive development mode, allowing you to execute subcommands and interact with the application environment.
+
+### ✅ Usage
+
+```bash
+dev
+```
+
+Once in dev mode, you'll enter an interactive REPL with a dynamic prompt.
+
+---
+
+### 🎨 Prompt Modes
+
+Switch between REPL modes using the `.mode` command:
+
+```bash
+.mode default
+.mode py
+.mode js
+```
+
+#### Available Modes
+
+| Mode      | Description                              |
+| --------- | ---------------------------------------- |
+| `default` | Basic development command prompt         |
+| `py`      | Python-style prompt (for syntax clarity) |
+| `js`      | JavaScript-style prompt                  |
+
+---
+
+### 📜 Multi-Command Support
+
+You can chain multiple commands with semicolons:
+
+```bash
+create env --name dev-east --workstation workstation-01; show env --name dev-east;
+```
+
+---
+
+## 🛠️ Subcommand: `create`
+
+Sets up environment configurations dynamically.
+
+### ✅ Usage
+
+```bash
+create env --name <profile-name> --workstation <hostname>;
+```
+
+### 📌 Description
+
+Creates an environment profile (e.g., dev, staging) under a specific workstation context.
+
+### 🧾 Options
+
+| Option          | Description                              | Required |
+| --------------- | ---------------------------------------- | -------- |
+| `env`           | Keyword that specifies the resource type | ✅ Yes    |
+| `--name`        | The environment profile name             | ✅ Yes    |
+| `--workstation` | Target workstation name                  | ✅ Yes    |
+
+### 🧪 Example
+
+```bash
+create env --name staging-01 --workstation george-laptop;
+✔ Environment setup completed for profile: staging-01
+```
+
+### ❌ Error Example
+
+```bash
+create env
+Error: Both --name and --workstation are required.
+```
+
+---
+
+## 📚 Planned or Placeholder Subcommands
+
+These commands are stubbed using `getSubcommand(...)`. Functionality may be extended in the future:
+
+| Subcommand | Description                                                   |
+| ---------- | ------------------------------------------------------------- |
+| `show`     | Likely for displaying resources                               |
+| `sync`     | Possibly syncs environments or configurations                 |
+| `exit`     | Exits development mode safely                                 |
+| `create`   | Creates various resources (currently only `env` is supported) |
+
+---
+
+## 🔄 Exiting Dev Mode
+
+Use the keyboard shortcut:
+
+```
+Ctrl + C (twice) or .exit
+```
+
+or run:
+
+```
+exit;
+```
+
+---
+
+## 📈 Logging
+
+All commands log their input and actions via the `CdLog` system.
+
+---
+
+## 📌 Future Improvements (Suggested)
+
+* [ ] Autocomplete workstation or environment names
+* [ ] Subcommand help output (`create --help`)
+* [ ] Command history persistence
+* [ ] Syntax highlighting or editor integration
+
+---
+
+Would you like this saved as a `.md` file or added to your CLI codebase directly as a documentation asset?
+
+
+## Developer Quick Start
+
+Repository: https://github.com/corpdesk/cd-cli-nodejs.git
 
 ```shell
 # development
@@ -45,9 +186,3 @@ Here are some [command-line-apps](https://github.com/sindresorhus/awesome-nodejs
 ## Contribution
 
 PR welcome if you have any constructive suggestions. Please polish your code and  describe you commit msg concisely and detailedly.
-# testAutoGit2
-# testAutoGit3
-# testAutoGit3
-# testAutoGit
-# testAutoGit4
-# testAutoGit

@@ -16,7 +16,6 @@ export class ConsumerModel {
   @Column({
     name: 'consumer_guid',
     length: 36,
-    default: uuidv4(),
   })
   consumerGuid?: string;
 
