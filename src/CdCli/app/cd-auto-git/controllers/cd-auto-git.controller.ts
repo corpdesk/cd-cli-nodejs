@@ -46,7 +46,7 @@ export class CdAutoGitController {
   private b = new BaseService<DocModel>();
 
   cdToken = '';
-  ctlSession = new SessonController();
+  // ctlSession = new SessonController();
   // ctlCdCliProfile = new CdCliProfileController();
   svCdCliProfile = new CdCliProfileService();
 
@@ -55,6 +55,7 @@ export class CdAutoGitController {
   }
 
   async init() {
+    const ctlSession = new SessonController();
     const ctlCdCliProfile = new CdCliProfileController();
     const profileRet = await ctlCdCliProfile.loadProfiles();
     if (!profileRet.state) {
@@ -62,7 +63,7 @@ export class CdAutoGitController {
       return null; // Handle the failure case properly
     }
 
-    const r = await this.ctlSession.getSession(config.cdApiLocal);
+    const r = await ctlSession.getSession(config.cdApiLocal);
     if (r && r.cd_token) {
       this.cdToken = r.cd_token;
       CdLog.info('cdToken has been set');
@@ -207,6 +208,7 @@ export class CdAutoGitController {
     isPrivate: boolean,
     repoHost: string,
   ): Promise<void> {
+    CdLog.debug('CdAutoGitController::createGitHubRepo()/01');
     try {
       // Validation for inputs
       if (!repoName || typeof repoName !== 'string' || repoName.trim() === '') {
@@ -614,24 +616,26 @@ export class CdAutoGitController {
         token: gitHubToken,
       });
 
-      // Handle placeholder token
-      if (gitHubToken?.startsWith('#cdVault[')) {
-        const tokenNameMatch = gitHubToken.match(/#cdVault\['(.+?)'\]/);
-        if (tokenNameMatch) {
-          const tokenName = tokenNameMatch[1];
-          const tokenVaultEntry = gitProfileData.cdVault.find(
-            (item: CdVault) => item.name === tokenName,
-          );
-          if (tokenVaultEntry) {
-            gitHubToken = tokenVaultEntry.isEncrypted
-              ? CdCliVaultController.getSensitiveData(tokenVaultEntry)
-              : tokenVaultEntry.value;
-          } else {
-            throw new Error(`Vault entry '${tokenName}' not found.`);
-          }
-        }
-      }
+      // Decrypt and resolve all vault references in details
+      const resolved =
+        await CdCliVaultController.resolveVaultReferencesInObject(
+          gitProfileData.details,
+          gitProfileData.cdVault,
+        );
 
+      // Extract from resolved details after vault substitution
+      // const { baseUrl, gitAccess } = resolved;
+      CdLog.debug(
+        `CdAutoGitController::cloneRepoToLocal()/resolved:${JSON.stringify(resolved)}`,
+      );
+      baseRepoUrl = resolved.gitAccess.baseRepoUrl;
+      CdLog.debug(
+        `CdAutoGitController::cloneRepoToLocal()/baseRepoUrl:${baseRepoUrl}`,
+      );
+      gitHubToken = resolved.gitAccess.gitHubToken;
+      CdLog.debug(
+        `CdAutoGitController::cloneRepoToLocal()/gitHubToken:${gitHubToken}`,
+      );
       if (!baseRepoUrl || !gitHubToken) {
         throw new Error(
           'Missing GitHub baseRepoUrl or token. Ensure GitHub profile is configured correctly.',

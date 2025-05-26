@@ -66,7 +66,7 @@ export class BaseService<
     app_msg: '',
   };
   isRegRequest = false;
-  svSess: SessionService = new SessionService();
+  // svSess: SessionService = new SessionService();
   sess: SessionModel | any;
   logger: Logging;
 
@@ -1025,7 +1025,7 @@ export class BaseService<
 
   async setSess(req, res) {
     // this.logger.logDebug('BaseService::setSess()/01');
-    this.svSess = new SessionService();
+    const svSess = new SessionService();
     if (await !this.cdToken) {
       // this.logger.logDebug('BaseService::setSess()/02');
       try {
@@ -1039,7 +1039,7 @@ export class BaseService<
           this.sess = [req.post.sessData];
         } else {
           // this.logger.logDebug('BaseService::setSess()/022');
-          const sessResult = await this.svSess.getSession({
+          const sessResult = await svSess.getSession({
             where: { cdToken: this.cdToken },
           });
           if (!sessResult.state || !sessResult.data) {
@@ -1094,7 +1094,7 @@ export class BaseService<
           app_msg: (e as Error).toString(),
         };
         // await this.serviceErr(req, res, this.i.app_msg, this.i.code)
-        await this.setAlertMessage((e as Error).toString(), this.svSess, false);
+        await this.setAlertMessage((e as Error).toString(), svSess, false);
         // this.respond(req, res);
       }
     }

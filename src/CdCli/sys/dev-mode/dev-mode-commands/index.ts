@@ -3,6 +3,7 @@ import repl from 'node:repl';
 import chalk from 'chalk';
 import minimist from 'minimist';
 import CdLog from '../../cd-comm/controllers/cd-logger.controller';
+import { CdAiController } from '@/CdCli/app/cd-ai/controllers/cd-ai.controller';
 
 // Branding utility for reusable prompt designs
 export const Branding = {
@@ -24,6 +25,7 @@ export const Branding = {
 };
 
 // Main Development Mode Commands
+// 👇 Internal buffer to accumulate multi-line or compound command input.
 let inputBuffer: string = '';
 let isCommandIncomplete = false;
 
@@ -32,44 +34,48 @@ export const DEV_MODE_COMMANDS = {
   description: 'Enter development mode to manage applications.',
   action: {
     execute: async () => {
-      console.log('Entering development mode...');
+      console.log(chalk.green('[dev-mode] Entering development mode...'));
+
+      // 👇 Initialize AI services required during development runtime.
+      await CdAiController.initAiRuntime();
+
+      // 👇 Tracks the current language mode for REPL prompt customization.
       let currentMode: 'default' | 'py' | 'js' = 'default';
 
+      // 👇 Start a REPL session for developer interaction.
       const replServer = repl.start({
-        prompt: Branding.getPrompt(currentMode),
+        prompt: Branding.getPrompt(currentMode), // Show context-aware prompt.
         eval: async (input, context, filename, callback) => {
           try {
-            CdLog.debug(`DevModeModel::eval()/input:${input}`);
+            CdLog.debug(`DevMode::eval()/input:${input}`);
             input = input.trim();
             inputBuffer += input;
 
             const hasDelimiterAtEnd = inputBuffer.endsWith(';');
-            const lastPart = inputBuffer.split(';').pop();
-            const hasTextAfterLastDelimiter = lastPart
-              ? lastPart.trim().length > 0
-              : false;
 
+            const lastPart = inputBuffer.split(';').pop();
+            const hasTextAfterLastDelimiter =
+              lastPart && lastPart.trim().length > 0;
+
+            // 👇 Support for multi-line or compound commands. Await final delimiter before executing.
             if (!hasDelimiterAtEnd || hasTextAfterLastDelimiter) {
-              callback(null, '...'); // Show continuation prompt
+              callback(null, '...'); // Continue input on next line
               return;
             }
 
+            // 👇 Once full command input is captured, split and execute each part.
             const commands = inputBuffer.split(';').filter((cmd) => cmd.trim());
             inputBuffer = '';
 
-            const executionPromises = commands.map(async (fullCommand) => {
-              return handleInput(`${fullCommand.trim()};`);
-            });
-
-            await Promise.all(executionPromises);
-            callback(
-              null,
-              `Executed ${commands.length} commands successfully.`,
+            const executionResults = await Promise.all(
+              commands.map((cmd) => handleInput(`${cmd.trim()};`)),
             );
+
+            callback(null, `✅ Executed ${commands.length} commands.`);
             replServer.displayPrompt();
-          } catch (error) {
+          } catch (err) {
             callback(
-              error instanceof Error ? error : new Error(String(error)),
+              err instanceof Error ? err : new Error(String(err)),
               undefined,
             );
             replServer.displayPrompt();
@@ -77,7 +83,7 @@ export const DEV_MODE_COMMANDS = {
         },
       });
 
-      // Handle REPL mode switching
+      // 👇 Dynamically switch between available modes.
       replServer.defineCommand('mode', {
         help: 'Switch between modes (default, py, js).',
         action(newMode: string) {
@@ -88,23 +94,26 @@ export const DEV_MODE_COMMANDS = {
             this.write(`Switched to ${newMode} mode.\n`);
           } else {
             this.write(
-              `Unknown mode: ${newMode}. Available modes: default, py, js.\n`,
+              `❌ Unknown mode: ${newMode}. Available modes: default, py, js.\n`,
             );
           }
         },
       });
 
+      // 👇 Graceful shutdown of REPL
       replServer.on('exit', () => {
-        console.log(chalk.yellow('Exited development mode.'));
+        console.log(chalk.yellow('[dev-mode] Exited development mode.'));
         process.exit(0);
       });
     },
   },
+
+  // 👇 Predefined subcommands available while in development mode.
   subcommands: [
-    getSubcommand('show'),
-    getSubcommand('sync'),
-    getSubcommand('exit'),
-    getSubcommand('create'),
+    getSubcommand('show'), // View application state/configs
+    getSubcommand('sync'), // Sync files or state
+    getSubcommand('exit'), // Exit the dev mode REPL
+    getSubcommand('create'), // Trigger code creation/generation tools
   ],
 };
 

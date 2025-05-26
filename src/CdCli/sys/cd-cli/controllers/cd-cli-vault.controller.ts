@@ -509,6 +509,83 @@ class CdCliVaultController {
       }
     }
   }
+
+  static async resolveCdVaultReferences(
+    cmds: string[],
+    cdVault?: CdVault[],
+  ): Promise<string[]> {
+    if (!cdVault) return cmds;
+
+    return Promise.all(
+      cmds.map(async (cmd) => {
+        // Find all matches of #cdVault['key']
+        const matches = [...cmd.matchAll(/#cdVault\['(.+?)'\]/g)];
+
+        if (matches.length === 0) {
+          return cmd; // No replacements needed
+        }
+
+        let resolvedCmd = cmd;
+
+        for (const match of matches) {
+          const key = match[1]; // Extract the key inside #cdVault['key']
+          const secret = cdVault.find((item) => item.name === key);
+
+          if (secret && secret.encryptedValue) {
+            const decryptedValue =
+              await CdCliVaultController.decryptValue(secret);
+            resolvedCmd = resolvedCmd.replace(
+              match[0],
+              decryptedValue ?? match[0],
+            );
+          } else {
+            console.warn(`Warning: Missing cdVault entry for ${key}`);
+          }
+        }
+
+        return resolvedCmd;
+      }),
+    );
+  }
+
+  static async resolveVaultReferencesInObject<T>(
+    input: T,
+    cdVault: CdVault[] = [],
+  ): Promise<T> {
+    const isVaultRef = (val: unknown): val is string =>
+      typeof val === 'string' && /#cdVault\['(.+?)'\]/.test(val);
+
+    const recursiveResolve = async (obj: any): Promise<any> => {
+      if (Array.isArray(obj)) {
+        return Promise.all(obj.map(recursiveResolve));
+      }
+
+      if (typeof obj === 'object' && obj !== null) {
+        const result: any = {};
+        for (const key of Object.keys(obj)) {
+          result[key] = await recursiveResolve(obj[key]);
+        }
+        return result;
+      }
+
+      if (isVaultRef(obj)) {
+        const key = obj.match(/#cdVault\['(.+?)'\]/)?.[1];
+        const vaultEntry = cdVault.find((v) => v.name === key);
+        if (vaultEntry) {
+          return vaultEntry.isEncrypted
+            ? await this.decryptValue(vaultEntry)
+            : vaultEntry.value;
+        } else {
+          console.warn(`Vault reference key '${key}' not found.`);
+          return obj;
+        }
+      }
+
+      return obj;
+    };
+
+    return recursiveResolve(input);
+  }
 }
 
 export default CdCliVaultController;

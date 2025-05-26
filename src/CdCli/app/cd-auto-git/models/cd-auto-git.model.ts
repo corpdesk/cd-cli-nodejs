@@ -37,7 +37,7 @@ export const CD_AUTO_GIT_CMD = {
       ],
       action: {
         execute: async (options) => {
-          CdLog.info('Executing auto-git create command...', options);
+          // CdLog.debug('Executing auto-git create command...', options);
           const cdAutoGitController = new CdAutoGitController();
           await cdAutoGitController.createGitHubRepo(
             options.name,
@@ -71,7 +71,7 @@ export const CD_AUTO_GIT_CMD = {
       ],
       action: {
         execute: async (options) => {
-          CdLog.info('Executing auto-git clone command...', options);
+          // CdLog.info('Executing auto-git clone command...', options);
           const cdAutoGitController = new CdAutoGitController();
           await cdAutoGitController.cloneRepoToLocal(
             options.repoName,

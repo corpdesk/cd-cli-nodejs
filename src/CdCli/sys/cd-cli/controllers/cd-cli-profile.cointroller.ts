@@ -1,12 +1,13 @@
 /* eslint-disable antfu/if-newline */
 /* eslint-disable node/prefer-global/process */
 /* eslint-disable style/operator-linebreak */
-import type {
-  CdFxReturn,
-  ICdResponse,
-  IJsonUpdate,
-  IQuery,
-  ISessResp,
+import {
+  CD_FX_FAIL,
+  type CdFxReturn,
+  type ICdResponse,
+  type IJsonUpdate,
+  type IQuery,
+  type ISessResp,
 } from '../../base/IBase';
 import type {
   ProfileContainer,
@@ -23,7 +24,7 @@ import { CdCliProfileService } from '../services/cd-cli-profile.service';
 
 // const fsAccess = promisify(fs.access);
 
-import type { CdVault } from '../models/cd-cli-vault.model';
+import { ENCRYPTION_CONFIGS, type CdVault } from '../models/cd-cli-vault.model';
 import fs, { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import config, { CONFIG_FILE_PATH } from '@/config';
@@ -31,6 +32,7 @@ import { printTable } from '../../base/cli-table';
 import { HttpService } from '../../base/http.service';
 import CdLog from '../../cd-comm/controllers/cd-logger.controller';
 import { SessonController } from '../../user/controllers/session.controller';
+import CdCliVaultController from './cd-cli-vault.controller';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -45,6 +47,7 @@ const PROFILE_DIRECTORY = join(homeDirectory, '.cd-cli');
 export class CdCliProfileController {
   // svUser = new UserController();
   ctlSession = new SessonController();
+  cdToken: string | null = null;
   svCdCliProfile = new CdCliProfileService();
   private profiles: ProfileContainer;
   // private profilesFilePath = join(__dirname, PROFILE_FILE_STORE);
@@ -86,6 +89,11 @@ export class CdCliProfileController {
     }
   }
 
+  /**
+   *
+   * @param profileFilePath
+   * @returns
+   */
   async createProfile(profileFilePath: string): Promise<void> {
     CdLog.debug(
       `CdCliProfileController::createProfile()/profileFilePath:${profileFilePath}`,
@@ -98,11 +106,41 @@ export class CdCliProfileController {
       const profileTemplate = JSON.parse(
         fs.readFileSync(profileFilePath, 'utf-8'),
       );
+      CdLog.debug(
+        `CdCliProfileController::createProfile()/profileTemplate: ${profileTemplate}`,
+      );
       const profileType = profileTemplate.type; // Get the profile type (ssh, api, etc.)
 
       // Step 2: Read sensitive details from the respective JSON file
+      CdLog.debug(
+        `CdCliProfileController::createProfile()/PROFILE_DIRECTORY: ${PROFILE_DIRECTORY}`,
+      );
+      CdLog.debug(
+        `CdCliProfileController::createProfile()/profileType: ${profileType}`,
+      );
       const detailsFilePath = join(PROFILE_DIRECTORY, `${profileType}.json`);
+      CdLog.debug(
+        `CdCliProfileController::createProfile()/filePath: ${detailsFilePath}`,
+      );
+
+      // 🛡️ Sanitize (encrypt) details before loading into memory
+      const sanitizeResult = await this.sanitizeProfileDetails(detailsFilePath);
+
+      if (!sanitizeResult.state) {
+        CdLog.error(`Sanitization failed: ${sanitizeResult.message}`);
+        return;
+      }
+
+      if (sanitizeResult.data?.length === 0) {
+        CdLog.warning(
+          `No sensitive fields were encrypted in ${detailsFilePath}. Continuing with caution...`,
+        );
+      }
+
       const profileDetails = this.loadProfileDetails(detailsFilePath);
+      CdLog.debug(
+        `CdCliProfileController::createProfile()/profileDetails: ${profileDetails}`,
+      );
 
       // Step 3: Prompt user for profile details based on the template (generic for any profile)
       const answers = await inquirer.prompt(
@@ -121,6 +159,7 @@ export class CdCliProfileController {
         CdLog.error('Invalid session. Please log in again.');
         return;
       }
+      this.cdToken = sessResp.cd_token;
 
       const d = {
         data: {
@@ -134,12 +173,20 @@ export class CdCliProfileController {
       };
 
       // Step 6: Send the profile data to the API for profile creation
+      CdLog.debug(
+        `CdCliProfileController::createProfile()/sessResp: ${JSON.stringify(sessResp)}`,
+      );
+      CdLog.debug(
+        `CdCliProfileController::createProfile()/this.cdToken: ${this.cdToken}`,
+      );
       const response: ICdResponse =
         await this.svCdCliProfile.createCdCliProfile(d, sessResp.cd_token);
       if (response.app_state?.success) {
         CdLog.success(`Profile '${answers.profileName}' created successfully.`);
       } else {
-        CdLog.error(`Profile creation failed:${response.app_state?.info}`);
+        CdLog.error(
+          `Profile creation failed:${JSON.stringify(response.app_state?.info)}`,
+        );
       }
     } catch (error) {
       CdLog.error(`Error creating profile: ${(error as Error).message}`);
@@ -189,6 +236,7 @@ export class CdCliProfileController {
   }
 
   private loadProfileDetails(filePath: string): any {
+    CdLog.debug(`CdCliProfileController::loadProfileDetails: ${filePath}`);
     try {
       if (!existsSync(filePath)) {
         CdLog.warning(`Profile details file not found: ${filePath}`);
@@ -203,6 +251,143 @@ export class CdCliProfileController {
       return {};
     }
   }
+
+  async sanitizeProfileDetails(
+    detailsPath: string,
+  ): Promise<CdFxReturn<string[]>> {
+    try {
+      const raw = JSON.parse(readFileSync(detailsPath, 'utf-8'));
+      const cryptFields: string[] = raw.cryptFields || [];
+
+      // Case: Already encrypted
+      if (raw.encrypted) {
+        return {
+          data: [],
+          state: true,
+          message: `File already encrypted: ${detailsPath}`,
+        };
+      }
+
+      // Case: No fields marked for encryption
+      if (cryptFields.length === 0) {
+        const msg = `No fields marked for encryption in: ${detailsPath}`;
+        CdLog.warning(msg);
+        return {
+          data: [],
+          state: false,
+          message: msg,
+        };
+      }
+
+      // Proceed to encrypt fields
+      const encryptedFields: string[] = [];
+
+      for (const field of cryptFields) {
+        const value = raw[field];
+        if (typeof value === 'string' && value.trim() !== '') {
+          const vaultEntry = await CdCliVaultController.encrypt(
+            value,
+            'default',
+          );
+          if (vaultEntry) {
+            vaultEntry.name = field;
+            raw[field] = vaultEntry;
+            encryptedFields.push(field);
+          }
+        }
+      }
+
+      raw.encrypted = true;
+      writeFileSync(detailsPath, JSON.stringify(raw, null, 2));
+
+      return {
+        data: encryptedFields,
+        state: true,
+        message: `Encrypted ${encryptedFields.length} field(s) in ${detailsPath}`,
+      };
+    } catch (error) {
+      const msg = `Sanitization failed: ${(error as Error).message}`;
+      CdLog.error(msg);
+      return {
+        ...CD_FX_FAIL,
+        message: msg,
+      };
+    }
+  }
+
+  // async sanitizeProfileDetails2(
+  //   detailsPath: string,
+  // ): Promise<CdFxReturn<string[]>> {
+  //   try {
+  //     const raw = JSON.parse(readFileSync(detailsPath, 'utf-8'));
+  //     const cryptFields: string[] = raw.cryptFields || [];
+
+  //     if (raw.encrypted) {
+  //       return {
+  //         data: [],
+  //         state: true,
+  //         message: `File already encrypted: ${detailsPath}`,
+  //       };
+  //     }
+
+  //     if (cryptFields.length === 0) {
+  //       const msg = `No fields marked for encryption in: ${detailsPath}`;
+  //       CdLog.warning(msg);
+  //       return {
+  //         data: [],
+  //         state: false,
+  //         message: msg,
+  //       };
+  //     }
+
+  //     const encryptedFields: string[] = [];
+
+  //     for (const field of cryptFields) {
+  //       const value = raw[field];
+
+  //       if (typeof value === 'string' && value.trim() !== '') {
+  //         if (value.startsWith('$')) {
+  //           const varName = value.slice(1);
+  //           const envValue = process.env[varName];
+  //           if (!envValue) {
+  //             return {
+  //               data: [],
+  //               state: false,
+  //               message: `Environment variable '${varName}' is not defined.`,
+  //             };
+  //           }
+  //           // Store as-is without encryption
+  //           CdLog.info(`Using env reference for '${field}': $${varName}`);
+  //         } else {
+  //           const vaultEntry = await CdCliVaultController.encrypt(
+  //             value,
+  //             'default',
+  //           );
+  //           if (vaultEntry) {
+  //             vaultEntry.name = field;
+  //             raw[field] = vaultEntry;
+  //             encryptedFields.push(field);
+  //           }
+  //         }
+  //       }
+  //     }
+
+  //     raw.encrypted = true;
+  //     writeFileSync(detailsPath, JSON.stringify(raw, null, 2));
+
+  //     return {
+  //       data: encryptedFields,
+  //       state: true,
+  //       message: `Encrypted fields saved successfully.`,
+  //     };
+  //   } catch (error) {
+  //     return {
+  //       data: [],
+  //       state: false,
+  //       message: `Encryption error: ${(error as Error).message}`,
+  //     };
+  //   }
+  // }
 
   async fetchAndSaveProfiles(cdToken: string): Promise<void> {
     CdLog.debug('starting fetchAndSaveProfiles():', { token: cdToken });
@@ -361,6 +546,7 @@ export class CdCliProfileController {
         CdLog.success('Session token renewed successfully.');
       } else {
         CdLog.info('Valid session token found. Proceeding...');
+        this.cdToken = session.cd_token;
       }
 
       return { data: null, state: true, message: 'Profile check successful.' };
@@ -562,6 +748,12 @@ export class CdCliProfileController {
       ) {
         CdLog.debug(`The profile is not initialized. Trying to initialize...`);
         const profileResult = await this.loadProfiles();
+        // CdLog.debug(
+        //   `getProfileByName()/profileResult: ${JSON.stringify(profileResult)}`,
+        // );
+        CdLog.debug(
+          `getProfileByName()/profileResult.data?.items: ${JSON.stringify(profileResult.data?.items)}`,
+        );
         if (!profileResult.state || !profileResult.data) {
           const message = `Failed to load profiles: ${profileResult.message}`;
           CdLog.error(message);

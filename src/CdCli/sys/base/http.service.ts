@@ -112,41 +112,6 @@ export class HttpService {
     }
   }
 
-  // async proc2(params: AxiosRequestConfig): Promise<any> {
-  //   if (!this.axiosInstance) {
-  //     throw new Error('HttpService is not initialized.');
-  //   }
-
-  //   if (this.debugMode) {
-  //     // Log detailed request data
-  //     CdLog.debug('HttpService::proc()/Request:', {
-  //       method: params.method,
-  //       url: params.url,
-  //       headers: params.headers,
-  //       data: params.data,
-  //     });
-  //   }
-
-  //   try {
-  //     const response = await this.axiosInstance.request(params);
-
-  //     if (this.debugMode) {
-  //       // Log detailed response data
-  //       CdLog.debug('HttpService::proc()/Response:', {
-  //         status: response.status,
-  //         data: response.data,
-  //       });
-  //     }
-
-  //     return response.data;
-  //   } catch (error: any) {
-  //     CdLog.error(
-  //       'HttpService::proc()/Error during HTTP request:',
-  //       error.response ? error.response.data : error.message,
-  //     );
-  //     throw new Error(`HTTP Request Failed: ${error.message}`);
-  //   }
-  // }
   async proc2(params: AxiosRequestConfig): Promise<CdFxReturn<ICdResponse>> {
     if (!this.axiosInstance) {
       throw new Error('HttpService is not initialized.');

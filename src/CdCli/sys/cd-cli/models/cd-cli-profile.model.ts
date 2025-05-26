@@ -27,6 +27,8 @@ export interface ProfileModel {
 
 // ProfileData holds the actual profile configuration, including user and permissions
 export interface ProfileData {
+  type: string; // Type of profile (e.g., 'ssh', 'api', etc.)
+  typeId: number; // based on database records Type ID (e.g., 2 for SSH)
   owner: ProfileOwner; // Profile owner details (userId, groupId)
   details: any; // Can be any. For example SSH connection details
   cdVault: CdVault[]; // for managing encrypted fields
@@ -264,23 +266,26 @@ export const PROFILE_CMD = {
       ],
       action: {
         execute: async (options) => {
-          console.log(
-            'CdCliProfileModel::PROFILE_CMD::action/execute()/options:',
-            options,
-          );
           // console.log(
-          //   'CdCliProfileModel::PROFILE_CMD::action/execute()/options.debug:',
-          //   options.debug,
+          //   'CdCliProfileModel::PROFILE_CMD::action/execute()/options:',
+          //   options,
           // );
-          // CdLog.setDebugLevel(options.debug);
-          // Set the log level dynamically (optional)
-          // setLogLevel('debug'); // This will enable debug, info, warn, and error messages
           console.log(
-            'CdCliProfileModel: CdLog.debugLevel:',
-            CdLog.getDebugLevel(),
+            'CdCliProfileModel::PROFILE_CMD::action/execute()/options._optionValues.file:',
+            options._optionValues.file,
+          );
+          console.log(
+            'CdCliProfileModel::PROFILE_CMD::action/execute()/options.args:',
+            options.args,
+          );
+          console.log(
+            'CdCliProfileModel::PROFILE_CMD::action/execute()/options.args[2]:',
+            options.args[2],
           );
           const cdCliProfileController = new CdCliProfileController();
-          await cdCliProfileController.createProfile(options.file);
+          await cdCliProfileController.createProfile(
+            options._optionValues.file,
+          );
         },
       },
     },

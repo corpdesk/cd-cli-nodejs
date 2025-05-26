@@ -1,5 +1,6 @@
 /* eslint-disable antfu/if-newline */
 /* eslint-disable style/brace-style */
+import { CdAiLogRouterService } from '@/CdCli/app/cd-ai/services/cd-ai-log-router.service';
 import chalk from 'chalk';
 import dayjs from 'dayjs';
 
@@ -32,7 +33,7 @@ class CdLog {
   static info(message: string, context?: object | string | null) {
     if (CdLog.debugLevel >= CdLog.LOG_LEVELS.INFO) {
       const formattedMessage = context
-        ? `${message} | Context: ${JSON.stringify(context)}`
+        ? `${message} | Context: ${context}`
         : message;
       console.log(this.formatMessage(chalk.blue('ℹ️'), formattedMessage));
     }
@@ -42,7 +43,7 @@ class CdLog {
   static success(message: string, context?: object) {
     if (CdLog.debugLevel >= CdLog.LOG_LEVELS.INFO) {
       const formattedMessage = context
-        ? `${message} | Context: ${JSON.stringify(context)}`
+        ? `${message} | Context: ${context}`
         : message;
       console.log(
         this.formatMessage(chalk.green('ℹ✨'), chalk.green(formattedMessage)),
@@ -54,7 +55,7 @@ class CdLog {
   static warning(message: string, context?: object) {
     if (CdLog.debugLevel >= CdLog.LOG_LEVELS.WARNING) {
       const formattedMessage = context
-        ? `${message} | Context: ${JSON.stringify(context)}`
+        ? `${message} | Context: ${context}`
         : message;
       console.log(this.formatMessage(chalk.yellow('ℹ⚠️'), formattedMessage));
     }
@@ -64,7 +65,7 @@ class CdLog {
   static error(message: string, context?: object) {
     if (CdLog.debugLevel >= CdLog.LOG_LEVELS.ERROR) {
       const formattedMessage = context
-        ? `${message} | Context: ${JSON.stringify(context)}`
+        ? `${message} | Context: ${context}`
         : message;
       console.log(this.formatMessage(chalk.red('❌'), formattedMessage));
     }
@@ -74,7 +75,7 @@ class CdLog {
   // static debug(message: string, context?: object) {
   //   if (CdLog.debugLevel >= CdLog.LOG_LEVELS.DEBUG) {
   //     const formattedMessage = context
-  //       ? `${message} | Context: ${JSON.stringify(context)}`
+  //       ? `${message} | Context: ${context}`
   //       : message;
   //     console.log(this.formatMessage(chalk.cyan('🛠️'), formattedMessage));
   //   }
@@ -82,7 +83,7 @@ class CdLog {
   static debug(message: string, context?: object) {
     if (CdLog.debugLevel >= CdLog.LOG_LEVELS.DEBUG) {
       const formattedMessage = context
-        ? `${message} | Context: ${JSON.stringify(context)}`
+        ? `${message} | Context: ${context}`
         : message;
       console.log(this.formatMessage(chalk.cyan('🛠️'), formattedMessage));
     }
@@ -112,6 +113,28 @@ class CdLog {
 
   static getDebugLevel(): number {
     return CdLog.debugLevel;
+  }
+
+  // AI-specific Info level
+  static aiInfo(message: string, context?: object | string | null) {
+    if (CdLog.debugLevel >= CdLog.LOG_LEVELS.INFO) {
+      const formattedMessage = context
+        ? `${message} | Context: ${context}`
+        : message;
+      const logLine = CdLog.formatMessage('ℹ️', formattedMessage);
+      CdAiLogRouterService.push(logLine);
+    }
+  }
+
+  // AI-specific Debug level
+  static aiDebug(message: string, context?: object | string | null) {
+    if (CdLog.debugLevel >= CdLog.LOG_LEVELS.DEBUG) {
+      const formattedMessage = context
+        ? `${message} | Context: ${context}`
+        : message;
+      const logLine = CdLog.formatMessage('🛠️', formattedMessage);
+      CdAiLogRouterService.push(logLine);
+    }
   }
 
   static safeStringify(obj: any, space = 2) {

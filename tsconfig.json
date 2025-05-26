@@ -29,7 +29,8 @@
     "src/**/*",
     "src/types.d.ts",
     "src/**/*.spec.ts",
-    "src/devops-scripts/migration/**/*"
+    "src/devops-scripts/migration/**/*",
+    "src/CdCli/app/cd-ai/models/.model.ts"
   ],
   "exclude": ["node_modules", "dist"],
   "ts-node": {

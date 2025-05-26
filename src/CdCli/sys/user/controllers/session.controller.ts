@@ -85,17 +85,27 @@ export class SessonController {
       CdLog.debug('SessionController::getSession()/session1:', session);
 
       // Resolve session token from `cdVault` if referenced
-      if (session.cd_token?.startsWith('#cdVault[')) {
-        const tokenKey = session.cd_token.match(/#cdVault\['(.+?)'\]/)?.[1];
-        if (tokenKey) {
-          const tokenVault = profile.cdCliProfileData.cdVault.find(
-            (vault) => vault.name === tokenKey,
-          );
-          if (tokenVault && tokenVault.encryptedValue) {
-            session.cd_token = tokenVault.value || tokenVault.encryptedValue;
-          }
-        }
-      }
+      // if (session.cd_token?.startsWith('#cdVault[')) {
+      //   const tokenKey = session.cd_token.match(/#cdVault\['(.+?)'\]/)?.[1];
+      //   if (tokenKey) {
+      //     const tokenVault = profile.cdCliProfileData.cdVault.find(
+      //       (vault) => vault.name === tokenKey,
+      //     );
+      //     if (tokenVault && tokenVault.encryptedValue) {
+      //       session.cd_token = tokenVault.value || tokenVault.encryptedValue;
+      //     }
+      //   }
+      // }
+      const resolved =
+        await CdCliVaultController.resolveVaultReferencesInObject(
+          profile.cdCliProfileData.details,
+          profile.cdCliProfileData.cdVault,
+        );
+      CdLog.debug('SessionController::getSession()/resolved:', {
+        r: JSON.stringify(resolved),
+      });
+      // Extract from resolved details after vault substitution
+      session.cd_token = resolved.session.cd_token;
 
       CdLog.debug('SessionController::getSession()/session2:', session);
       return session;

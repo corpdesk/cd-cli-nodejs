@@ -18,7 +18,7 @@ import { execSync } from 'node:child_process';
 // Interface for Tags
 export interface VersionControlTag extends BaseDescriptor {
   name: string; // Tag name (e.g., "v1.0.0")
-  commitHash: string; // Hash of the commit the tag points to
+  commitHash?: string; // Hash of the commit the tag points to
   description?: string; // Description of the tag
   date?: string; // Date of tagging
 }

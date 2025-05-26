@@ -66,9 +66,7 @@ export class CdCliProfileService {
   }
 
   setEnvelopeCreateCdCliProfile(d: any, cdToken: string) {
-    // console.log('starting setEnvelopeCreateCdCliProfile()/01:');
-    // console.log('starting setEnvelopeCreateCdCliProfile()/d:', d);
-    // console.log('starting setEnvelopeCreateCdCliProfile()/d.data:', d.data);
+    console.log('starting setEnvelopeCreateCdCliProfile()/d.data:', d.data);
     return {
       ctx: 'Sys',
       m: 'CdCli',
