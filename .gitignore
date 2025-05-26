@@ -7,3 +7,4 @@ src/templates
 # .env for automated uploads
 src/devops-scripts/cd-api/env_*
 .env
+src/CdCli/app/coops
