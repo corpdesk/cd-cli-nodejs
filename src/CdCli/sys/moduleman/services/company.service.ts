@@ -3,7 +3,7 @@
 
 import { ObjectLiteral } from 'typeorm';
 import { CD_FX_FAIL, CdFxReturn, IQuery } from '../../base/IBase';
-import { CompanyModel, siGet } from '../models/company.model';
+import { CompanyModel } from '../models/company.model';
 import CdLog from '../../cd-comm/controllers/cd-logger.controller';
 import { BaseService } from '../../base/base.service';
 import config from '@/config';
@@ -11,7 +11,7 @@ import { GenericService } from '../../base/generic-service';
 
 export class CompanyService extends GenericService<ObjectLiteral> {
   // b = new BaseService<CompanyModel>();
-
+  serviceModel = CompanyModel;
   defaultDs = config.ds.sqlite;
   // Define validation rules
   cRules: any = {
@@ -148,12 +148,16 @@ export class CompanyService extends GenericService<ObjectLiteral> {
       q = this.b.getQuery(req);
     }
     console.log('CompanyService::getCompany/f:', q);
-    const serviceInput = siGet(q!);
+    const serviceInput = this.b.siGet(
+      q!,
+      'CompanyService::getCompany',
+      CompanyModel,
+    );
     try {
       return await this.b.read(req, res, serviceInput);
     } catch (e: any) {
       console.log('CompanyService::read$()/e:', e);
-      this.b.err.push(e.toString());
+      this.b.err.push((e as Error).toString());
       const i = {
         messages: this.b.err,
         code: 'BaseService:update',

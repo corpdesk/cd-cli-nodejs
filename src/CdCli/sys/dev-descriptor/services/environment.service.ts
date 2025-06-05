@@ -541,11 +541,12 @@ export class EnvironmentService extends GenericService<CdObjModel> {
    */
   async create(d: CdDescriptor): Promise<CdFxReturn<null>> {
     try {
-      const payload = this.svDevDescriptors.setEnvelope('Create', { data: d });
-      const httpService = new HttpService();
-      await httpService.init(); // Ensure this is awaited
-      httpService.headers.data = payload;
-      return await httpService.proc3(httpService.headers);
+      // const payload = this.svDevDescriptors.setEnvelope('Create', { data: d });
+      // const httpService = new HttpService();
+      // await httpService.init(); // Ensure this is awaited
+      // httpService.headers.data = payload;
+      // return await httpService.proc3(httpService.headers);
+      return CD_FX_FAIL;
     } catch (error) {
       return {
         data: null,
@@ -562,13 +563,14 @@ export class EnvironmentService extends GenericService<CdObjModel> {
        * If null it is substituted by { where: {} }
        * Which would then fetch all the data
        */
-      const payload = this.svDevDescriptors.setEnvelope('Read', {
-        query: q ?? { where: {} },
-      });
-      const httpService = new HttpService();
-      await httpService.init(); // Ensure this is awaited
-      httpService.headers.data = payload;
-      return await httpService.proc3(httpService.headers);
+      // const payload = this.svDevDescriptors.setEnvelope('Read', {
+      //   query: q ?? { where: {} },
+      // });
+      // const httpService = new HttpService();
+      // await httpService.init(); // Ensure this is awaited
+      // httpService.headers.data = payload;
+      // return await httpService.proc3(httpService.headers);
+      return CD_FX_FAIL;
     } catch (error) {
       return {
         data: null,
@@ -580,11 +582,12 @@ export class EnvironmentService extends GenericService<CdObjModel> {
 
   async update(q: IQuery): Promise<CdFxReturn<null>> {
     try {
-      const payload = this.svDevDescriptors.setEnvelope('Update', { query: q });
-      const httpService = new HttpService();
-      await httpService.init(); // Ensure this is awaited
-      httpService.headers.data = payload;
-      return await httpService.proc3(httpService.headers);
+      // const payload = this.svDevDescriptors.setEnvelope('Update', { query: q });
+      // const httpService = new HttpService();
+      // await httpService.init(); // Ensure this is awaited
+      // httpService.headers.data = payload;
+      // return await httpService.proc3(httpService.headers);
+      return CD_FX_FAIL;
     } catch (error) {
       return {
         data: null,
@@ -596,11 +599,12 @@ export class EnvironmentService extends GenericService<CdObjModel> {
 
   async delete(q: IQuery): Promise<CdFxReturn<null>> {
     try {
-      const payload = this.svDevDescriptors.setEnvelope('Delete', { query: q });
-      const httpService = new HttpService();
-      await httpService.init(); // Ensure this is awaited
-      httpService.headers.data = payload;
-      return await httpService.proc3(httpService.headers);
+      // const payload = this.svDevDescriptors.setEnvelope('Delete', { query: q });
+      // const httpService = new HttpService();
+      // await httpService.init(); // Ensure this is awaited
+      // httpService.headers.data = payload;
+      // return await httpService.proc3(httpService.headers);
+      return CD_FX_FAIL;
     } catch (error) {
       return {
         data: null,
@@ -767,16 +771,31 @@ export class EnvironmentService extends GenericService<CdObjModel> {
     if (resWorkstation) {
       devEnv.workstation = resWorkstation;
     }
-    const retValidDevEnv = this.validateEnvironment(devEnv);
+    // Ensure devEnv has a workstation property before validation
+    if (!devEnv.workstation) {
+      return {
+        data: null,
+        state: false,
+        message: 'Development environment is missing a workstation',
+      };
+    }
+    // Explicitly cast devEnv to EnvironmentDescriptor since workstation is now guaranteed
+    const retValidDevEnv = this.validateEnvironment(
+      devEnv as EnvironmentDescriptor,
+    );
     CdLog.debug(
       `EnvironmentService::buildEnvironmentData()/retValidDevEnv:${retValidDevEnv}`,
     );
-    if (!retValidDevEnv) {
+    if (!retValidDevEnv.state) {
       return CD_FX_FAIL;
     }
 
+    // Ensure the returned object has the required 'workstation' property
     return {
-      data: devEnv,
+      data: {
+        ...devEnv,
+        workstation: devEnv.workstation,
+      } as EnvironmentDescriptor,
       state: true,
       message: '',
     };

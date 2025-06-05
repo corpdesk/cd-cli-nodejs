@@ -1,10 +1,9 @@
 import { ViewEntity, ViewColumn } from 'typeorm';
 
-@ViewEntity(
-    {
-        name: 'acl_module_view',
-        synchronize: false,
-        expression: `
+@ViewEntity({
+  name: 'acl_module_view',
+  synchronize: false,
+  expression: `
         select
             consumer_resource.consumer_id AS consumer_id,
             consumer_resource.consumer_resource_name AS consumer_resource_name,
@@ -28,136 +27,96 @@ import { ViewEntity, ViewColumn } from 'typeorm';
             ((consumer_resource.cd_obj_id = cd_obj.cd_obj_id)))
         join consumer on
             ((consumer_resource.consumer_id = consumer.consumer_id)))
-    `
-    })
-
+    `,
+})
 export class AclModuleViewModel {
+  @ViewColumn({
+    name: 'consumer_resource_id',
+  })
+  consumerResourceId?: number;
 
-    @ViewColumn(
-        {
-            name: 'consumer_resource_id'
-        }
-    )
-    consumerResourceId?: number;
+  @ViewColumn({
+    name: 'consumer_resource_name',
+  })
+  consumerResourceName?: number;
 
-    @ViewColumn(
-        {
-            name: 'consumer_resource_name'
-        }
-    )
-    consumerResourceName?: number;
+  @ViewColumn({
+    name: 'consumer_id',
+  })
+  consumerId?: number;
 
-    @ViewColumn(
-        {
-            name: 'consumer_id'
-        }
-    )
-    consumerId?: number;
+  @ViewColumn({
+    name: 'consumer_guid',
+  })
+  consumerGuid?: number;
 
-    @ViewColumn(
-        {
-            name: 'consumer_guid'
-        }
-    )
-    consumerGuid?: number;
+  @ViewColumn({
+    name: 'cd_obj_id',
+  })
+  cdObjId?: number;
 
-    @ViewColumn(
-        {
-            name: 'cd_obj_id'
-        }
-    )
-    cdObjId?: number;
+  @ViewColumn({
+    name: 'cd_obj_guid',
+  })
+  cdObjGuid?: string;
 
-    @ViewColumn(
-        {
-            name: 'cd_obj_guid'
-        }
-    )
-    cdObjGuid?: string;
+  @ViewColumn({
+    name: 'obj_guid',
+  })
+  objGuid?: string;
 
-    @ViewColumn(
-        {
-            name: 'obj_guid'
-        }
-    )
-    objGuid?: string;
+  @ViewColumn({
+    name: 'cd_obj_name',
+  })
+  cdObjName?: number;
 
-    @ViewColumn(
-        {
-            name: 'cd_obj_name'
-        }
-    )
-    cdObjName: number;
+  @ViewColumn({
+    name: 'cd_obj_type_guid',
+  })
+  cdObjTypeGuid?: string;
 
-    @ViewColumn(
-        {
-            name: 'cd_obj_type_guid'
-        }
-    )
-    cdObjTypeGuid: string;
+  @ViewColumn({
+    name: 'cd_obj_type_id',
+  })
+  cdObjTypeId?: string;
 
-    @ViewColumn(
-        {
-            name: 'cd_obj_type_id'
-        }
-    )
-    cdObjTypeId: string;
+  @ViewColumn({
+    name: 'module_id',
+  })
+  moduleId?: number;
 
-    @ViewColumn(
-        {
-            name: 'module_id'
-        }
-    )
-    moduleId: number;
+  @ViewColumn({
+    name: 'module_guid',
+  })
+  moduleGuid?: string;
 
-    @ViewColumn(
-        {
-            name: 'module_guid'
-        }
-    )
-    moduleGuid: string;
+  @ViewColumn({
+    name: 'module_name',
+  })
+  moduleName?: string;
 
-    @ViewColumn(
-        {
-            name: 'module_name'
-        }
-    )
-    moduleName: string;
+  @ViewColumn({
+    name: 'module_is_public',
+  })
+  moduleIsPublic?: boolean;
 
-    @ViewColumn(
-        {
-            name: 'module_is_public'
-        }
-    )
-    moduleIsPublic?: boolean ;
+  @ViewColumn({
+    name: 'is_sys_module',
+  })
+  isSysModule?: boolean;
 
-    @ViewColumn(
-        {
-            name: 'is_sys_module'
-        }
-    )
-    isSysModule?: boolean;
+  @ViewColumn({
+    name: 'module_enabled',
+  })
+  moduleEnabled?: boolean;
 
-    @ViewColumn(
-        {
-            name: 'module_enabled'
-        }
-    )
-    moduleEnabled: boolean;
+  @ViewColumn({
+    name: 'group_guid',
+  })
+  groupGuid?: string;
 
-    @ViewColumn(
-        {
-            name: 'group_guid'
-        }
-    )
-    groupGuid?: string;
-
-    @ViewColumn(
-        {
-            name: 'module_type_id'
-        }
-    )
-    moduleTypeId?: number;
-
+  @ViewColumn({
+    name: 'module_type_id',
+  })
+  moduleTypeId?: number;
 }
-

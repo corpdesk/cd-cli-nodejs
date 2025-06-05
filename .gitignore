@@ -4,6 +4,9 @@ types
 .idea
 .DS_Store
 src/templates
+src/CdCli/app/mod-craft/workshop/cd-api/template
+src/CdCli/app/mod-craft/workshop/frontend/template
+src/CdCli/app/mod-craft/workshop/cli/template
 # .env for automated uploads
 src/devops-scripts/cd-api/env_*
 .env

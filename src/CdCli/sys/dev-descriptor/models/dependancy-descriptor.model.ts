@@ -12,7 +12,6 @@ import type { VersionControlDescriptor } from './version-control.model';
 export interface DependencyDescriptor
   extends BaseDescriptor,
     DependencyCategoryDescriptor,
-    DependencyTypeDescriptor,
     DependencySourceDescriptor,
     DependencyScopeDescriptor {
   resolution?: ResolutionDescriptor;

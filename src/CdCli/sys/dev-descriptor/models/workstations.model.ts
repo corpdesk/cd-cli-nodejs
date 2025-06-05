@@ -1012,6 +1012,8 @@ export const localProfile: ProfileModel = {
       userId: 1001,
       groupId: 1001,
     },
+    type: 'local', // or the appropriate type string for your use case
+    typeId: 1, // or the appropriate typeId number for your use case
     details: emp12DevEnvironment,
     cdVault: [],
     permissions: {
@@ -1031,6 +1033,8 @@ export const remoteProfile: ProfileModel = {
       userId: 1002,
       groupId: 1002,
     },
+    type: 'remote', // or the appropriate type string for your use case
+    typeId: 2, // or the appropriate typeId number for your use case
     details: emp13DevEnvironment,
     cdVault: [
       {

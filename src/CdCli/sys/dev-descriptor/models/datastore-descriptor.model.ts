@@ -4,9 +4,7 @@ import type { EnvironmentDescriptor } from './/environment.model';
 import type { BaseDescriptor } from './base-descriptor.model';
 
 // Main Descriptor Interface
-export interface DataStoreDescriptor
-  extends BaseDescriptor,
-    DataStoreTypeDescriptor {
+export interface DataStoreDescriptor extends DataStoreTypeDescriptor {
   environment?: EnvironmentDescriptor;
   productionEnvironment?: EnvironmentDescriptor;
 

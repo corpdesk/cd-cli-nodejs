@@ -5,17 +5,17 @@ import { CompanyViewModel } from './company-view.model';
 import { DocModel } from './doc.model';
 import config from '@/config';
 
-export function siGet(q: IQuery): IServiceInput<CompanyModel> {
-  return {
-    serviceModel: CompanyModel,
-    docName: 'CompanyModel::siGet',
-    cmd: {
-      action: 'find',
-      query: q,
-    },
-    dSource: config.ds.sqlite,
-  };
-}
+// export function siGet(q: IQuery): IServiceInput<CompanyModel> {
+//   return {
+//     serviceModel: CompanyModel,
+//     docName: 'CompanyModel::siGet',
+//     cmd: {
+//       action: 'find',
+//       query: q,
+//     },
+//     dSource: config.ds.sqlite,
+//   };
+// }
 
 // SELECT company_id, company_type_id, directory_category_id, company_name, postal_address, phone, e_mail, website, physical_location, city, country, area_of_specialization, logo, fax, password, trusted, doc_id, city_id, county_id, company_guid, company_description, parent_id, consumer_id
 // FROM cd1213.company;

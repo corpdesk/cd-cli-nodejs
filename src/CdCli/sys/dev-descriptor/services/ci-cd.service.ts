@@ -20,6 +20,13 @@ export class CiCdService extends GenericService<CdObjModel> {
   ): Promise<CdFxReturn<null>> {
     let allSuccessful = true; // Track overall success
     for (const ciCdDescriptor of input.ciCd) {
+      if (!ciCdDescriptor.cICdPipeline || !ciCdDescriptor.cICdPipeline.stages) {
+        CdLog.warning(
+          `Skipping descriptor: cICdPipeline or its stages are undefined.`,
+        );
+        allSuccessful = false;
+        continue;
+      }
       for (const stage of ciCdDescriptor.cICdPipeline.stages) {
         for (const task of stage.tasks) {
           const methodName = task.methodName;

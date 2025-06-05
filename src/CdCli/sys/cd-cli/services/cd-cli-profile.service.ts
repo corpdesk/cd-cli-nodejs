@@ -16,9 +16,14 @@
 // import { CoopRole, CoopsAclScope } from './coop-member.model';
 // import { MemberMeta } from '../coops.model';
 
-import type { ICdRequest, IJsonUpdate, IQuery } from '../../base/IBase';
+import type {
+  ICdRequest,
+  ICdResponse,
+  IJsonUpdate,
+  IQuery,
+} from '../../base/IBase';
 import { HttpService } from '../../base/http.service';
-import { DEFAULT_ENVELOPE_CREATE } from '../../base/IBase';
+import { DEFAULT_CD_RESPONSE, DEFAULT_ENVELOPE_CREATE } from '../../base/IBase';
 import CdLog from '../../cd-comm/controllers/cd-logger.controller';
 import config from '@/config';
 
@@ -114,52 +119,109 @@ export class CdCliProfileService {
   //   };
   // }
 
-  async getCdCliProfile(q: IQuery, cdToken: string): Promise<any> {
-    CdLog.debug('starting getCdCliProfile():', { token: cdToken, query: q });
+  // async getCdCliProfile(q: IQuery, cdToken: string): Promise<any> {
+  //   CdLog.debug('starting getCdCliProfile():', { token: cdToken, query: q });
+
+  //   try {
+  //     // Initialize HttpService with debugging enabled
+  //     const httpService = new HttpService(true);
+
+  //     // Get the base URL dynamically
+  //     const baseUrl = await httpService.getCdApiUrl(config.cdApiLocal);
+  //     CdLog.debug('getCdCliProfile()/baseUrl:', { baseUrl });
+
+  //     if (!baseUrl) {
+  //       throw new Error(
+  //         'API base URL not found. Ensure "cd-api-local" is configured.',
+  //       );
+  //     }
+
+  //     await httpService.init(config.cdApiLocal);
+
+  //     // Prepare the envelope for the request
+  //     const postData = this.setEnvelopeGetCountCdCliProfile(q, cdToken);
+
+  //     // Make the HTTP request using proc2()
+  //     return await httpService.proc2({
+  //       method: 'POST',
+  //       url: '/', // Single route for cd-api
+  //       data: postData,
+  //       headers: {
+  //         Authorization: `Bearer ${cdToken}`,
+  //         Accept: 'application/json',
+  //       },
+  //     });
+  //   } catch (error: any) {
+  //     CdLog.error('Error in getCdCliProfile():', error.message);
+  //     throw error; // Re-throw the error for further handling
+  //   }
+  // }
+
+  async getCdCliProfile(q: IQuery, cdToken: string): Promise<ICdResponse> {
+    CdLog.debug('Starting getCdCliProfile():', { token: cdToken, query: q });
+
+    const httpService = new HttpService(true);
+    let ret: ICdResponse = DEFAULT_CD_RESPONSE;
 
     try {
-      // Initialize HttpService with debugging enabled
-      const httpService = new HttpService(true);
-
-      // Get the base URL dynamically
-      const baseUrl = await httpService.getCdApiUrl(config.cdApiLocal);
-      CdLog.debug('getCdCliProfile()/baseUrl:', { baseUrl });
-
-      if (!baseUrl) {
-        throw new Error(
-          'API base URL not found. Ensure "cd-api-local" is configured.',
-        );
+      const initialized = await httpService.init(config.cdApiLocal);
+      if (!initialized) {
+        const msg = `Profile '${config.cdApiLocal}' could not be initialized.`;
+        CdLog.error(msg);
+        ret.app_state.info!.app_msg = msg;
+        return ret;
       }
 
-      await httpService.init();
+      const postData: ICdRequest = this.setEnvelopeGetCountCdCliProfile(
+        q,
+        cdToken,
+      );
 
-      // Prepare the envelope for the request
-      const postData = this.setEnvelopeGetCountCdCliProfile(q, cdToken);
-
-      // Make the HTTP request using proc2()
-      return await httpService.proc2({
-        method: 'POST',
-        url: '/', // Single route for cd-api
-        data: postData,
-        headers: {
-          Authorization: `Bearer ${cdToken}`,
-          Accept: 'application/json',
+      const response = await httpService.request<ICdResponse>(
+        {
+          method: 'POST',
+          url: '/',
+          headers: {
+            Authorization: `Bearer ${cdToken}`,
+            Accept: 'application/json',
+          },
+          data: postData,
         },
-      });
-    } catch (error: any) {
-      CdLog.error('Error in getCdCliProfile():', error.message);
-      throw error; // Re-throw the error for further handling
+        config.cdApiLocal,
+      );
+
+      if (!response.state) {
+        const msg = `getCdCliProfile() failed: ${response.message}`;
+        CdLog.error(msg);
+        ret.app_state.info!.app_msg =
+          response.message || 'Unknown error from cd-api';
+        return ret;
+      }
+
+      if (!response.data) {
+        const msg = 'getCdCliProfile() response.data is undefined or null';
+        CdLog.error(msg);
+        ret.app_state.info!.app_msg = msg;
+        return ret;
+      }
+
+      return response.data;
+    } catch (err: any) {
+      const msg = `getCdCliProfile() encountered an error: ${err.message || err}`;
+      CdLog.error(msg);
+      ret.app_state.info!.app_msg = msg;
+      return ret;
     }
   }
 
-  setEnvelopeGetCountCdCliProfile(q: IQuery, cdToken: string): any {
+  setEnvelopeGetCountCdCliProfile(q: IQuery, cdToken: string): ICdRequest {
     CdLog.debug('starting setEnvelopeGetCountCdCliProfile():', {
       token: cdToken,
       query: q,
     });
 
     // Build the envelope for the API request
-    const envelope = {
+    const envelope: ICdRequest = {
       ctx: 'Sys',
       m: 'CdCli',
       c: 'CdCliProfile',

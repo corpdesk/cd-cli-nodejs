@@ -12,6 +12,7 @@ import type {
 /* eslint-disable prefer-promise-reject-errors */
 /* eslint-disable no-useless-rename */
 import type {
+  IProfileDetails,
   ProfileContainer,
   ProfileData,
   ProfileModel,
@@ -170,7 +171,13 @@ export class CdAutoGitController {
           return null;
         }
 
-        gitProfileData.details.gitAccess.gitHubToken = decryptedToken;
+        if (gitProfileData.details.gitAccess) {
+          gitProfileData.details.gitAccess.gitHubToken = decryptedToken;
+        } else {
+          CdLog.error('gitAccess is undefined in gitProfileData.details.');
+          await this.handleMissingToken();
+          return null;
+        }
       } catch (e: any) {
         CdLog.error(`Decryption failed: ${(e as Error).message}`);
         await this.handleMissingToken(); // Prompt the user to set the token
@@ -178,7 +185,18 @@ export class CdAutoGitController {
       }
     } else {
       // If not encrypted, directly assign the value
-      gitProfileData.details.gitAccess.gitHubToken = vaultItem.value;
+      if (
+        gitProfileData.details.gitAccess &&
+        typeof vaultItem.value === 'string'
+      ) {
+        gitProfileData.details.gitAccess.gitHubToken = vaultItem.value;
+      } else {
+        CdLog.error(
+          'gitAccess is undefined or vaultItem.value is not a string.',
+        );
+        await this.handleMissingToken();
+        return null;
+      }
     }
 
     if (!gitProfileData.details.gitAccess.gitHubToken) {
@@ -202,6 +220,85 @@ export class CdAutoGitController {
    * @param isPrivate
    * @param repoHost // git organizatin or account name
    */
+  // async createGitHubRepo(
+  //   repoName: string,
+  //   descript: string,
+  //   isPrivate: boolean,
+  //   repoHost: string,
+  // ): Promise<void> {
+  //   CdLog.debug('CdAutoGitController::createGitHubRepo()/01');
+  //   try {
+  //     // Validation for inputs
+  //     if (!repoName || typeof repoName !== 'string' || repoName.trim() === '') {
+  //       throw new Error('Repository name is missing or invalid.');
+  //     }
+  //     if (!descript || typeof descript !== 'string') {
+  //       descript = 'A new repo created via cd-auto-git.';
+  //     }
+  //     if (typeof isPrivate !== 'boolean') {
+  //       isPrivate = false;
+  //     }
+
+  //     const gitProfileData = await this.getGitHubProfile();
+  //     if (!gitProfileData) {
+  //       throw new Error('GitHub profile could not be loaded.');
+  //     }
+
+  //     const { apiRepoUrl } = gitProfileData.details.gitAccess;
+  //     const { gitHubToken } = gitProfileData.details.gitAccess;
+
+  //     CdLog.debug(
+  //       'CdAutoGitController::createGitHubRepo()/gitProfileData.details.gitAccess:',
+  //       gitProfileData.details.gitAccess,
+  //     );
+
+  //     if (!apiRepoUrl || !gitHubToken) {
+  //       throw new Error('GitHub API URL or token is missing.');
+  //     }
+
+  //     const payload = {
+  //       name: repoName.trim(),
+  //       private: isPrivate,
+  //       description: descript,
+  //     };
+
+  //     CdLog.debug('CdAutoGitController::createGitHubRepo()/payload:', payload);
+
+  //     const headers = {
+  //       Authorization: `token ${gitHubToken}`,
+  //       Accept: 'application/vnd.github.v3+json',
+  //     };
+
+  //     const httpService = new HttpService(true);
+  //     await httpService.init();
+
+  //     const responseResult = await httpService.proc2({
+  //       method: 'POST',
+  //       url: `/orgs/${repoHost}/repos`,
+  //       headers,
+  //       data: payload,
+  //     });
+
+  //     if (!responseResult.state || !responseResult.data) {
+  //       return;
+  //     }
+
+  //     const response: ICdResponse = responseResult.data;
+  //     if (response.data.html_url) {
+  //       CdLog.success(`Repository Created: ${response.data.html_url}`);
+  //       const repoUrl = `${apiRepoUrl.replace(
+  //         'https://api.github.com',
+  //         'https://github.com',
+  //       )}/${repoHost}/${repoName}.git`;
+
+  //       await this.initializeLocalRepo(repoName, repoUrl);
+  //     }
+  //   } catch (error) {
+  //     CdLog.error(
+  //       `Error creating GitHub repository: ${(error instanceof Error && error.message) || error}`,
+  //     );
+  //   }
+  // }
   async createGitHubRepo(
     repoName: string,
     descript: string,
@@ -210,7 +307,7 @@ export class CdAutoGitController {
   ): Promise<void> {
     CdLog.debug('CdAutoGitController::createGitHubRepo()/01');
     try {
-      // Validation for inputs
+      // Input Validation
       if (!repoName || typeof repoName !== 'string' || repoName.trim() === '') {
         throw new Error('Repository name is missing or invalid.');
       }
@@ -221,23 +318,23 @@ export class CdAutoGitController {
         isPrivate = false;
       }
 
+      // Load GitHub Profile
       const gitProfileData = await this.getGitHubProfile();
       if (!gitProfileData) {
         throw new Error('GitHub profile could not be loaded.');
       }
 
-      const { apiRepoUrl } = gitProfileData.details.gitAccess;
-      const { gitHubToken } = gitProfileData.details.gitAccess;
+      const { endpoint, gitHubToken } = gitProfileData.details ?? {};
+      if (!endpoint || !gitHubToken) {
+        throw new Error('GitHub endpoint or token is missing.');
+      }
 
       CdLog.debug(
         'CdAutoGitController::createGitHubRepo()/gitProfileData.details.gitAccess:',
         gitProfileData.details.gitAccess,
       );
 
-      if (!apiRepoUrl || !gitHubToken) {
-        throw new Error('GitHub API URL or token is missing.');
-      }
-
+      // Prepare request data
       const payload = {
         name: repoName.trim(),
         private: isPrivate,
@@ -252,23 +349,34 @@ export class CdAutoGitController {
       };
 
       const httpService = new HttpService(true);
-      await httpService.init();
+      const profileName = 'gitHubApi';
 
-      const responseResult = await httpService.proc2({
-        method: 'POST',
-        url: `/orgs/${repoHost}/repos`,
-        headers,
-        data: payload,
-      });
-
-      if (!responseResult.state || !responseResult.data) {
-        return;
+      const initOk = await httpService.init(profileName); // Pass baseURL directly
+      if (!initOk) {
+        throw new Error(`Failed to initialize HttpService for ${profileName}`);
       }
 
-      const response: ICdResponse = responseResult.data;
-      if (response.data.html_url) {
-        CdLog.success(`Repository Created: ${response.data.html_url}`);
-        const repoUrl = `${apiRepoUrl.replace(
+      const responseResult = await httpService.request<any>(
+        {
+          method: 'POST',
+          url: `/orgs/${repoHost}/repos`,
+          headers,
+          data: payload,
+        },
+        profileName,
+      );
+
+      if (!responseResult.state || !responseResult.data) {
+        throw new Error(
+          `GitHub API call failed: ${responseResult.message || 'Unknown error'}`,
+        );
+      }
+
+      const response = responseResult.data;
+      if (response.html_url) {
+        CdLog.success(`Repository Created: ${response.html_url}`);
+
+        const repoUrl = `${endpoint.replace(
           'https://api.github.com',
           'https://github.com',
         )}/${repoHost}/${repoName}.git`;
@@ -482,49 +590,46 @@ export class CdAutoGitController {
       }
 
       // Perform the database update
-      const apiRes: ICdResponse =
+      const apiRes: CdFxReturn<ICdResponse> =
         await this.svCdCliProfile.updateCdCliProfileData(
           q,
           jsonUpdate,
           this.cdToken,
         );
 
-      if (apiRes.app_state.success) {
+      if (
+        apiRes.state &&
+        apiRes.data &&
+        apiRes.data.app_state &&
+        apiRes.data.app_state.success
+      ) {
         // Synchronize local configuration with the updated database profile
-        const updatedProfile = apiRes.data?.newProfile[0];
-        if (updatedProfile) {
-          const configIndex = profileRet.data.items.findIndex(
-            (item: ProfileModel) =>
-              item.cdCliProfileName === config.cdGitConfig,
+        // Use the updated gitProfile object since apiRes.data does not have newProfile
+        const updatedProfile = gitProfile;
+        const configIndex = profileRet.data.items.findIndex(
+          (item: ProfileModel) => item.cdCliProfileName === config.cdGitConfig,
+        );
+
+        if (configIndex !== -1) {
+          profileRet.data.items[configIndex] = updatedProfile;
+          // saveCdCliProfileLocal(cdCliProfile);
+
+          ret = await ctlCdCliProfile.saveCdCliProfileLocal(
+            updatedProfile,
+            config.cdGitConfig,
           );
-
-          if (configIndex !== -1) {
-            profileRet.data.items[configIndex] = updatedProfile;
-            // saveCdCliProfileLocal(cdCliProfile);
-
-            ret = await ctlCdCliProfile.saveCdCliProfileLocal(
-              gitProfile,
-              config.cdGitConfig,
+          if (ret) {
+            CdLog.success(
+              'Token saved to GitHub profile and local configuration synchronized.',
             );
-            if (ret) {
-              CdLog.success(
-                'Token saved to GitHub profile and local configuration synchronized.',
-              );
-              return ret;
-            } else {
-              CdLog.error('Error while saving to local');
-              return ret;
-            }
+            return ret;
           } else {
-            const error =
-              'Failed to update local configuration: Profile not found in config.';
-            this.b.err.push(error);
-            CdLog.error(error);
+            CdLog.error('Error while saving to local');
             return ret;
           }
         } else {
           const error =
-            'Failed to retrieve updated profile from the database response.';
+            'Failed to update local configuration: Profile not found in config.';
           this.b.err.push(error);
           CdLog.error(error);
           return ret;
@@ -597,27 +702,26 @@ export class CdAutoGitController {
         gitProfileData,
       );
 
-      // Extract the baseRepoUrl and token from the GitHub profile
-      let { baseRepoUrl } = gitProfileData.details.gitAccess;
-      let { gitHubToken } = gitProfileData.details.gitAccess;
+      // Extract the endpoint and token from the GitHub profile
+      let endpoint = gitProfileData.details.endpoint;
+      let gitHubToken = gitProfileData.details.gitAccess?.gitHubToken;
 
       CdLog.debug(
-        'CdAutoGitController::cloneRepoToLocal()/baseRepoUrl:',
-        baseRepoUrl,
+        `CdAutoGitController::cloneRepoToLocal()/endpoint: ${endpoint}`,
       );
 
       // Experimental overrides
-      baseRepoUrl = 'https://github.com';
+      endpoint = 'https://github.com';
 
-      CdLog.debug('CdAutoGitController::cloneRepoToLocal()/baseRepoUrl:', {
-        url: baseRepoUrl,
+      CdLog.debug('CdAutoGitController::cloneRepoToLocal()/endpoint:', {
+        url: endpoint,
       });
       CdLog.debug('CdAutoGitController::cloneRepoToLocal()/gitHubToken:', {
         token: gitHubToken,
       });
 
       // Decrypt and resolve all vault references in details
-      const resolved =
+      const resolved: IProfileDetails =
         await CdCliVaultController.resolveVaultReferencesInObject(
           gitProfileData.details,
           gitProfileData.cdVault,
@@ -628,22 +732,22 @@ export class CdAutoGitController {
       CdLog.debug(
         `CdAutoGitController::cloneRepoToLocal()/resolved:${JSON.stringify(resolved)}`,
       );
-      baseRepoUrl = resolved.gitAccess.baseRepoUrl;
+      endpoint = resolved.endpoint;
       CdLog.debug(
-        `CdAutoGitController::cloneRepoToLocal()/baseRepoUrl:${baseRepoUrl}`,
+        `CdAutoGitController::cloneRepoToLocal()/endpoint:${endpoint}`,
       );
-      gitHubToken = resolved.gitAccess.gitHubToken;
+      gitHubToken = resolved.gitAccess?.gitHubToken;
       CdLog.debug(
         `CdAutoGitController::cloneRepoToLocal()/gitHubToken:${gitHubToken}`,
       );
-      if (!baseRepoUrl || !gitHubToken) {
+      if (!endpoint || !gitHubToken) {
         throw new Error(
-          'Missing GitHub baseRepoUrl or token. Ensure GitHub profile is configured correctly.',
+          'Missing GitHub endpoint or token. Ensure GitHub profile is configured correctly.',
         );
       }
 
       // Construct the full repository URL with authentication
-      const authRepoUrl = baseRepoUrl.replace(
+      const authRepoUrl = endpoint.replace(
         'https://',
         `https://${gitHubToken}@`,
       );
@@ -709,12 +813,12 @@ export class CdAutoGitController {
     const {
       gitHubUser: gitHubUser,
       gitHubToken: gitHubToken,
-      baseRepoUrl,
+      endpoint,
     } = gitProfileData.details;
 
-    if (!gitHubToken || !gitHubUser || !baseRepoUrl) {
+    if (!gitHubToken || !gitHubUser || !endpoint) {
       CdLog.error(
-        'GitHub profile is incomplete. Ensure username, token, and baseRepoUrl are set.',
+        'GitHub profile is incomplete. Ensure username, token, and endpoint are set.',
       );
       return;
     }

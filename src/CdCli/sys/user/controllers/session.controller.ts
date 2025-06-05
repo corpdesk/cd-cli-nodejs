@@ -36,7 +36,15 @@ export class SessonController {
       }
 
       // Save session to profile details
-      profile.cdCliProfileData.details.session = session;
+      profile.cdCliProfileData.details.session = {
+        jwt:
+          session.jwt && typeof session.jwt === 'object'
+            ? session.jwt.jwtToken
+            : session.jwt,
+        ttl: session.ttl,
+        userId: typeof session.userId === 'number' ? session.userId : undefined,
+        cd_token: session.cd_token,
+      };
 
       // Write updated configuration back to the file
       writeFileSync(CONFIG_FILE_PATH, JSON.stringify(cdCliConfig, null, 2));
@@ -81,7 +89,10 @@ export class SessonController {
 
       CdLog.debug('SessionController::getSession()/profile:', profile);
 
-      const session: ISessResp = profile.cdCliProfileData.details.session;
+      const session = profile.cdCliProfileData.details.session;
+      if (!session) {
+        throw new Error(`Session not found in profile "${profileName}".`);
+      }
       CdLog.debug('SessionController::getSession()/session1:', session);
 
       // Resolve session token from `cdVault` if referenced
@@ -105,10 +116,35 @@ export class SessonController {
         r: JSON.stringify(resolved),
       });
       // Extract from resolved details after vault substitution
-      session.cd_token = resolved.session.cd_token;
+      if (
+        resolved.session &&
+        typeof resolved.session.cd_token !== 'undefined'
+      ) {
+        session.cd_token = resolved.session.cd_token;
+      }
 
       CdLog.debug('SessionController::getSession()/session2:', session);
-      return session;
+
+      // Ensure session.jwt matches ISessResp type
+      if (
+        session &&
+        (typeof session.jwt === 'string' ||
+          typeof session.jwt === 'undefined' ||
+          session.jwt === null)
+      ) {
+        // If you need the expanded object, assign it to a new property (e.g., session.jwtObj)
+        (session as any).jwtObj = session.jwt
+          ? {
+              jwtToken: session.jwt,
+              checked: false,
+              checkTime: null,
+              authorized: false,
+              ttl: session.ttl ?? null,
+            }
+          : null;
+      }
+
+      return session as ISessResp;
     } catch (error) {
       CdLog.error(`Error retrieving session: ${(error as Error).message}`);
       return null;

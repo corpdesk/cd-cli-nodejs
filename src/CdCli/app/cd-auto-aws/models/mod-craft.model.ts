@@ -1,6 +1,7 @@
 // import { CdCliProfileController } from '../../cd-cli/controllers/cd-cli-profile.cointroller';
 import { CdCliProfileController } from '@/CdCli/sys/cd-cli/controllers/cd-cli-profile.cointroller';
 import { ModCraftController } from '../controllers/mod-craft.controller';
+import CdLog from '@/CdCli/sys/cd-comm/controllers/cd-logger.controller';
 
 export const InitModuleFromRepoPromptData: any = [
   {
@@ -65,7 +66,7 @@ export const MODULE_CMD = {
         {
           flags: '--type <templateType>',
           description:
-            'Type of the module template (e.g., module-api, module-frontend)',
+            'Type of the module template (e.g., cd-api, module-frontend)',
         },
         {
           flags: '--repo <gitRepo>',
@@ -83,6 +84,17 @@ export const MODULE_CMD = {
       ],
       action: {
         execute: async (options) => {
+          CdLog.debug(`MODULE_CMD/execute()/options:${options}`);
+          CdLog.debug(
+            `MODULE_CMD/execute()/options.gitRepo:${options.gitRepo}`,
+          );
+          CdLog.debug(`MODULE_CMD/execute()/options.repo:${options.repo}`);
+          CdLog.debug(
+            `MODULE_CMD/execute()/options.profileName:${options.profileName}`,
+          );
+          CdLog.debug(
+            `MODULE_CMD/execute()/options.profile:${options.profile}`,
+          );
           const modCraftController = new ModCraftController();
           await modCraftController.initModuleFromRepo(
             options.repo,
@@ -105,7 +117,7 @@ export const TEMPLATE_CMD = {
         {
           flags: '--type <templateType>',
           description:
-            'Type of the module template (e.g., module-api, module-frontend)',
+            'Type of the module template (e.g., cd-api, module-frontend)',
         },
         {
           flags: '--url <gitRepo>',

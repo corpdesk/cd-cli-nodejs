@@ -226,8 +226,8 @@ export class UserModel {
 }
 
 export interface IUserProfileAccess {
-  userPermissions: IProfileUserAccess[];
-  groupPermissions: IProfileGroupAccess[];
+  userPermissions?: IProfileUserAccess[];
+  groupPermissions?: IProfileGroupAccess[];
 }
 
 /**
@@ -255,7 +255,7 @@ export interface IProfileGroupAccess {
 }
 
 export interface IUserProfile {
-  fieldPermissions: IUserProfileAccess;
+  fieldPermissions?: IUserProfileAccess;
   avatar?: string; // URL or base64-encoded image
   userData: UserModel;
   areasOfInterest?: string[];

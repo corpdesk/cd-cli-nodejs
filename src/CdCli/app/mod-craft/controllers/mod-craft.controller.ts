@@ -1,8 +1,4 @@
 /* eslint-disable style/operator-linebreak */
-import type {
-  ProfileContainer,
-  ProfileModel,
-} from '../../cd-cli/models/cd-cli-profile.model';
 
 /* eslint-disable style/brace-style */
 import { exec } from 'node:child_process';
@@ -14,9 +10,16 @@ import { fileURLToPath } from 'node:url';
 import util, { promisify } from 'node:util';
 import { CONFIG_FILE_PATH } from '@/config';
 import inquirer from 'inquirer';
-import CdCliVaultController from '../../cd-cli/controllers/cd-cli-vault.controller';
-import CdLog from '../../cd-comm/controllers/cd-logger.controller';
-import { SSH_TO_DEV_PROMPT_DATA } from '../models/mod-craft.model';
+import {
+  SSH_TO_DEV_PROMPT_DATA,
+  workshopConfig,
+} from '../models/mod-craft.model';
+import CdLog from '@/CdCli/sys/cd-comm/controllers/cd-logger.controller';
+import {
+  ProfileContainer,
+  ProfileModel,
+} from '@/CdCli/sys/cd-cli/models/cd-cli-profile.model';
+import CdCliVaultController from '@/CdCli/sys/cd-cli/controllers/cd-cli-vault.controller';
 
 const execPromise = promisify(exec);
 // Construct __dirname for ES Modules
@@ -27,7 +30,7 @@ export class ModCraftController {
   /**
    * Method to clone repository of module template to cd-cli for referencw when developing given module at development server
    * Usage:
-   * cd-cli template init --type=module-api --url=https://github.com/corpdesk/abcd.git
+   * cd-cli template init --type=cd-api --url=https://github.com/corpdesk/abcd.git
    * @param templateType
    * @param gitRepo
    */
@@ -42,7 +45,11 @@ export class ModCraftController {
       const projectRoot = path.resolve(path.dirname(__filename), './..'); // Adjusts based on current directory depth
 
       // Use configuration parameter for templates directory
-      const templatesRelativePath = './src/templates';
+      // const templatesRelativePath = './src/templates';
+      const templatesRelativePath = workshopConfig(
+        null,
+        null,
+      ).moduleTemplatePath;
       const templatesDir = path.resolve(
         projectRoot,
         templatesRelativePath,
@@ -111,29 +118,30 @@ export class ModCraftController {
   }
 
   /**
-   * Method to connect to a development server via SSH and clone a module repository.
+   * Method to connect to a development server via SSH and clone a module repository into a cd-api project.
+   * This would be a module that was developed by a 3rd party or by the user.
+   * After cloning, it will set up the module structure and configure it for further development or use in the CorpDesk environment.
    *
    * Profile Selection: The user can pass the --profile flag (e.g., --profile=devServer-ssh-profile) in the command to use the specified profile. If the profile exists, the details are extracted and used for the SSH connection. If no profile is provided, the user is prompted to enter the SSH details manually.
    * Profile Data Extraction: If a profile is provided, the method will read the profiles.json file, extract the profile data (e.g., sshKey, remoteUser, devServer, cdApiDir), and use it to connect to the development server.
    * Command Construction: The command is constructed dynamically based on the provided or selected profile data. The ssh -i flag is used if an SSH key is provided; otherwise, it defaults to using ssh without a key.
    *
    * Usaging Profile:
-   * cd-cli module init --type=module-api --repo=https://github.com/corpdesk/cd-geo --profile=devServer-ssh-profile
+   * cd-cli module init --type=cd-api --repo=https://github.com/corpdesk/cd-geo --profile=devServer-ssh-profile
    * This command will use the SSH settings from the devServer-ssh-profile profile to connect to the development server and clone the repository.
    *
    * Without profile:
-   * cd-cli module init --type=module-api --repo=https://github.com/corpdesk/cd-geo --dev-srv=192.168.1.70
+   * cd-cli module init --type=cd-api --repo=https://github.com/corpdesk/cd-geo --dev-srv=192.168.1.70
    * If no profile is specified, the user will be prompted to enter the SSH connection details (server, user, key, etc.).
    *
    */
   // import { checkProfileAndLogin } from '../../utils/profileHelper'; // Assuming the helper is in utils
 
   async initModuleFromRepo(gitRepo: string, profileName?: string) {
-    CdLog.debug('starting initModuleFromRepo():', {
-      repo: gitRepo,
-      pName: profileName,
-      configPath: CONFIG_FILE_PATH,
-    });
+    CdLog.debug(`initModuleFromRepo()/gitRepo:${gitRepo}`);
+    CdLog.debug(`initModuleFromRepo()/profileName:${profileName}`);
+    CdLog.debug(`initModuleFromRepo()/CONFIG_FILE_PATH:${CONFIG_FILE_PATH}`);
+
     try {
       // Step 1: Load configurations from ~/.cd-cli.profiles.json
       if (!existsSync(CONFIG_FILE_PATH)) {
@@ -179,7 +187,7 @@ export class ModCraftController {
         const answers = await inquirer.prompt(SSH_TO_DEV_PROMPT_DATA);
 
         profileDetails = {
-          remoteServer: answers.remoteServer,
+          devServer: answers.devServer,
           remoteUser: answers.remoteUser,
           sshKey: answers.sshKey,
           cdApiDir: answers.cdApiDir,
@@ -187,16 +195,16 @@ export class ModCraftController {
       }
 
       // Step 3: Construct SSH command
-      const { remoteUser, sshKey, remoteServer, cdApiDir } = profileDetails;
-      CdLog.debug(`remoteUser: ${remoteUser}, remoteServer: ${remoteServer}`);
+      const { remoteUser, sshKey, devServer, cdApiDir } = profileDetails;
+      CdLog.debug(`remoteUser: ${remoteUser}, devServer: ${devServer}`);
 
       const command = sshKey
-        ? `ssh -i "${sshKey}" "${remoteUser}@${remoteServer}" "sudo -H -u ${remoteUser} bash -c 'git clone ${gitRepo} ${cdApiDir}/src/CdApi/app/cd-geo'"`
-        : `ssh "${remoteUser}@${remoteServer}" "sudo -H -u ${remoteUser} bash -c 'git clone ${gitRepo} ${cdApiDir}/src/CdApi/app/cd-geo'"`;
+        ? `ssh -i "${sshKey}" "${remoteUser}@${devServer}" "sudo -H -u ${remoteUser} bash -c 'git clone ${gitRepo} ${cdApiDir}/src/CdApi/app/cd-geo'"`
+        : `ssh "${remoteUser}@${devServer}" "sudo -H -u ${remoteUser} bash -c 'git clone ${gitRepo} ${cdApiDir}/src/CdApi/app/cd-geo'"`;
 
       // Step 4: Execute SSH command and log output
       CdLog.info(
-        `Executing SSH command to clone repository from ${gitRepo} on server ${remoteServer}...`,
+        `Executing SSH command to clone repository from ${gitRepo} on server ${devServer}...`,
       );
 
       const process = exec(command);

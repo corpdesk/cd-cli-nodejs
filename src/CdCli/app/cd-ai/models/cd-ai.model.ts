@@ -34,18 +34,18 @@ export interface CdAiPromptResponse {
   };
 }
 
-export interface ProfileDetails {
-  profileName: string;
-  description?: string;
-  apiKey: string;
-  orgId?: string;
-  baseUrl: string;
-  organizationId?: string;
-  openAiProjectName?: string;
-  encrypted?: boolean;
-  cryptFields?: string[];
-  defaultRequestConfig?: Partial<OpenAiRequestConfig | DeepSeekRequestConfig>;
-}
+// export interface ProfileDetails {
+//   profileName: string;
+//   description?: string;
+//   apiKey: string;
+//   orgId?: string;
+//   baseUrl: string;
+//   organizationId?: string;
+//   openAiProjectName?: string;
+//   encrypted?: boolean;
+//   cryptFields?: string[];
+//   defaultRequestConfig?: Partial<OpenAiRequestConfig | DeepSeekRequestConfig>;
+// }
 
 export interface CdAiServiceInterface {
   readonly name: string;

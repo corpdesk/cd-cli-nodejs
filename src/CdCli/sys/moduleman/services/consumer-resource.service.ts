@@ -26,7 +26,7 @@ import { GenericService } from '../../base/generic-service';
 import { CompanyModel } from '../models/company.model';
 
 export class ConsumerResourceService extends GenericService<ConsumerResourceModel> {
-  // b: any; // instance of BaseService
+  // b: BaseService<CdGeoProximityService>; // instance of BaseService
   cdToken!: string;
   srvSess!: SessionService;
   srvUser!: UserService;
@@ -326,16 +326,21 @@ export class ConsumerResourceService extends GenericService<ConsumerResourceMode
     //   controllerInstance: this,
     //   model: ConsumerResourceModel,
     // };
-    let serviceInput: IServiceInput<ConsumerResourceModel> = {
-      serviceModel: ConsumerResourceModel,
-      cmd: {
-        action: 'find',
-        query: {
-          select: ['consumerId'],
-          where: { consumerGuid: pl.consumerGuid },
-        },
-      },
-      dSource: this.defaultDs,
+    // let serviceInput: IServiceInput<ConsumerResourceModel> = {
+    //   serviceModel: ConsumerResourceModel,
+    //   cmd: {
+    //     action: 'find',
+    //     query: {
+    //       select: ['consumerId'],
+    //       where: { consumerGuid: pl.consumerGuid },
+    //     },
+    //   },
+    //   dSource: this.defaultDs,
+    // };
+
+    const params: any = {
+      controllerInstance: this,
+      model: ConsumerResourceModel,
     };
     this.b.i.code = 'ConsumerResourceService::validateCreate';
     let ret = false;
@@ -485,7 +490,7 @@ export class ConsumerResourceService extends GenericService<ConsumerResourceMode
       });
     } catch (e) {
       console.log('ConsumerResourceService::read$()/e:', e);
-      this.b.err.push(e.toString());
+      this.b.err.push((e as Error).toString());
       const i = {
         messages: this.b.err,
         code: 'BaseService:update',
@@ -521,7 +526,7 @@ export class ConsumerResourceService extends GenericService<ConsumerResourceMode
       });
     } catch (e) {
       console.log('ConsumerResourceService::read$()/e:', e);
-      this.b.err.push(e.toString());
+      this.b.err.push((e as Error).toString());
       const i = {
         messages: this.b.err,
         code: 'BaseService:update',
@@ -585,14 +590,16 @@ export class ConsumerResourceService extends GenericService<ConsumerResourceMode
     // Initialize the service
     // await this.b.init(req, res);
 
+    const b = new BaseService<ConsumerResourceViewModel>();
+
     // Register the mapping from the entity to ensure the data is correctly transformed
-    this.b.entityAdapter.registerMappingFromEntity(ConsumerResourceViewModel);
+    b.entityAdapter.registerMappingFromEntity(ConsumerResourceViewModel);
 
     // Prepare the query to fetch all consumer resources
-    const query = this.b.getQuery(req);
+    const query = b.getQuery(req);
 
     // Define the service input structure
-    const serviceInput = {
+    const serviceInput: IServiceInput<ConsumerResourceViewModel> = {
       serviceModel: ConsumerResourceViewModel,
       docName: 'ConsumerResourceService::getConsumerResources',
       cmd: {
@@ -603,7 +610,7 @@ export class ConsumerResourceService extends GenericService<ConsumerResourceMode
     };
 
     // Fetch data using the base service's readQB method
-    const result = await this.b.readQB(req, res, serviceInput);
+    const result = await b.readQB(req, res, serviceInput);
 
     // Transform the flat data structure into a hierarchical structure
     const consumerResourceMap = this.transformToConsumerResourceTree(
@@ -624,6 +631,10 @@ export class ConsumerResourceService extends GenericService<ConsumerResourceMode
     const consumerMap = {};
 
     items.forEach((item) => {
+      // Skip items with undefined consumerGuid
+      if (typeof item.consumerGuid === 'undefined') {
+        return;
+      }
       // Ensure the consumer entry exists in the map
       if (!consumerMap[item.consumerGuid]) {
         consumerMap[item.consumerGuid] = {
@@ -680,22 +691,43 @@ export class ConsumerResourceService extends GenericService<ConsumerResourceMode
     });
   }
 
-  delete(req, res) {
+  async delete(
+    req: any,
+    res: any,
+    serviceInput: IServiceInput<ConsumerResourceModel>,
+  ): Promise<CdFxReturn<unknown>> {
     const q = this.b.getQuery(req);
     console.log('ConsumerResourceService::delete()/q:', q);
-    const serviceInput = {
-      serviceModel: ConsumerResourceModel,
-      docName: 'ConsumerResourceService::delete',
-      cmd: {
-        action: 'delete',
-        query: q,
-      },
-      dSource: this.defaultDs,
-    };
+    if (!serviceInput) {
+      serviceInput = {
+        serviceModel: ConsumerResourceModel,
+        docName: 'ConsumerResourceService::delete',
+        cmd: {
+          action: 'delete',
+          query: q,
+        },
+        dSource: this.defaultDs,
+      };
+    }
 
-    this.b.delete$(req, res, serviceInput).subscribe((ret) => {
-      this.b.cdResp.data = ret;
+    try {
+      const result = await this.b.delete(req, res, serviceInput);
+      this.b.cdResp.data = result;
       this.b.respond(req, res);
-    });
+
+      // Ensure the return value is always of type CdFxReturn<unknown>
+      if (result && typeof result === 'object' && 'state' in result) {
+        return result as CdFxReturn<unknown>;
+      } else {
+        return {
+          data: result ?? null,
+          state: true,
+          message: null,
+        } as CdFxReturn<unknown>;
+      }
+    } catch (error) {
+      console.error('ConsumerResourceService::delete()/error:', error);
+      throw error;
+    }
   }
 }

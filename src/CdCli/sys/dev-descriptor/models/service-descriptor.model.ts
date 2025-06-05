@@ -219,17 +219,17 @@ export interface MigrationStep extends BaseDescriptor {
   tools?: string[]; // Tools required to perform the step (optional)
 }
 
-export interface LicenseDescriptor extends BaseDescriptor {
-  type: 'openSource' | 'commercial' | 'custom';
-  licenseName?: string; // For standard licenses (e.g., 'MIT', 'GPL-3.0', 'Apache-2.0')
-  licenseLink?: string; // URL to the license text (for commercial or open source)
-  terms?: string; // For custom licenses or additional terms
-  cost?: {
-    type: 'free' | 'paid';
-    amount?: number; // Specify cost if 'paid'
-    currency?: string; // Currency type if 'paid'
-  };
-}
+// export interface LicenseDescriptor extends BaseDescriptor {
+//   type: 'openSource' | 'commercial' | 'custom';
+//   licenseName?: string; // For standard licenses (e.g., 'MIT', 'GPL-3.0', 'Apache-2.0')
+//   licenseLink?: string; // URL to the license text (for commercial or open source)
+//   terms?: string; // For custom licenses or additional terms
+//   cost?: {
+//     type: 'free' | 'paid';
+//     amount?: number; // Specify cost if 'paid'
+//     currency?: string; // Currency type if 'paid'
+//   };
+// }
 
 export interface VendorDescriptor extends BaseDescriptor {
   name: string; // Name of the vendor or organization

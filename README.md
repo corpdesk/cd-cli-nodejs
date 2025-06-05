@@ -160,7 +160,7 @@ pnpm build
 cd-cli login -u user-name -p password
 
 # initialize template:
-cd-cli template init --type=module-api --url=<module-template-repository>
+cd-cli template init --type=cd-api --url=<module-template-repository>
 
 # logout
 cd-cli logout

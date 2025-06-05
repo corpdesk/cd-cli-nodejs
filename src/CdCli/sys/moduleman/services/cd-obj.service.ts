@@ -11,7 +11,7 @@ import { GenericService } from '../../base/generic-service';
 
 export class CdObjService extends GenericService<CdObjModel> {
   // private b = new BaseService<CdObjModel>();
-
+  serviceModel?: CdObjModel;
   defaultDs = config.ds.sqlite;
   // Define validation rules
   cRules: any = {

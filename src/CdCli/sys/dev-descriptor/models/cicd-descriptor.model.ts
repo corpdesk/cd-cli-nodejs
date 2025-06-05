@@ -1,7 +1,7 @@
 /* eslint-disable style/brace-style */
 /* eslint-disable antfu/if-newline */
 
-import type { CdFxReturn } from '../../base/IBase';
+import type { CdFxReturn, ICdRequest } from '../../base/IBase';
 import type { BaseDescriptor } from './base-descriptor.model';
 import type { EnvironmentDescriptor } from './environment.model';
 import type { MigrationDescriptor } from './migration-descriptor.model';
@@ -12,7 +12,8 @@ import { CdVault } from '../../cd-cli/models/cd-cli-vault.model';
 
 // Main CiCdDescriptor Interface
 export interface CiCdDescriptor extends BaseDescriptor {
-  cICdPipeline: CICdPipeline; // Details of the pipeline
+  dsFormart?: 'json' | 'csv' | 'sql-db';
+  cICdPipeline?: CICdPipeline; // Details of the pipeline
   cICdTriggers?: CICdTrigger; // Details of the triggers
   cICdEnvironment?: CICdEnvironment; // Details of the environment
   cICdNotifications?: CICdNotification; // Details of the notifications
@@ -22,7 +23,12 @@ export interface CiCdDescriptor extends BaseDescriptor {
 // Interface for Pipeline
 export interface CICdPipeline extends BaseDescriptor {
   name: string; // Name of the pipeline (e.g., "Build and Deploy Pipeline")
-  type: 'integration' | 'delivery' | 'deployment' | 'dev-env-setup'; // Type of pipeline
+  type:
+    | 'integration'
+    | 'delivery'
+    | 'deployment'
+    | 'dev-env-setup'
+    | 'cd-module-development'; // Type of pipeline
   stages: CICdStage[]; // List of stages in the pipeline
 }
 
@@ -50,9 +56,10 @@ export interface CICdStage extends BaseDescriptor {
 
 export interface CICdTask<T = any> extends BaseDescriptor {
   name: string;
-  type: 'script-inline' | 'script-file' | 'method';
-  executor: 'bash' | 'cd-cli'; // Defines the execution environment
+  type: 'script-inline' | 'script-file' | 'method' | 'cdRequest';
+  executor: ExecutionEnvironmentType; // Defines the execution environment
   script?: string; // Used for inline scripts
+  cdRequest?: ICdRequest; // Optionally ICdRequest json can be used to invoke a given action
   scriptFile?: string; // Used when the script is a file
   className?: string; // Used when calling a cd-cli method
   methodName?: string; // The method to be executed
@@ -60,6 +67,8 @@ export interface CICdTask<T = any> extends BaseDescriptor {
   status: 'pending' | 'running' | 'completed' | 'failed'; // Task execution status
   cdVault?: CdVault[];
 }
+
+export type ExecutionEnvironmentType = 'bash' | 'cd-cli' | 'runner';
 
 export const methodRegistry = {
   async installDependencies(
@@ -446,7 +455,7 @@ export function getCiCdByName(
   cIcDs: CiCdDescriptor[],
 ): CiCdDescriptor {
   for (const name of names) {
-    const found = cIcDs.find((ciCd) => ciCd.cICdPipeline.name === name);
+    const found = cIcDs.find((ciCd) => ciCd.cICdPipeline?.name === name);
     if (found) return found;
   }
   return defaultCiCd;

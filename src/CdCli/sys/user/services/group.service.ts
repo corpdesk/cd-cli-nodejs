@@ -499,7 +499,7 @@ export class GroupService extends GenericService<ObjectLiteral> {
       });
     } catch (e: any) {
       console.log('GroupService::read$()/e:', e);
-      this.b.err.push(e.toString());
+      this.b.err.push((e as Error).toString());
       const i = {
         messages: this.b.err,
         code: 'BaseService:update',
@@ -548,7 +548,7 @@ export class GroupService extends GenericService<ObjectLiteral> {
     } catch (e: any) {
       console.log('GroupService::getGroupI()/e:', e);
       if (req) {
-        this.b.err.push(e.toString());
+        this.b.err.push((e as Error).toString());
         const i = {
           messages: this.b.err,
           code: 'GroupService:getGroupI',
@@ -587,7 +587,7 @@ export class GroupService extends GenericService<ObjectLiteral> {
     } catch (e: any) {
       console.log('GroupService::getGroupType()/e:', e);
       if (req) {
-        this.b.err.push(e.toString());
+        this.b.err.push((e as Error).toString());
         const i = {
           messages: this.b.err,
           code: 'GroupService:getGroupType',
@@ -638,7 +638,7 @@ export class GroupService extends GenericService<ObjectLiteral> {
     } catch (e: any) {
       console.log('GroupService::getGroupTypeI()/e:', e);
       if (req) {
-        this.b.err.push(e.toString());
+        this.b.err.push((e as Error).toString());
         const i = {
           messages: this.b.err,
           code: 'GroupService:getGroupTypeI',

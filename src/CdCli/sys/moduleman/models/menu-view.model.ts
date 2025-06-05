@@ -1,6 +1,5 @@
 import { ViewEntity, ViewColumn } from 'typeorm';
 
-
 // return \DB::table('menu')
 //             ->join('module, 'menu.module_id, '=, 'module.module_id')
 //             ->join('cd_obj, 'menu.menu_action_id, '=, 'cd_obj.cd_obj_id')
@@ -18,9 +17,9 @@ import { ViewEntity, ViewColumn } from 'typeorm';
 // })
 
 @ViewEntity({
-    name: 'menu_view',
-    synchronize: false,
-    expression: `
+  name: 'menu_view',
+  synchronize: false,
+  expression: `
      SELECT 
         menu.menu_id AS menu_id,
         menu.menu_name AS menu_label,
@@ -64,276 +63,203 @@ import { ViewEntity, ViewColumn } from 'typeorm';
         ((menu
         JOIN module ON ((menu.module_id = module.module_id)))
         JOIN cd_obj ON ((cd_obj.cd_obj_id = menu.cd_obj_id)))
-    `
+    `,
 })
 export class MenuViewModel {
-    @ViewColumn(
-        {
-            name: 'menu_id'
-        }
-    )
-    menuId: number;
+  @ViewColumn({
+    name: 'menu_id',
+  })
+  menuId?: number;
 
-    @ViewColumn(
-        {
-            name: 'menu_name'
-        }
-    )
-    menuName?: string;
+  @ViewColumn({
+    name: 'menu_name',
+  })
+  menuName?: string;
 
-    @ViewColumn(
-        {
-            name: 'menu_label'
-        }
-    )
-    menuLabel?: string;
+  @ViewColumn({
+    name: 'menu_label',
+  })
+  menuLabel?: string;
 
-    @ViewColumn(
-        {
-            name: 'menu_guid'
-        }
-    )
-    menuGuid?: string;
+  @ViewColumn({
+    name: 'menu_guid',
+  })
+  menuGuid?: string;
 
-    @ViewColumn(
-        {
-            name: 'closet_file'
-        }
-    )
-    closetFile?: string;
+  @ViewColumn({
+    name: 'closet_file',
+  })
+  closetFile?: string;
 
-    @ViewColumn(
-        {
-            name: 'cd_obj_id'
-        }
-    )
-    cdObjId?: number;
+  @ViewColumn({
+    name: 'cd_obj_id',
+  })
+  cdObjId?: number;
 
-    @ViewColumn(
-        {
-            name: 'menu_enabled'
-        }
-    )
-    menuEnabled?: boolean;
+  @ViewColumn({
+    name: 'menu_enabled',
+  })
+  menuEnabled?: boolean;
 
-    @ViewColumn(
-        {
-            name: 'menu_description'
-        }
-    )
-    menuDescription?: string;
+  @ViewColumn({
+    name: 'menu_description',
+  })
+  menuDescription?: string;
 
-    @ViewColumn(
-        {
-            name: 'menu_icon'
-        }
-    )
-    menuIcon?: string;
+  @ViewColumn({
+    name: 'menu_icon',
+  })
+  menuIcon?: string;
 
-    @ViewColumn(
-        {
-            name: 'icon_type'
-        }
-    )
-    iconType?: string;
+  @ViewColumn({
+    name: 'icon_type',
+  })
+  iconType?: string;
 
-    @ViewColumn(
-        {
-            name: 'doc_id'
-        }
-    )
-    docId?: number;
+  @ViewColumn({
+    name: 'doc_id',
+  })
+  docId?: number;
 
-    @ViewColumn(
-        {
-            name: 'menu_parent_id'
-        }
-    )
-    menuParentId?: number;
+  @ViewColumn({
+    name: 'menu_parent_id',
+  })
+  menuParentId?: number;
 
-    @ViewColumn(
-        {
-            name: 'path'
-        }
-    )
-    path?: string;
+  @ViewColumn({
+    name: 'path',
+  })
+  path?: string;
 
-    @ViewColumn(
-        {
-            name: 'is_title'
-        }
-    )
-    isTitle?: boolean | number | null;
+  @ViewColumn({
+    name: 'is_title',
+  })
+  isTitle?: boolean | number | null;
 
-    @ViewColumn(
-        {
-            name: 'badge'
-        }
-    )
-    badge?: string;
+  @ViewColumn({
+    name: 'badge',
+  })
+  badge?: string;
 
-    @ViewColumn(
-        {
-            name: 'is_layout'
-        }
-    )
-    isLayout?: boolean | number | null;
+  @ViewColumn({
+    name: 'is_layout',
+  })
+  isLayout?: boolean | number | null;
 
-    @ViewColumn(
-        {
-            name: 'module_id'
-        }
-    )
-    moduleId?: number;
+  @ViewColumn({
+    name: 'module_id',
+  })
+  moduleId?: number;
 
-    @ViewColumn(
-        {
-            name: 'module_guid'
-        }
-    )
-    moduleGuid?: string;
+  @ViewColumn({
+    name: 'module_guid',
+  })
+  moduleGuid?: string;
 
-    @ViewColumn(
-        {
-            name: 'module_name'
-        }
-    )
-    moduleName?: string;
+  @ViewColumn({
+    name: 'module_name',
+  })
+  moduleName?: string;
 
-    @ViewColumn(
-        {
-            name: 'module_is_public'
-        }
-    )
-    moduleIsPublic?: boolean | number;
+  @ViewColumn({
+    name: 'module_is_public',
+  })
+  moduleIsPublic?: boolean | number;
 
-    @ViewColumn(
-        {
-            name: 'is_sys_module'
-        }
-    )
-    isSysModule?: boolean | number;
+  @ViewColumn({
+    name: 'is_sys_module',
+  })
+  isSysModule?: boolean | number;
 
-    @ViewColumn(
-        {
-            name: 'children'
-        }
-    )
-    children?: MenuViewModel[] | null;
+  @ViewColumn({
+    name: 'children',
+  })
+  children?: MenuViewModel[] | null;
 
-    @ViewColumn({
-        name: 'menu_action'
-    })
-    menuAction?: string;
+  @ViewColumn({
+    name: 'menu_action',
+  })
+  menuAction?: string;
 
-    @ViewColumn(
-        {
-            name: 'cd_obj_name'
-        }
-    )
-    cdObjName?: string;
+  @ViewColumn({
+    name: 'cd_obj_name',
+  })
+  cdObjName?: string;
 
-    @ViewColumn(
-        {
-            name: 'last_sync_date'
-        }
-    )
-    lastSyncDate?: string;
+  @ViewColumn({
+    name: 'last_sync_date',
+  })
+  lastSyncDate?: string;
 
-    @ViewColumn(
-        {
-            name: 'cd_obj_disp_name'
-        }
-    )
-    cdObjDispName?: string;
+  @ViewColumn({
+    name: 'cd_obj_disp_name',
+  })
+  cdObjDispName?: string;
 
-    @ViewColumn(
-        {
-            name: 'cd_obj_guid'
-        }
-    )
-    cdObjGuid?: string;
+  @ViewColumn({
+    name: 'cd_obj_guid',
+  })
+  cdObjGuid?: string;
 
-    @ViewColumn(
-        {
-            name: 'cd_obj_type_guid'
-        }
-    )
-    cdObjTypeGuid?: string;
+  @ViewColumn({
+    name: 'cd_obj_type_guid',
+  })
+  cdObjTypeGuid?: string;
 
-    @ViewColumn(
-        {
-            name: 'last_modification_date'
-        }
-    )
-    lastModificationDate?: string;
+  @ViewColumn({
+    name: 'last_modification_date',
+  })
+  lastModificationDate?: string;
 
-    @ViewColumn(
-        {
-            name: 'parent_module_guid'
-        }
-    )
-    parentModuleGuid?: string;
+  @ViewColumn({
+    name: 'parent_module_guid',
+  })
+  parentModuleGuid?: string;
 
-    @ViewColumn(
-        {
-            name: 'parent_class_guid'
-        }
-    )
-    parentClassGuid?: string;
+  @ViewColumn({
+    name: 'parent_class_guid',
+  })
+  parentClassGuid?: string;
 
-    @ViewColumn(
-        {
-            name: 'parent_obj'
-        }
-    )
-    parentObj?: string;
+  @ViewColumn({
+    name: 'parent_obj',
+  })
+  parentObj?: string;
 
-    @ViewColumn(
-        {
-            name: 'show_name'
-        }
-    )
-    showName?: boolean;
+  @ViewColumn({
+    name: 'show_name',
+  })
+  showName?: boolean;
 
-    @ViewColumn(
-        {
-            name: 'icon'
-        }
-    )
-    icon?: string;
+  @ViewColumn({
+    name: 'icon',
+  })
+  icon?: string;
 
-    @ViewColumn(
-        {
-            name: 'show_icon'
-        }
-    )
-    showIcon?: boolean;
+  @ViewColumn({
+    name: 'show_icon',
+  })
+  showIcon?: boolean;
 
-    @ViewColumn(
-        {
-            name: 'curr_val'
-        }
-    )
-    currVal?: string;
+  @ViewColumn({
+    name: 'curr_val',
+  })
+  currVal?: string;
 
-    @ViewColumn(
-        {
-            name: 'cd_obj_enabled'
-        }
-    )
-    cdObjEnabled?: boolean | number;
+  @ViewColumn({
+    name: 'cd_obj_enabled',
+  })
+  cdObjEnabled?: boolean | number;
 
-    // @ViewColumn(
-    //     {
-    //         name: 'menu_is_public'
-    //     }
-    // )
-    // menuIsPublic?: boolean | number;
+  // @ViewColumn(
+  //     {
+  //         name: 'menu_is_public'
+  //     }
+  // )
+  // menuIsPublic?: boolean | number;
 
-    @ViewColumn({
-        name: 'menu_is_public'
-    })
-    menuIsPublic?: number;
-
+  @ViewColumn({
+    name: 'menu_is_public',
+  })
+  menuIsPublic?: number;
 }

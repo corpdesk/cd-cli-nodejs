@@ -1,4 +1,5 @@
 import winston from 'winston';
+import type { ConsoleTransportOptions } from 'winston/lib/winston/transports';
 
 // Define custom levels
 const logLevels = {
@@ -21,17 +22,13 @@ const logLevels = {
 // Create the logger with custom levels
 export const logger = winston.createLogger({
   levels: logLevels.levels,
-  transports: [
-    new winston.transports.Console({
-      level: 'debug', // Default level to log from (including debug)
-      format: winston.format.combine(
-        winston.format.colorize(), // Colorize logs
-        winston.format.printf(({ level, message }) => {
-          return `${level}: ${message}`; // Format log message
-        }),
-      ),
+  format: winston.format.combine(
+    winston.format.colorize(), // Colorize logs
+    winston.format.printf(({ level, message }) => {
+      return `${level}: ${message}`; // Format log message
     }),
-  ],
+  ),
+  transports: [new winston.transports.Console()],
 });
 
 // Adding color support for custom levels

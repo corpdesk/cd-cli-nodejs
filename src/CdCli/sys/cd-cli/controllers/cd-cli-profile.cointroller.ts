@@ -179,8 +179,10 @@ export class CdCliProfileController {
       CdLog.debug(
         `CdCliProfileController::createProfile()/this.cdToken: ${this.cdToken}`,
       );
-      const response: ICdResponse =
-        await this.svCdCliProfile.createCdCliProfile(d, sessResp.cd_token);
+      const response: any = await this.svCdCliProfile.createCdCliProfile(
+        d,
+        sessResp.cd_token,
+      );
       if (response.app_state?.success) {
         CdLog.success(`Profile '${answers.profileName}' created successfully.`);
       } else {

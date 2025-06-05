@@ -161,7 +161,7 @@ export class WebsocketService extends GenericService<CdPushSocketModel> {
   //     await this.b.respond(req, res);
   //   }
 
-  //   async read(req, res, serviceInput: IServiceInput): Promise<any> {
+  //   async read(req, res, serviceInput: IServiceInput<CoopStatModel>): Promise<any> {
   //     //
   //   }
 
@@ -275,7 +275,7 @@ export class WebsocketService extends GenericService<CdPushSocketModel> {
       });
     } catch (e: any) {
       console.log('WebSocketService::read$()/e:', e);
-      this.b.err.push(e.toString());
+      this.b.err.push((e as Error).toString());
       const i = {
         messages: this.b.err,
         code: 'BaseService:update',
@@ -311,7 +311,7 @@ export class WebsocketService extends GenericService<CdPushSocketModel> {
       });
     } catch (e: any) {
       console.log('WebSocketService::read$()/e:', e);
-      this.b.err.push(e.toString());
+      this.b.err.push((e as Error).toString());
       const i = {
         messages: this.b.err,
         code: 'BaseService:update',
@@ -433,7 +433,7 @@ export class WebsocketService extends GenericService<CdPushSocketModel> {
       return this.getWebSocketCount(req, res, serviceInput);
     } catch (e: any) {
       console.log('WebsocketService::destinationSocket/e:', e);
-      this.b.err.push(e.toString());
+      this.b.err.push((e as Error).toString());
       const i = {
         messages: this.b.err,
         code: 'WebsocketService::destinationSocket',

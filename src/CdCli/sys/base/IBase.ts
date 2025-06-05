@@ -9,6 +9,9 @@ import { CompanyModel } from '../moduleman/models/company.model';
 import { ConsumerModel } from '../moduleman/models/consumer.model';
 import { SessionModel } from '../user/models/session.model';
 import { IUserProfile, UserModel } from '../user/models/user.model';
+import { MenuViewModel } from '../moduleman/models/menu-view.model';
+import { AclModuleViewModel } from '../moduleman/models/acl-module-view.model';
+import { Observable } from 'rxjs';
 
 export interface BaseServiceInterface<T> {
   create: (
@@ -68,11 +71,14 @@ export abstract class AbstractBaseService<T>
  * Proposed: 6th Feb 2025
  * Adoption is meant to be progressive over time.
  * The principle if borrowed from Go's tuple returns
+ * @data: T | null;
+ * @state: boolean;
+ * @message?: string; // Optional error/success message
  */
 export interface CdFxReturn<T> {
-  data: T | null;
+  data?: T | null;
   state: boolean;
-  message?: string; // Optional error/success message
+  message?: string | null; // Optional error/success message
 }
 
 // default return on failure
@@ -384,11 +390,24 @@ export interface IServiceInput<T> {
   docName?: string;
   cmd?: Cmd<T>;
   data?: Partial<T>;
-  dSource?: DataSource; // Now accepts a TypeORM DataSource instance
+  dSource?: number | DataSource; // Now accepts a TypeORM DataSource instance
   extraInfo?: boolean;
   modelName?: string;
   modelPath?: string;
   fetchInput?: IFetchInput;
+}
+
+export interface IFetchInput {
+  url: string;
+  optins?: {
+    method?: string;
+    body?: string;
+    headers?: {
+      'Content-Type'?: string;
+      'X-Parse-Application-Id'?: string;
+      'X-Parse-REST-API-Key'?: string;
+    };
+  };
 }
 
 export interface Cmd<T> {
@@ -403,13 +422,49 @@ export interface Cmd<T> {
 //   take?: number;
 //   skip?: number;
 // }
+// export interface IQuery {
+//   select?: string[];
+//   update?: Partial<ObjectLiteral> | null;
+//   where: Partial<ObjectLiteral>;
+//   distinct?: boolean;
+//   take?: number;
+//   skip?: number;
+// }
 export interface IQuery {
   select?: string[];
-  update?: Partial<ObjectLiteral> | null;
-  where: Partial<ObjectLiteral>;
+  update?: ObjectLiteral | null;
+  where: IQueryWhere;
+  jsonUpdate?: IJsonUpdate[];
   distinct?: boolean;
   take?: number;
   skip?: number;
+  jFilters?: IJFilter[];
+  order?: any;
+  class?: string;
+  extData?: any; // any extra data
+}
+
+// Recursive support for nested 'andWhere' and 'orWhere'
+export interface IQueryWhere {
+  andWhere?: Array<IQueryWhere | { [field: string]: any }>;
+  orWhere?: Array<IQueryWhere | { [field: string]: any }>;
+
+  // legacy-compatible flat conditions
+  [field: string]: any;
+}
+
+// custom json update
+export interface IJsonUpdate {
+  modelField?; // name of the json column. Capacity to update multiple json columns in a given row
+  path: any; // path to a target item in JSON data
+  value: any; // value to apply to a tarteg item
+}
+
+// json field filter
+export interface IJFilter {
+  jField: string;
+  jPath: string;
+  pathValue: any;
 }
 
 export interface QueryInput {
@@ -491,7 +546,7 @@ export interface IUser {
   userName: string;
 }
 export interface IBase {
-  cdToken: string;
+  cdToken?: string;
   cRules: object;
   uRules: object;
   dRules: object;
@@ -586,6 +641,31 @@ export interface IAclCtx {
   module: any;
 }
 
+export interface IAclRole {
+  aclRoleName?: string;
+  permissions?: IAclPermission;
+}
+
+export interface IAclPermission {
+  userPermissions: IPermissionData[];
+  groupPermissions: IPermissionData[];
+}
+
+/**
+ * Improved versin should have just one interface and
+ * instead of userId or groupId, cdObjId is applied.
+ * This would then allow any object permissions to be set
+ * Automation and 'role' concept can then be used to manage permission process
+ */
+export interface IPermissionData {
+  cdObjId: number;
+  hidden: boolean;
+  field: string;
+  read: boolean;
+  write: boolean;
+  execute: boolean;
+}
+
 // export const controlFormatt = {
 //   text: ['', [Validators.required]],
 //   textDisabled: ['', [Validators.required]],
@@ -647,6 +727,22 @@ export interface ILoginData {
   consumer: IConsumer[];
   menuData: IMenuItem[];
   userData: IUserData;
+}
+
+export interface ISelectedMenu {
+  moduleMenuData?: MenuViewModel[];
+  selectedItem: MenuViewModel;
+  selectedId?: number;
+}
+
+export interface IAllowedModules {
+  modules$: Observable<AclModuleViewModel[]>;
+  modulesCount: number;
+}
+
+export interface IMenuRelations {
+  menuParent: MenuViewModel;
+  menuChildren: MenuViewModel[];
 }
 
 export interface IConsumer {
@@ -733,4 +829,14 @@ export interface PushEvent {
   emittEvent: string;
   sFx?: string;
   cFx?: string;
+}
+
+/// ColumnNumericTransformer
+export class ColumnNumericTransformer {
+  to(data: number): number {
+    return data;
+  }
+  from(data: string): number {
+    return parseFloat(data);
+  }
 }

@@ -176,6 +176,11 @@ export default {
       },
     ],
   },
+  back4app: {
+    url: process.env.B4A_URL,
+    appId: process.env.X_Parse_Application_Id,
+    apiKey: process.env.X_Parse_REST_API_Key,
+  },
   ////////////////////////////////////////
   usePush: true,
   usePolling: true,
@@ -193,6 +198,12 @@ export default {
       },
     },
   ],
+  cdApi: {
+    endpoint: 'https://localhost:3001/api',
+    serverHost: 'localhost',
+    serverPort: '3001',
+    entryPoint: '/api',
+  },
   push: {
     mode: process.env.PUSH_MODE,
     serverHost: 'https://146.190.165.51',

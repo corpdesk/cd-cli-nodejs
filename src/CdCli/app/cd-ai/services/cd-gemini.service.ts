@@ -4,11 +4,7 @@ import {
   GeminiHttpData,
   GeminiRequestConfig,
 } from '../models/cd-gemini.model';
-import {
-  CdAiPromptRequest,
-  CdAiPromptResponse,
-  ProfileDetails,
-} from '../models/cd-ai.model';
+import { CdAiPromptRequest, CdAiPromptResponse } from '../models/cd-ai.model';
 import { join } from 'node:path';
 import fs from 'node:fs';
 import CdLog from '@/CdCli/sys/cd-comm/controllers/cd-logger.controller';
@@ -17,6 +13,8 @@ import CdCliVaultController from '@/CdCli/sys/cd-cli/controllers/cd-cli-vault.co
 import { EncryptionMeta } from '@/CdCli/sys/cd-cli/models/cd-cli-vault.model';
 import { AiServiceRegistry } from './cd-ai-registry.service';
 import { BudgetStatus } from '../models/budget-guard.model';
+import { IProfileDetails } from '@/CdCli/sys/cd-cli/models/cd-cli-profile.model';
+import { HttpService } from '@/CdCli/sys/base/http.service';
 
 export class CdGeminiService {
   readonly name = 'Gemini AI';
@@ -35,69 +33,158 @@ export class CdGeminiService {
     return { used: 10, limit: 100, remaining: 90 };
   }
 
+  // static async sendPrompt(
+  //   request: CdAiPromptRequest,
+  // ): Promise<CdAiPromptResponse> {
+  //   try {
+  //     const profile = await this.getProfile();
+
+  //     if (!profile) {
+  //       return {
+  //         success: false,
+  //         message: 'Gemini profile not found or decryption failed.',
+  //       };
+  //     }
+
+  //     // Default model for Gemini is 'gemini-pro' for text generation
+  //     const model =
+  //       request.model ?? profile.defaultRequestConfig?.model ?? 'gemini-pro';
+
+  //     const requestBody: GeminiRequestConfig = {
+  //       contents: [
+  //         // Gemini generally doesn't require a 'system' role.
+  //         // The 'user' role is used for all input prompts.
+  //         { role: 'user', parts: [{ text: request.prompt ?? '' }] },
+  //       ],
+  //       generationConfig: {
+  //         temperature: request.temperature ?? 0.7,
+  //         maxOutputTokens: request.maxTokens ?? 1024,
+  //         // Add other generationConfig properties as needed based on Gemini API
+  //         // candidateCount: 1, // Default to 1 candidate
+  //         // topP: 0.9,
+  //         // topK: 40,
+  //       },
+  //       // safetySettings: [ // Example safety settings, can be customized
+  //       //   { category: 'HARM_CATEGORY_HARASSMENT', threshold: 'BLOCK_NONE' },
+  //       //   { category: 'HARM_CATEGORY_HATE_SPEECH', threshold: 'BLOCK_NONE' },
+  //       // ],
+  //     };
+
+  //     // If messages are provided (for chat interactions), override the prompt-based contents
+  //     if (Array.isArray(request.messages) && request.messages.length > 0) {
+  //       requestBody.contents = request.messages.map((msg: any) => ({
+  //         role: msg.role === 'assistant' ? 'model' : 'user', // Map 'assistant' to 'model' for Gemini
+  //         parts: [{ text: msg.content }],
+  //       }));
+  //     }
+
+  //     GeminiHttpData.headers['x-goog-api-key'] = profile.apiKey; // Set API key in header
+  //     GeminiHttpData.body = JSON.stringify(requestBody);
+
+  //     const response = await fetch(
+  //       `${profile.baseUrl}/v1beta/models/${model}:generateContent`, // Gemini API endpoint for content generation
+  //       GeminiHttpData,
+  //     );
+
+  //     if (!response.ok) {
+  //       const errorText = await response.text();
+  //       CdLog.error(`❌ Gemini API error [${response.status}]: ${errorText}`);
+  //       return {
+  //         success: false,
+  //         message: `Gemini API call failed with status ${response.status}.`,
+  //       };
+  //     }
+
+  //     const result = (await response.json()) as GeminiChatResponse;
+
+  //     const content = result.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
+  //     const tokensUsed = result.usageMetadata?.totalTokenCount;
+
+  //     return {
+  //       success: true,
+  //       message: 'Gemini prompt executed successfully.',
+  //       content: content ?? '',
+  //       usage: {
+  //         tokensUsed,
+  //         estimatedCost: this.estimateCost(tokensUsed, model),
+  //       },
+  //     };
+  //   } catch (error: any) {
+  //     CdLog.error(`Gemini sendPrompt() error: ${error.message}`);
+  //     return {
+  //       success: false,
+  //       message: `Gemini error: ${error.message}`,
+  //     };
+  //   }
+  // }
   static async sendPrompt(
     request: CdAiPromptRequest,
   ): Promise<CdAiPromptResponse> {
-    try {
-      const profile = await this.getProfile();
+    const profileName = 'gemini';
 
-      if (!profile) {
+    try {
+      const profile = await this.getProfile(); // Get Gemini profile
+
+      if (!profile || !profile.details?.apiKey || !profile.details?.endpoint) {
         return {
           success: false,
-          message: 'Gemini profile not found or decryption failed.',
+          message: 'Gemini profile is incomplete or decryption failed.',
         };
       }
 
-      // Default model for Gemini is 'gemini-pro' for text generation
+      const endpoint = profile.details.endpoint;
+      const apiKey = profile.details.apiKey;
+
       const model =
-        request.model ?? profile.defaultRequestConfig?.model ?? 'gemini-pro';
+        request.model ??
+        profile.details.defaultRequestConfig?.model ??
+        'gemini-pro';
 
       const requestBody: GeminiRequestConfig = {
-        contents: [
-          // Gemini generally doesn't require a 'system' role.
-          // The 'user' role is used for all input prompts.
-          { role: 'user', parts: [{ text: request.prompt ?? '' }] },
-        ],
+        contents: [{ role: 'user', parts: [{ text: request.prompt ?? '' }] }],
         generationConfig: {
           temperature: request.temperature ?? 0.7,
           maxOutputTokens: request.maxTokens ?? 1024,
-          // Add other generationConfig properties as needed based on Gemini API
-          // candidateCount: 1, // Default to 1 candidate
-          // topP: 0.9,
-          // topK: 40,
         },
-        // safetySettings: [ // Example safety settings, can be customized
-        //   { category: 'HARM_CATEGORY_HARASSMENT', threshold: 'BLOCK_NONE' },
-        //   { category: 'HARM_CATEGORY_HATE_SPEECH', threshold: 'BLOCK_NONE' },
-        // ],
       };
 
-      // If messages are provided (for chat interactions), override the prompt-based contents
       if (Array.isArray(request.messages) && request.messages.length > 0) {
         requestBody.contents = request.messages.map((msg: any) => ({
-          role: msg.role === 'assistant' ? 'model' : 'user', // Map 'assistant' to 'model' for Gemini
+          role: msg.role === 'assistant' ? 'model' : 'user',
           parts: [{ text: msg.content }],
         }));
       }
 
-      GeminiHttpData.headers['x-goog-api-key'] = profile.apiKey; // Set API key in header
-      GeminiHttpData.body = JSON.stringify(requestBody);
-
-      const response = await fetch(
-        `${profile.baseUrl}/v1beta/models/${model}:generateContent`, // Gemini API endpoint for content generation
-        GeminiHttpData,
-      );
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        CdLog.error(`❌ Gemini API error [${response.status}]: ${errorText}`);
+      const httpService = new HttpService(true);
+      const initialized = await httpService.init(profileName, endpoint);
+      if (!initialized) {
         return {
           success: false,
-          message: `Gemini API call failed with status ${response.status}.`,
+          message: `Failed to initialize HTTP client for '${profileName}'.`,
         };
       }
 
-      const result = (await response.json()) as GeminiChatResponse;
+      const response = await httpService.request<GeminiChatResponse>(
+        {
+          method: 'POST',
+          url: `/v1beta/models/${model}:generateContent`,
+          headers: {
+            'x-goog-api-key': apiKey,
+            'Content-Type': 'application/json',
+          },
+          data: requestBody,
+        },
+        profileName,
+      );
+
+      if (!response.state || !response.data) {
+        return {
+          success: false,
+          message: response.message || 'Gemini API call failed.',
+        };
+      }
+
+      const result = response.data;
 
       const content = result.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
       const tokensUsed = result.usageMetadata?.totalTokenCount;
@@ -120,7 +207,7 @@ export class CdGeminiService {
     }
   }
 
-  private static async getProfile(): Promise<ProfileDetails | null> {
+  private static async getProfile(): Promise<IProfileDetails | null> {
     const ctlCdCliProfile = new CdCliProfileController();
     const profileRet = await ctlCdCliProfile.getProfileByName('gemini'); // Fetch profile for 'gemini'
 
@@ -154,7 +241,13 @@ export class CdGeminiService {
       }
       return {
         ...profileData.details,
-        apiKey: decryptedApiKey,
+        apiKey: {
+          ...profileData.details.apiKey,
+          value: decryptedApiKey,
+          isEncrypted: false,
+          encryptedValue: undefined,
+          encryptionMeta: undefined,
+        },
         baseUrl:
           profileData.details.baseUrl ??
           'https://generativelanguage.googleapis.com', // Default Gemini API base URL

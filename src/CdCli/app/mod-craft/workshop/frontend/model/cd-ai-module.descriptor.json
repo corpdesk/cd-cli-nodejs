@@ -1,0 +1,9 @@
+{
+  "cdModuleName": "cd-ai",
+  "cdModuleType": "cd-api",
+  "description": "AI services for corpdesk",
+  "controllers": [],
+  "services": [],
+  "models": [],
+  "workstationPath": "src/CdCli/app/mod-craft/workshop/cd-ai"
+}

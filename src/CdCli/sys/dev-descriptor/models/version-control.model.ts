@@ -123,16 +123,16 @@ export interface DeveloperDescriptor extends BaseDescriptor {
   profileLink?: string; // Link to personal or group profile (e.g., GitHub)
 }
 
+export interface ContributorDescriptor extends BaseDescriptor {
+  vendor?: VendorDescriptor;
+  developers?: DeveloperDescriptor[];
+  communities?: CommunityDescriptor[];
+}
+
 export interface CommunityDescriptor extends BaseDescriptor {
   name: string; // Community name
   type: 'forum' | 'github' | 'mailingList' | 'other';
   link: string; // URL to the community
-}
-
-export interface ContributorDescriptor extends BaseDescriptor {
-  vendors?: VendorDescriptor[];
-  developers?: DeveloperDescriptor[];
-  communities?: CommunityDescriptor[];
 }
 
 export const versionControlRepositories: VersionControlDescriptor[] = [

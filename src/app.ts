@@ -6,7 +6,7 @@ import chalk from 'chalk';
 import { createCommand } from 'commander';
 import nodeCleanup from 'node-cleanup';
 import updateNotifier from 'update-notifier';
-import { name, version } from '../package.json';
+import { name, version } from '../package.json' assert { type: 'json' };
 import { CdCli } from './CdCli/sys/cd-cli/models/cd-cli.model';
 import CdLog from './CdCli/sys/cd-comm/controllers/cd-logger.controller';
 import { setLogLevel } from './CdCli/sys/cd-comm/controllers/cd-winston';

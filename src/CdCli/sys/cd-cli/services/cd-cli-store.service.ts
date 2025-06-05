@@ -42,7 +42,7 @@ export class CdCliStoreService {
   }
 
   async createCdObj(
-    cdObjects: CdDescriptor[],
+    cdObjects: CdObjModel[],
   ): Promise<CdFxReturn<CdObjModel[]>> {
     try {
       const retArr: CdObjModel[] = [];

@@ -1,39 +1,65 @@
 {
   "compilerOptions": {
+    // 🧠 Compilation behavior
     "incremental": true,
-    "target": "ES2021", // Align with modern features
-    "lib": ["ES2021"], // Include modern libraries
-    "emitDecoratorMetadata": true, // Enable if using decorators
+    "target": "ES2021",
+    "lib": ["ES2021"],
+
+    // ⚙️ Decorators
+    "emitDecoratorMetadata": true,
     "experimentalDecorators": true,
-    "baseUrl": ".",
-    "rootDir": "src",
-    "module": "esnext", // Ensure ESM for compatibility
+
+    // 📦 Module system
+    "module": "ESNext",
     "moduleResolution": "node",
+
+    // 📁 Path aliases for development
+    "baseUrl": ".",
     "paths": {
       "@/*": ["./src/*"]
     },
+
+    // 🗂️ Directory management
+    "rootDir": "src",
+    "outDir": "dist",
+    "preserveSymlinks": true,
+
+    // ✅ Import support
     "resolveJsonModule": true,
-    "typeRoots": ["./node_modules/@types"],
+    "allowSyntheticDefaultImports": true,
+    "esModuleInterop": true,
+
+    // 🧪 Type safety
     "strict": true,
     "strictNullChecks": true,
     "noImplicitAny": false,
+
+    // 📝 Declaration and debugging
     "declaration": true,
-    "outDir": "dist",
     "sourceMap": true,
-    "allowSyntheticDefaultImports": true,
-    "esModuleInterop": true, // Ensure compatibility with ESM imports
+
+    // 🔍 File casing and skipping unnecessary checks
     "forceConsistentCasingInFileNames": true,
-    "skipLibCheck": true
+    "skipLibCheck": true,
+
+    // 📌 Add these for standalone module outputs
+    "declarationMap": true // Useful if you’ll expose your modules via registry
   },
+
+  // 🔍 Ensure inclusion of all dynamic or runtime-compiled paths
   "include": [
     "src/**/*",
     "src/types.d.ts",
-    "src/**/*.spec.ts",
     "src/devops-scripts/migration/**/*",
-    "src/CdCli/app/cd-ai/models/.model.ts"
+    "sdk/acl.service.ts.backup"
   ],
+
+  // ❌ Exclude unnecessary build-time directories
   "exclude": ["node_modules", "dist"],
+
+  // 🛠️ ts-node config (used in dev)
   "ts-node": {
-    "esm": true
+    "esm": true,
+    "experimentalSpecifierResolution": "node"
   }
 }

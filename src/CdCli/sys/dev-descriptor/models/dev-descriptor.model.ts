@@ -25,7 +25,7 @@ export interface TypeDetails extends BaseDescriptor {
 /**
  * Utility function to convert CdDescriptor into CdObjModel
  */
-export function mapDescriptorToCdObj(descriptor: CdDescriptor): CdObjModel {
+export function mapDescriptorToCdObj(descriptor: CdObjModel): CdObjModel {
   console.log('DevDescriptorModel::mapDescriptorToCdObj()/starting...');
   const cdObj = new CdObjModel();
   cdObj.cdObjId = descriptor.cdObjId;

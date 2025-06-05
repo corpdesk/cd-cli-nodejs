@@ -30,9 +30,57 @@ export interface ProfileData {
   type: string; // Type of profile (e.g., 'ssh', 'api', etc.)
   typeId: number; // based on database records Type ID (e.g., 2 for SSH)
   owner: ProfileOwner; // Profile owner details (userId, groupId)
-  details: any; // Can be any. For example SSH connection details
+  details: IProfileDetails; // Can be varied. For example SSH connection details
   cdVault: CdVault[]; // for managing encrypted fields
   permissions: ProfilePermissions; // Permissions associated with this profile
+}
+
+export interface IProfileDetails {
+  /**
+   * A required field for any external service that exposes an API endpoint.
+   * This field is mandatory for HTTP-based services.
+   */
+  endpoint?: string;
+
+  // Non-endpoint, service-specific keys (Git, SSH, AI, etc.)
+  sshKey?: string | null;
+  cdApiDir?: string;
+  devServer?: string;
+  remoteUser?: string;
+
+  gitAccess?: {
+    gitHubUser?: string;
+    gitHubToken?: string;
+    baseRepoUrl?: string;
+  };
+
+  session?: {
+    jwt?: string | null;
+    ttl?: number;
+    userId?: number;
+    cd_token?: string;
+  };
+
+  apiKey?: {
+    name?: string;
+    value?: string | null;
+    encryptedValue?: string;
+    isEncrypted?: boolean;
+    encryptionMeta?: any;
+  };
+
+  organizationId?: string;
+  openAiProjectName?: string;
+  defaultRequestConfig?: {
+    model?: string;
+    temperature?: number;
+    max_tokens?: number;
+  };
+
+  cryptFields?: string[];
+  encrypted?: boolean;
+
+  [key: string]: any;
 }
 
 // ProfileOwner defines the user and group associated with the profile
@@ -266,10 +314,6 @@ export const PROFILE_CMD = {
       ],
       action: {
         execute: async (options) => {
-          // console.log(
-          //   'CdCliProfileModel::PROFILE_CMD::action/execute()/options:',
-          //   options,
-          // );
           console.log(
             'CdCliProfileModel::PROFILE_CMD::action/execute()/options._optionValues.file:',
             options._optionValues.file,

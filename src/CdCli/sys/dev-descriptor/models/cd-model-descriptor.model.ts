@@ -1,8 +1,8 @@
-import type { BaseDescriptor } from '../../dev-descriptor/models/base-descriptor.model';
-import type { DependencyDescriptor } from '../../dev-descriptor/models/dependancy-descriptor.model';
+import type { BaseDescriptor } from './base-descriptor.model';
+import type { DependencyDescriptor } from './dependancy-descriptor.model';
 
 export interface CdModelDescriptor extends BaseDescriptor {
-  module: string; // The module to which this model belongs
+  module?: string; // The module to which this model belongs
   parent?: string; // Parent model (if part of a hierarchical structure)
   dependencies?: DependencyDescriptor[]; // Other models this model is related to
   relationships?: RelationshipDescriptor[]; // Model relationships

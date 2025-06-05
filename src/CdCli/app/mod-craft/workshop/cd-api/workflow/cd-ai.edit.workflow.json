@@ -1,0 +1,49 @@
+{
+  "method": "json",
+  "process": "update",
+  "workflow": {
+    "cICdPipeline": {
+      "name": "Module Edit Pipeline",
+      "type": "integration",
+      "stages": [
+        {
+          "name": "Iterative Development",
+          "tasks": [
+            {
+              "name": "test-module",
+              "type": "method",
+              "executor": "cd-cli",
+              "className": "CdModuleService",
+              "methodName": "testModule",
+              "status": "pending"
+            },
+            {
+              "name": "modify-module",
+              "type": "method",
+              "executor": "cd-cli",
+              "className": "CdModuleService",
+              "methodName": "modifyModule",
+              "status": "pending"
+            },
+            {
+              "name": "add-new-features",
+              "type": "method",
+              "executor": "cd-cli",
+              "className": "CdModuleService",
+              "methodName": "addFeatures",
+              "status": "pending"
+            },
+            {
+              "name": "sync-to-repo",
+              "type": "method",
+              "executor": "cd-cli",
+              "className": "CdModuleService",
+              "methodName": "syncToRepository",
+              "status": "pending"
+            }
+          ]
+        }
+      ]
+    }
+  }
+}

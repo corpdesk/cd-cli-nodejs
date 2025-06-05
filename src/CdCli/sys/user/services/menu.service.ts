@@ -16,7 +16,7 @@ import { AclService } from '../../moduleman/services/acl.service';
 import { GroupMemberService } from '../../user/services/group-member.service';
 import { BaseService } from '../../base/base.service';
 import { GroupService } from '../../user/services/group.service';
-import { MenuViewModel } from '../models/menu-view.model';
+// import { MenuViewModel } from '../models/menu-view.model';
 import {
   CreateIParams,
   IAllowedModules,
@@ -25,17 +25,21 @@ import {
   IServiceInput,
   ISessionDataExt,
 } from '../../base/IBase';
-import { MenuModel } from '../models/menu.model';
-import { CdObjService } from './cd-obj.service';
-import { CdObjModel } from '../models/cd-obj.model';
+// import { MenuModel } from '../models/menu.model';
+// import { CdObjService } from './cd-obj.service';
+// import { CdObjModel } from '../models/cd-obj.model';
 import { Logging } from '../../base/winston.log';
+import { MenuModel } from '../../moduleman/models/menu.model';
+import { CdObjService } from '../../moduleman/services/cd-obj.service';
+import { CdObjModel } from '../../moduleman/models/cd-obj.model';
+import { MenuViewModel } from '../../moduleman/models/menu-view.model';
 
 const menuCache = new CacheContainer(new MemoryStorage());
 
 export class MenuService {
   logger: Logging;
-  b: BaseService;
-  srvGroup: GroupService;
+  b: BaseService<MenuModel>;
+  srvGroup?: GroupService;
   srvGroupMember: GroupMemberService;
   srvAcl: AclService;
   cuid;
@@ -123,7 +127,7 @@ export class MenuService {
     }
   }
 
-  async createI(req, res, createIParams: CreateIParams) {
+  async createI(req, res, createIParams: CreateIParams<MenuModel>) {
     return await this.b.createI(req, res, createIParams);
   }
 
@@ -162,14 +166,14 @@ export class MenuService {
   async beforeCreate(req, res) {
     const cdObjQuery = req.post.dat.f_vals[0].cdObj;
     const svCdObj = new CdObjService();
-    const si = {
+    const si: IServiceInput<CdObjModel> = {
       serviceInstance: svCdObj,
       serviceModel: CdObjModel,
       serviceModelInstance: svCdObj.serviceModel,
       docName: 'Create Menu/beforeCreate',
       dSource: 1,
     };
-    const createIParams: CreateIParams = {
+    const createIParams: CreateIParams<CdObjModel> = {
       serviceInput: si,
       controllerData: cdObjQuery,
     };
@@ -192,7 +196,7 @@ export class MenuService {
   getMenu(req, res) {
     const f = this.b.getQuery(req);
     this.logger.logInfo('MenuService::getMenu/f:', f);
-    const serviceInput: IServiceInput = {
+    const serviceInput: IServiceInput<MenuViewModel> = {
       serviceModel: MenuViewModel,
       docName: 'MenuService::getMenu',
       cmd: {
@@ -293,7 +297,7 @@ export class MenuService {
     } else {
       filter = { moduleGuid: moduleData.moduleGuid, menuEnabled: true };
     }
-    const serviceInput: IServiceInput = {
+    const serviceInput: IServiceInput<MenuViewModel> = {
       // serviceInstance: this,
       serviceModel: MenuViewModel,
       docName: 'MenuService::getModuleMenu$',
@@ -394,7 +398,7 @@ export class MenuService {
             .filter((m) => m.menuParentId === parentId)
             .map((m) => ({
               ...m,
-              children: buildTree(m.menuId),
+              children: m.menuId !== undefined ? buildTree(m.menuId) : [],
             }));
         };
 
@@ -424,7 +428,8 @@ export class MenuService {
         console.log('MenuService::getRootMenuIds()/menuData:', menuData);
         return menuData
           .filter((m) => m.menuParentId === -1)
-          .map((m) => m.menuId);
+          .map((m) => m.menuId)
+          .filter((id): id is number => id !== undefined);
       }),
     );
   }
@@ -484,6 +489,9 @@ export class MenuService {
   ): MenuViewModel[] {
     // console.log('MenuService::getChildren/01:');
     const moduleMenuData = selectedMenu.moduleMenuData;
+    if (!moduleMenuData) {
+      return [];
+    }
     const data = moduleMenuData.filter((m) => {
       if (m.menuParentId === menuParentId) {
         return m;

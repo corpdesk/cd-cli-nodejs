@@ -1,5 +1,10 @@
 /* eslint-disable style/brace-style */
-import type { CdFxReturn, CdRequest, IQuery } from '../../base/IBase';
+import {
+  CD_FX_FAIL,
+  type CdFxReturn,
+  type CdRequest,
+  type IQuery,
+} from '../../base/IBase';
 import type { CdDescriptor } from '../models/dev-descriptor.model';
 import { HttpService } from '../../base/http.service';
 import CdLog from '../../cd-comm/controllers/cd-logger.controller';
@@ -34,11 +39,12 @@ export class CdAppService extends GenericService<CdObjModel> {
    */
   async create(d: CdDescriptor): Promise<CdFxReturn<null>> {
     try {
-      const payload = this.svDevDescriptors.setEnvelope('Create', { data: d });
-      const httpService = new HttpService();
-      await httpService.init(); // Ensure this is awaited
-      httpService.headers.data = payload;
-      return await httpService.proc3(httpService.headers);
+      // const payload = this.svDevDescriptors.setEnvelope('Create', { data: d });
+      // const httpService = new HttpService();
+      // await httpService.init(); // Ensure this is awaited
+      // httpService.headers.data = payload;
+      // return await httpService.proc3(httpService.headers);
+      return CD_FX_FAIL;
     } catch (error) {
       return {
         data: null,
@@ -55,13 +61,14 @@ export class CdAppService extends GenericService<CdObjModel> {
        * If null it is substituted by { where: {} }
        * Which would then fetch all the data
        */
-      const payload = this.svDevDescriptors.setEnvelope('Read', {
-        query: q ?? { where: {} },
-      });
-      const httpService = new HttpService();
-      await httpService.init(); // Ensure this is awaited
-      httpService.headers.data = payload;
-      return await httpService.proc3(httpService.headers);
+      // const payload = this.svDevDescriptors.setEnvelope('Read', {
+      //   query: q ?? { where: {} },
+      // });
+      // const httpService = new HttpService();
+      // await httpService.init(); // Ensure this is awaited
+      // httpService.headers.data = payload;
+      // return await httpService.proc3(httpService.headers);
+      return CD_FX_FAIL;
     } catch (error) {
       return {
         data: null,
@@ -73,11 +80,12 @@ export class CdAppService extends GenericService<CdObjModel> {
 
   async update(q: IQuery): Promise<CdFxReturn<null>> {
     try {
-      const payload = this.svDevDescriptors.setEnvelope('Update', { query: q });
-      const httpService = new HttpService();
-      await httpService.init(); // Ensure this is awaited
-      httpService.headers.data = payload;
-      return await httpService.proc3(httpService.headers);
+      // const payload = this.svDevDescriptors.setEnvelope('Update', { query: q });
+      // const httpService = new HttpService();
+      // await httpService.init(); // Ensure this is awaited
+      // httpService.headers.data = payload;
+      // return await httpService.proc3(httpService.headers);
+      return CD_FX_FAIL;
     } catch (error) {
       return {
         data: null,
@@ -89,11 +97,12 @@ export class CdAppService extends GenericService<CdObjModel> {
 
   async delete(q: IQuery): Promise<CdFxReturn<null>> {
     try {
-      const payload = this.svDevDescriptors.setEnvelope('Delete', { query: q });
-      const httpService = new HttpService();
-      await httpService.init(); // Ensure this is awaited
-      httpService.headers.data = payload;
-      return await httpService.proc3(httpService.headers);
+      // const payload = this.svDevDescriptors.setEnvelope('Delete', { query: q });
+      // const httpService = new HttpService();
+      // await httpService.init(); // Ensure this is awaited
+      // httpService.headers.data = payload;
+      // return await httpService.proc3(httpService.headers);
+      return CD_FX_FAIL;
     } catch (error) {
       return {
         data: null,

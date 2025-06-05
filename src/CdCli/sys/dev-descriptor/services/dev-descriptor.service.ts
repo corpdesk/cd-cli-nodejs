@@ -59,8 +59,62 @@ export class DevDescriptorService extends GenericService<CdObjModel> {
     }
   }
 
+  // async syncDescriptors(
+  //   d: CdDescriptor[],
+  //   db: 'mysql' | 'redis' | 'all' = 'all',
+  // ): Promise<CdFxReturn<ICdResponse | CdObjModel[]>> {
+  //   CdLog.debug(`DevDescriptorService::syncDescriptors() - Sync Target: ${db}`);
+
+  //   let mysqlResult: CdFxReturn<ICdResponse> | null = null;
+  //   let redisResult: CdFxReturn<CdObjModel[]> | null = null;
+
+  //   // Sync to MySQL if needed
+  //   if (db === 'mysql' || db === 'all') {
+  //     try {
+  //       const payload = this.setEnvelope('SyncDescriptors', { data: d });
+  //       this.httpService.headers.data = payload;
+  //       const httpService = new HttpService();
+  //       await httpService.init();
+  //       mysqlResult = await httpService.proc2(this.httpService.headers);
+
+  //       CdLog.debug(
+  //         `DevDescriptorService::syncDescriptors() - Synced ${d.length} descriptors to MySQL`,
+  //       );
+  //     } catch (error) {
+  //       return {
+  //         data: null,
+  //         state: false,
+  //         message: `MySQL Sync Failed: ${(error as Error).message}`,
+  //       };
+  //     }
+  //   }
+
+  //   // Sync to Redis if needed
+  //   if (db === 'redis' || db === 'all') {
+  //     try {
+  //       redisResult = await this.redisService.createCdObj(d);
+
+  //       CdLog.debug(
+  //         `DevDescriptorService::syncDescriptors() - Synced ${d.length} descriptors to Redis`,
+  //       );
+  //     } catch (error) {
+  //       return {
+  //         data: null,
+  //         state: false,
+  //         message: `Redis Sync Failed: ${(error as Error).message}`,
+  //       };
+  //     }
+  //   }
+
+  //   return {
+  //     data: mysqlResult?.data || redisResult?.data || null,
+  //     state: true,
+  //     message: `Sync to ${db} completed successfully.`,
+  //   };
+  // }
+
   async syncDescriptors(
-    d: CdDescriptor[],
+    d: CdObjModel[],
     db: 'mysql' | 'redis' | 'all' = 'all',
   ): Promise<CdFxReturn<ICdResponse | CdObjModel[]>> {
     CdLog.debug(`DevDescriptorService::syncDescriptors() - Sync Target: ${db}`);
@@ -72,10 +126,18 @@ export class DevDescriptorService extends GenericService<CdObjModel> {
     if (db === 'mysql' || db === 'all') {
       try {
         const payload = this.setEnvelope('SyncDescriptors', { data: d });
-        this.httpService.headers.data = payload;
-        const httpService = new HttpService();
-        await httpService.init();
-        mysqlResult = await httpService.proc2(this.httpService.headers);
+        const httpService = new HttpService(true); // Enable debug mode if needed
+        const profileName = 'cdApiLocal';
+
+        await httpService.init(profileName); // Initialize with profile
+        mysqlResult = await httpService.request<ICdResponse>(
+          {
+            method: 'POST',
+            url: '/',
+            data: payload,
+          },
+          profileName,
+        );
 
         CdLog.debug(
           `DevDescriptorService::syncDescriptors() - Synced ${d.length} descriptors to MySQL`,
@@ -113,6 +175,61 @@ export class DevDescriptorService extends GenericService<CdObjModel> {
     };
   }
 
+  // async syncDescriptorData(
+  //   descriptorData: any,
+  //   db: 'mysql' | 'redis' | 'all' = 'all',
+  // ): Promise<CdFxReturn<ICdResponse | CdObjModel[]>> {
+  //   CdLog.debug(
+  //     `DevDescriptorService::syncDescriptorData() - Sync Target: ${db}`,
+  //   );
+
+  //   let mysqlResult: CdFxReturn<ICdResponse> | null = null;
+  //   let redisResult: CdFxReturn<CdObjModel[]> | null = null;
+
+  //   if (db === 'mysql' || db === 'all') {
+  //     try {
+  //       const payload = this.setEnvelope('SyncDescriptorData', {
+  //         data: descriptorData,
+  //       });
+  //       this.httpService.headers.data = payload;
+  //       const httpService = new HttpService();
+  //       await httpService.init();
+  //       mysqlResult = await httpService.proc2(this.httpService.headers);
+
+  //       CdLog.debug(
+  //         'DevDescriptorService::syncDescriptorData() - Synced descriptor data to MySQL',
+  //       );
+  //     } catch (error) {
+  //       return {
+  //         data: null,
+  //         state: false,
+  //         message: `MySQL Sync Failed: ${(error as Error).message}`,
+  //       };
+  //     }
+  //   }
+
+  //   if (db === 'redis' || db === 'all') {
+  //     try {
+  //       redisResult = await this.redisService.createCdObj(descriptorData);
+
+  //       CdLog.debug(
+  //         'DevDescriptorService::syncDescriptorData() - Synced descriptor data to Redis',
+  //       );
+  //     } catch (error) {
+  //       return {
+  //         data: null,
+  //         state: false,
+  //         message: `Redis Sync Failed: ${(error as Error).message}`,
+  //       };
+  //     }
+  //   }
+
+  //   return {
+  //     data: mysqlResult?.data || redisResult?.data || null,
+  //     state: true,
+  //     message: `Sync to ${db} completed successfully.`,
+  //   };
+  // }
   async syncDescriptorData(
     descriptorData: any,
     db: 'mysql' | 'redis' | 'all' = 'all',
@@ -124,15 +241,25 @@ export class DevDescriptorService extends GenericService<CdObjModel> {
     let mysqlResult: CdFxReturn<ICdResponse> | null = null;
     let redisResult: CdFxReturn<CdObjModel[]> | null = null;
 
+    // Sync to MySQL
     if (db === 'mysql' || db === 'all') {
       try {
         const payload = this.setEnvelope('SyncDescriptorData', {
           data: descriptorData,
         });
-        this.httpService.headers.data = payload;
-        const httpService = new HttpService();
-        await httpService.init();
-        mysqlResult = await httpService.proc2(this.httpService.headers);
+
+        const httpService = new HttpService(true); // Optional: enable debug mode
+        const profileName = 'cdApiLocal';
+
+        await httpService.init(profileName);
+        mysqlResult = await httpService.request<ICdResponse>(
+          {
+            method: 'POST',
+            url: '/',
+            data: payload,
+          },
+          profileName,
+        );
 
         CdLog.debug(
           'DevDescriptorService::syncDescriptorData() - Synced descriptor data to MySQL',
@@ -146,6 +273,7 @@ export class DevDescriptorService extends GenericService<CdObjModel> {
       }
     }
 
+    // Sync to Redis
     if (db === 'redis' || db === 'all') {
       try {
         redisResult = await this.redisService.createCdObj(descriptorData);

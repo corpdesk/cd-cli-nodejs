@@ -159,6 +159,36 @@ export class GroupMemberService extends GenericService<GroupMemberModel> {
     }
   }
 
+  async getUserGroupsI(req, res, userGuid: string) {
+    // if (q === null) {
+    //     q = this.b.getQuery(req);
+    // }
+    const q = { where: { memberGuid: userGuid } };
+    console.log('GroupMemberService::getUserGroupsI/f:', q);
+    const serviceInput = {
+      serviceModel: GroupMemberModel,
+      docName: 'GroupMemberService::getUserGroupsI',
+      cmd: {
+        action: 'find',
+        query: q,
+      },
+      dSource: 1,
+    };
+    try {
+      return this.b.read(req, res, serviceInput);
+    } catch (e) {
+      console.log('GroupMemberService::getUserGroupsI()/e:', e);
+      this.b.err.push((e as Error).toString());
+      const i = {
+        messages: this.b.err,
+        code: 'GroupMemberService:getUserGroupsI',
+        app_msg: '',
+      };
+      await this.b.serviceErr(req, res, e, i.code);
+      await this.b.respond(req, res);
+    }
+  }
+
   beforeUpdate(q: any) {
     if (q.update.CoopEnabled === '') {
       q.update.CoopEnabled = null;

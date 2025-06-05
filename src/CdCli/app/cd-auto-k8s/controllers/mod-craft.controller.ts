@@ -30,7 +30,7 @@ export class ModCraftController {
   /**
    * Method to clone repository of module template to cd-cli for referencw when developing given module at development server
    * Usage:
-   * cd-cli template init --type=module-api --url=https://github.com/corpdesk/abcd.git
+   * cd-cli template init --type=cd-api --url=https://github.com/corpdesk/abcd.git
    * @param templateType
    * @param gitRepo
    */
@@ -121,11 +121,11 @@ export class ModCraftController {
    * Command Construction: The command is constructed dynamically based on the provided or selected profile data. The ssh -i flag is used if an SSH key is provided; otherwise, it defaults to using ssh without a key.
    *
    * Usaging Profile:
-   * cd-cli module init --type=module-api --repo=https://github.com/corpdesk/cd-geo --profile=devServer-ssh-profile
+   * cd-cli module init --type=cd-api --repo=https://github.com/corpdesk/cd-geo --profile=devServer-ssh-profile
    * This command will use the SSH settings from the devServer-ssh-profile profile to connect to the development server and clone the repository.
    *
    * Without profile:
-   * cd-cli module init --type=module-api --repo=https://github.com/corpdesk/cd-geo --dev-srv=192.168.1.70
+   * cd-cli module init --type=cd-api --repo=https://github.com/corpdesk/cd-geo --dev-srv=192.168.1.70
    * If no profile is specified, the user will be prompted to enter the SSH connection details (server, user, key, etc.).
    *
    */

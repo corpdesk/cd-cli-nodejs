@@ -2,13 +2,11 @@ import type { ContributorDescriptor } from './version-control.model';
 
 // Example Contributors
 const contributors: ContributorDescriptor = {
-  vendors: [
-    {
-      name: 'TechCorp Inc.',
-      contact: 'support@techcorp.com',
-      website: 'https://techcorp.com',
-    },
-  ],
+  vendor: {
+    name: 'TechCorp Inc.',
+    contact: 'support@techcorp.com',
+    website: 'https://techcorp.com',
+  },
   developers: [
     {
       name: 'John Doe',
@@ -38,13 +36,11 @@ const contributors: ContributorDescriptor = {
 
 // Default Contributor
 const defaultContributor: ContributorDescriptor = {
-  vendors: [
-    {
-      name: 'Default Vendor',
-      contact: 'default@vendor.com',
-      website: 'https://defaultvendor.com',
-    },
-  ],
+  vendor: {
+    name: 'Default Vendor',
+    contact: 'default@vendor.com',
+    website: 'https://defaultvendor.com',
+  },
   developers: [
     {
       name: 'Default Developer',
@@ -67,9 +63,10 @@ export function getContributorsByNames(
   names: string[],
   contributors: ContributorDescriptor,
 ): ContributorDescriptor {
-  const matchedVendors = contributors.vendors?.filter((vendor) =>
-    names.includes(vendor.name),
-  );
+  const matchedVendor =
+    contributors.vendor && names.includes(contributors.vendor.name)
+      ? contributors.vendor
+      : undefined;
 
   const matchedDevelopers = contributors.developers?.filter((developer) =>
     names.includes(developer.name),
@@ -81,9 +78,7 @@ export function getContributorsByNames(
 
   // Combine matched contributors, falling back to default if no matches
   return {
-    vendors: matchedVendors?.length
-      ? matchedVendors
-      : defaultContributor.vendors,
+    vendor: matchedVendor ?? defaultContributor.vendor,
     developers: matchedDevelopers?.length
       ? matchedDevelopers
       : defaultContributor.developers,

@@ -8,7 +8,7 @@ import { CdCliProfileController } from '../../cd-cli/controllers/cd-cli-profile.
 import CdLog from '../../cd-comm/controllers/cd-logger.controller';
 import { SessonController } from '../../user/controllers/session.controller';
 
-export class CdObjService {
+export class DevDescriptorService {
   cdToken = '';
   baseUrl = '';
   httpService;
@@ -74,7 +74,7 @@ export class CdObjService {
 
     const httpService = new HttpService();
     await httpService.init(); // Ensure this is awaited
-    return await httpService.proc2(this.headers); // Ensure this is awaited
+    return await httpService.proc(this.headers); // Ensure this is awaited
   }
 
   setEnvelopeGetCdObj(q: IQuery) {

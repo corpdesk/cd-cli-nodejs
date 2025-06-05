@@ -229,7 +229,7 @@ export class DependencyService extends GenericService<CdObjModel> {
       );
 
       if (!result.state) {
-        throw new Error(result.message);
+        throw new Error(result.message ?? 'Unknown error');
       }
 
       return {

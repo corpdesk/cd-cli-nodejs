@@ -65,7 +65,7 @@ export const MODULE_CMD = {
         {
           flags: '--type <templateType>',
           description:
-            'Type of the module template (e.g., module-api, module-frontend)',
+            'Type of the module template (e.g., cd-api, module-frontend)',
         },
         {
           flags: '--repo <gitRepo>',
@@ -105,7 +105,7 @@ export const TEMPLATE_CMD = {
         {
           flags: '--type <templateType>',
           description:
-            'Type of the module template (e.g., module-api, module-frontend)',
+            'Type of the module template (e.g., cd-api, module-frontend)',
         },
         {
           flags: '--url <gitRepo>',

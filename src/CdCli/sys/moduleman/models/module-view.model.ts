@@ -1,9 +1,9 @@
 import { ViewEntity, ViewColumn } from 'typeorm';
 
 @ViewEntity({
-    name: 'module_view',
-    synchronize: false,
-    expression: `
+  name: 'module_view',
+  synchronize: false,
+  expression: `
     SELECT
         module.module_id' AS 'module_id,
         module.module_guid' AS 'module_guid,
@@ -25,106 +25,76 @@ import { ViewEntity, ViewColumn } from 'typeorm';
             JOIN 'module' ON ((
                     group.group_guid = module.group_guid
                 )));
-    `
+    `,
 })
-
 export class ModuleViewModel {
-    @ViewColumn(
-        {
-            name: 'module_id'
-        }
-    )
-    moduleId: number;
+  @ViewColumn({
+    name: 'module_id',
+  })
+  moduleId?: number;
 
-    @ViewColumn(
-        {
-            name: 'module_guid'
-        }
-    )
-    moduleGuid?: string;
+  @ViewColumn({
+    name: 'module_guid',
+  })
+  moduleGuid?: string;
 
-    @ViewColumn(
-        {
-            name: 'module_name'
-        }
-    )
-    moduleName?: string;
+  @ViewColumn({
+    name: 'module_name',
+  })
+  moduleName?: string;
 
-    @ViewColumn(
-        {
-            name: 'module_description'
-        }
-    )
-    moduleDescription?: string;
+  @ViewColumn({
+    name: 'module_description',
+  })
+  moduleDescription?: string;
 
-    @ViewColumn(
-        {
-            name: 'module_type_id'
-        }
-    )
-    moduleTypeId?: number;
+  @ViewColumn({
+    name: 'module_type_id',
+  })
+  moduleTypeId?: number;
 
-    @ViewColumn(
-        {
-            name: 'module_is_public'
-        }
-    )
-    moduleIsPublic?: number;
+  @ViewColumn({
+    name: 'module_is_public',
+  })
+  moduleIsPublic?: number;
 
-    @ViewColumn(
-        {
-            name: 'is_sys_module'
-        }
-    )
-    isSysModule?: number;
+  @ViewColumn({
+    name: 'is_sys_module',
+  })
+  isSysModule?: number;
 
-    @ViewColumn(
-        {
-            name: 'doc_id'
-        }
-    )
-    docId?: string;
+  @ViewColumn({
+    name: 'doc_id',
+  })
+  docId?: string;
 
-    @ViewColumn(
-        {
-            name: 'module_enabled'
-        }
-    )
-    moduleEnabled?: boolean | number | null;
+  @ViewColumn({
+    name: 'module_enabled',
+  })
+  moduleEnabled?: boolean | number | null;
 
-    @ViewColumn(
-        {
-            name: 'group_guid'
-        }
-    )
-    groupGuid?: string;
+  @ViewColumn({
+    name: 'group_guid',
+  })
+  groupGuid?: string;
 
-    @ViewColumn(
-        {
-            name: 'group_name'
-        }
-    )
-    groupName?: string;
+  @ViewColumn({
+    name: 'group_name',
+  })
+  groupName?: string;
 
-    @ViewColumn(
-        {
-            name: 'group_owner_id'
-        }
-    )
-    groupOwnerId?: boolean | number | null;
+  @ViewColumn({
+    name: 'group_owner_id',
+  })
+  groupOwnerId?: boolean | number | null;
 
-    @ViewColumn(
-        {
-            name: 'group_type_id'
-        }
-    )
-    groupTypeId?: number;
+  @ViewColumn({
+    name: 'group_type_id',
+  })
+  groupTypeId?: number;
 
-    @ViewColumn(
-        {
-            name: 'company_id'
-        }
-    )
-    companyId?: string;
-
+  @ViewColumn({
+    name: 'company_id',
+  })
+  companyId?: string;
 }

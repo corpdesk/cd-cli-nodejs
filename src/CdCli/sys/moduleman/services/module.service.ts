@@ -309,7 +309,7 @@ export class ModuleService extends GenericService<ModuleModel> {
      */
     const moduleGroup: GroupModel = {
       groupGuid: this.newModule.moduleGuid,
-      groupName: this.newModule.moduleName,
+      groupName: this.newModule.moduleName ?? '',
       groupOwnerId: this.sessDataExt?.currentUser.userId!,
       groupTypeId: 2,
       groupEnabled: true,
@@ -473,7 +473,7 @@ export class ModuleService extends GenericService<ModuleModel> {
          * register cdObj and use the data to fill menu data
          */
         const cdObj: CdObjModel = {
-          cdObjName: menuItem.menuName,
+          cdObjName: menuItem.menuName ?? '',
           cdObjTypeGuid: '574c73a6-7e5b-40fe-aa89-e52ce1640f42', // menu_item
           parentModuleGuid: this.newModule.moduleGuid,
           cdObjDispName: menuItem.menuName,

@@ -49,6 +49,10 @@ export const CD_AUTO_GIT_CMD = {
       },
     },
     {
+      /**
+       * Usage example:
+       * cd-cli auto-git clone --repo-name abcXyz --repo-directory ~/cd-projects --git-host corpdesk
+       */
       name: 'clone',
       description: 'Clone an existing GitHub repository.',
       options: [

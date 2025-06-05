@@ -1,6 +1,7 @@
 import chalk from 'chalk';
 import CdLog from '@/CdCli/sys/cd-comm/controllers/cd-logger.controller';
-import { CdOpenAiController } from '@/CdCli/app/cd-ai/controllers/cd-ai.controller';
+import { CdOpenAiController } from '@/CdCli/app/cd-ai';
+// import { CdOpenAiController } from '@/CdCli/app/cd-ai/controllers/cd-ai.controller';
 
 export const generateCommand = {
   name: 'generate',

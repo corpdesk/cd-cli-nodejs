@@ -121,11 +121,7 @@ export class UserController {
 
       if (baseUrl) {
         await httpService.init();
-        const responseResult = await httpService.proc2({
-          method: 'POST',
-          url: '/',
-          data: payload,
-        });
+        const responseResult = await httpService.proc(payload);
         if (!responseResult.state || !responseResult.data) {
           return;
         }

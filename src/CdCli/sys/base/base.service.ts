@@ -48,6 +48,7 @@ import { createClient } from 'redis';
 import { from, Observable } from 'rxjs';
 import { SocketStore } from '../cd-push/models/cd-push-socket.model';
 import { QueryBuilderHelper } from '../utilities/query-builder-helper';
+import { TypeOrmDatasource } from './type-orm-connect';
 
 const USER_ANON = 1000;
 const INVALID_REQUEST = 'invalid request';
@@ -55,6 +56,9 @@ const INVALID_REQUEST = 'invalid request';
 export class BaseService<
   T extends ObjectLiteral,
 > extends AbstractBaseService<T> {
+  logTimeStamp(arg0: string) {
+    throw new Error('Method not implemented.');
+  }
   err: string[] = []; // error messages
   cuid = 1000;
   cdToken = '';
@@ -73,6 +77,9 @@ export class BaseService<
   redisClient;
   svRedis!: RedisService;
   db;
+  ds: any = null;
+  sqliteConn;
+  private repo: any;
   isInvalidFields: string[] = [];
   entityAdapter!: EntityAdapter;
 
@@ -103,6 +110,53 @@ export class BaseService<
   //   this.logger.logInfo("BaseService::init()/this.models:", this.models);
   // }
 
+  async init(req, res) {
+    this.logger.logDebug('BaseService::init()/01:');
+    try {
+      if (!this.db) {
+        this.db = new TypeOrmDatasource();
+        this.ds = await this.db.getConnection(); // ✅ Store DataSource
+      }
+      // this.logger.logDebug('BaseService::init()/this.models:', this.models);
+    } catch (e) {
+      this.logger.logDebug('BaseService::init()/02:');
+      this.logger.logDebug(
+        `BaseService::init() failed:${(e as Error).message}`,
+      );
+      this.err.push(`BaseService::init() failed:${(e as Error).message}`);
+    }
+  }
+
+  async setRepo(serviceInput: IServiceInput<T>) {
+    // const AppDataSource = await getDataSource();
+    // this.repo = AppDataSource.getRepository(serviceInput.serviceModel);
+    this.repo = this.ds.getRepository(serviceInput.serviceModel);
+  }
+
+  async initSqlite(req, res) {
+    const iMax = 5;
+    const i = 1;
+    try {
+      this.logger.logDebug('BaseService::initSqlite()/01');
+      if (this.sqliteConn) {
+        this.logger.logDebug('BaseService::initSqlite()/02');
+      } else {
+        this.logger.logDebug('BaseService::initSqlite()/03');
+        // await this.setSLConn(i)
+        this.sqliteConn = await this.db;
+      }
+    } catch (e) {
+      this.logger.logDebug('BaseService::initSqlite()/04');
+      // this.logger.logDebug('initSqlite()/Error:', e);
+      // const p = (e as Error).toString().search('AlreadyHasActiveConnectionError');
+      // if (p === -1 && i < iMax) {
+      //     i++;
+      //     await this.setSLConn(i);
+      // }
+      this.err.push((e as Error).toString());
+    }
+  }
+
   initCdResp(): ICdResponse {
     return {
       app_state: {
@@ -128,6 +182,27 @@ export class BaseService<
     };
   }
 
+  async resolveCls(req, res, clsCtx) {
+    try {
+      this.logger.logDebug('BaseService::resolveCls()/01:');
+      this.logger.logDebug('BaseService::resolveCls/clsCtx.path:', clsCtx.path);
+      const eImport = await import(clsCtx.path);
+      this.logger.logDebug('BaseService::resolveCls()/02:');
+      const eCls = eImport[clsCtx.clsName];
+      this.logger.logDebug('BaseService::resolveCls()/03:');
+      const cls = new eCls();
+      this.ds = clsCtx.dataSource;
+      this.logger.logDebug('BaseService::resolveCls()/04:');
+      if (this.sess) {
+        // set sessData in req so it is available thoughout the bootstrap
+        req.post.sessData = this.sess;
+      }
+      await cls[clsCtx.action](req, res);
+    } catch (e) {
+      this.serviceErr(req, res, e, 'BaseService:resolveCls');
+    }
+  }
+
   /**
    * 1. create new doc
    * 2. use docId to complete create
@@ -145,11 +220,7 @@ export class BaseService<
     serviceInput: IServiceInput<T>,
   ): Promise<CdFxReturn<T> | T | ICdResponse> {
     try {
-      if (
-        !serviceInput.serviceModel ||
-        !serviceInput.data ||
-        !serviceInput.dSource
-      ) {
+      if (!serviceInput.serviceModel || !serviceInput.data || !this.db) {
         return { data: null, state: false, message: 'Invalid input' };
       }
 
@@ -176,9 +247,7 @@ export class BaseService<
         (serviceInput.data as any).docId = newDocData.docId;
       }
 
-      const repository = serviceInput.dSource.getRepository(
-        serviceInput.serviceModel,
-      );
+      const repository = this.db.getRepository(serviceInput.serviceModel);
       const entityInstance = repository.create(
         serviceInput.data as DeepPartial<T>,
       );
@@ -245,7 +314,7 @@ export class BaseService<
     let serviceRepository = null;
 
     try {
-      const repository = serviceInput.dSource!.getRepository(
+      const repository = this.db.getRepository(
         createIParams.serviceInput.serviceModel,
       );
       const entityInstance = repository.create(
@@ -277,9 +346,34 @@ export class BaseService<
     }
   }
 
+  async createSL(req, res, serviceInput: IServiceInput<T>) {
+    try {
+      const repo: any = await this.sqliteConn.getRepository(
+        serviceInput.serviceModel,
+      );
+      const pl = this.getPlData(req);
+      return await repo.save(pl);
+    } catch (e) {
+      this.err.push((e as Error).toString());
+      const i = {
+        messages: this.err,
+        code: 'BillService:create',
+        app_msg: '',
+      };
+      await this.serviceErr(req, res, e, 'BillService:create');
+      return this.cdResp;
+    }
+  }
+
+  connSLClose() {
+    if (this.sqliteConn) {
+      this.sqliteConn.close();
+    }
+  }
+
   async saveDoc(req, res, serviceInput: IServiceInput<T>) {
     const doc: DocModel = await this.setDoc(req, res, serviceInput);
-    const docRepository = serviceInput.dSource!.getRepository(DocModel);
+    const docRepository = this.db.getRepository(DocModel);
     return await docRepository.save(doc);
   }
 
@@ -310,17 +404,11 @@ export class BaseService<
     serviceInput: IServiceInput<T>,
   ): Promise<CdFxReturn<T[]> | T[] | ICdResponse> {
     try {
-      if (
-        !serviceInput.serviceModel ||
-        !serviceInput.cmd?.query ||
-        !serviceInput.dSource
-      ) {
+      if (!serviceInput.serviceModel || !serviceInput.cmd?.query || !this.db) {
         return { data: null, state: false, message: 'Invalid query' };
       }
 
-      const repository = serviceInput.dSource.getRepository(
-        serviceInput.serviceModel,
-      );
+      const repository = this.db.getRepository(serviceInput.serviceModel);
       const results = await repository.find(serviceInput.cmd.query);
 
       if (req) {
@@ -333,7 +421,7 @@ export class BaseService<
       if (req) {
         return this.cdResp;
       } else {
-        return { state: false, data: null, message: e.toString() };
+        return { state: false, data: null, message: (e as Error).toString() };
       }
     }
   }
@@ -344,17 +432,11 @@ export class BaseService<
 
   async readCount(req, res, serviceInput: IServiceInput<T>): Promise<any> {
     try {
-      if (
-        !serviceInput.serviceModel ||
-        !serviceInput.cmd?.query ||
-        !serviceInput.dSource
-      ) {
+      if (!serviceInput.serviceModel || !serviceInput.cmd?.query || !this.db) {
         return { data: null, state: false, message: 'Invalid query' };
       }
 
-      const repo = serviceInput.dSource.getRepository(
-        serviceInput.serviceModel,
-      );
+      const repo = this.db.getRepository(serviceInput.serviceModel);
       let q: IQuery;
       if (req) {
         q = this.getQuery(req);
@@ -373,12 +455,134 @@ export class BaseService<
     }
   }
 
+  async feildMapSL(req, res, serviceInput: IServiceInput<T>) {
+    await this.initSqlite(req, res);
+    // this.logger.logDebug('BaseService::feildMapSL()/this.sqliteConn:', this.sqliteConn)
+    this.logger.logDebug(
+      'BaseService::feildMapSL()/serviceInput:',
+      serviceInput.serviceModel,
+    );
+    const meta = await this.ds.getMetadata(serviceInput.serviceModel).columns;
+    return await meta.map(async (c) => {
+      return {
+        propertyPath: await c.propertyPath,
+        givenDatabaseName: await c.givenDatabaseName,
+        dType: await c.type,
+      };
+    });
+  }
+
+  async readSL(req, res, serviceInput: IServiceInput<T>): Promise<any> {
+    try {
+      this.initSqlite(req, res);
+      // const repo = this.sqliteConn.getRepository(serviceInput.serviceModel);
+      await this.setRepo(serviceInput);
+      // this.setRepo(serviceInput.serviceModel)
+      const repo: any = this.repo;
+      const svSess = new SessionService();
+      // const billRepository = this.sqliteConn.getRepository(BillModel)
+      // const allBills = await billRepository.find()
+      // this.logger.logDebug('allBills:', allBills)
+      // this.i.app_msg = '';
+      // this.setAppState(true, this.i, svSess.sessResp);
+      // this.cdResp.data = allBills;
+      // const r = await this.respond(req, res);
+
+      let r: any = null;
+      switch (serviceInput.cmd?.action) {
+        case 'find':
+          try {
+            r = await repo.find(serviceInput.cmd.query);
+            if (serviceInput.extraInfo) {
+              return {
+                result: r,
+                fieldMap: await this.feildMapSL(req, res, serviceInput),
+              };
+            } else {
+              return await r;
+            }
+          } catch (err) {
+            return await this.serviceErr(req, res, err, 'BillService:read');
+          }
+          break;
+        case 'count':
+          try {
+            r = await repo.count(serviceInput.cmd.query);
+            this.logger.logDebug('BillService::read()/r:', r);
+            return r;
+          } catch (err) {
+            return await this.serviceErr(req, res, err, 'BillService:read');
+          }
+          break;
+      }
+      // this.serviceErr(res, err, 'BaseService:read');
+    } catch (e) {
+      return await this.serviceErr(req, res, e, 'BillService:read');
+    }
+  }
+
   readCount$(req, res, serviceInput): Observable<any> {
     this.logger.logDebug(
       'BaseService::readCount$()/serviceInput:',
       serviceInput,
     );
     return from(this.readCount(req, res, serviceInput));
+  }
+
+  async readCountSL(req, res, serviceInput): Promise<any> {
+    await this.initSqlite(req, res);
+    try {
+      // const repo = this.sqliteConn.getRepository(serviceInput.serviceModel);
+      await this.setRepo(serviceInput);
+      // this.setRepo(serviceInput.serviceModel)
+      const repo: any = this.repo;
+      const meta = await this.getEntityPropertyMapSL(
+        req,
+        res,
+        serviceInput.serviceModel,
+      );
+      const [result, total] = await repo.findAndCount(this.getQuery(req));
+      return {
+        metaData: meta,
+        items: result,
+        count: total,
+      };
+    } catch (err) {
+      return await this.serviceErr(req, res, err, 'BaseService:readCount');
+    }
+  }
+
+  async getEntityPropertyMapSL(req, res, model) {
+    await this.initSqlite(req, res);
+    const entityMetadata: EntityMetadata = await this.ds.getMetadata(model);
+    const cols = await entityMetadata.columns;
+    // this.logger.logDebug('BaseService::getEntityPropertyMapSL()/cols:', cols)
+    const colsFiltdArr: {
+      propertyAliasName: string;
+      databaseNameWithoutPrefixes: string;
+      type: any;
+    }[] = [];
+    const colsFiltd = await cols.map(async (col) => {
+      const ret = {
+        propertyAliasName: await col.propertyAliasName,
+        databaseNameWithoutPrefixes: await col.databaseNameWithoutPrefixes,
+        type: await col.type,
+      };
+      // this.logger.logDebug('getEntityPropertyMapSL()/ret:', {ret: JSON.stringify(ret)});
+      colsFiltdArr.push(ret);
+      return ret;
+    });
+    // this.logger.logDebug('BaseService::getEntityPropertyMapSL()/colsFiltd:', await colsFiltd)
+    // this.logger.logDebug('BaseService::getEntityPropertyMapSL()/colsFiltdArr:', await colsFiltdArr)
+    return colsFiltdArr;
+  }
+
+  readCountSL$(req, res, serviceInput): Observable<any> {
+    return from(this.readCountSL(req, res, serviceInput));
+  }
+
+  readSL$(req, res, serviceInput): Observable<any> {
+    return from(this.readSL(req, res, serviceInput));
   }
 
   /**
@@ -388,15 +592,11 @@ export class BaseService<
    * class converts them to typeorm query builder.
    */
   async readQB(req, res, serviceInput: IServiceInput<T>): Promise<any> {
-    if (
-      !serviceInput.serviceModel ||
-      !serviceInput.cmd?.query ||
-      !serviceInput.dSource
-    ) {
+    if (!serviceInput.serviceModel || !serviceInput.cmd?.query || !this.db) {
       return { data: null, state: false, message: 'Invalid query' };
     }
 
-    const repo = serviceInput.dSource.getRepository(serviceInput.serviceModel);
+    const repo = this.db.getRepository(serviceInput.serviceModel);
     // Create the helper instance
     const queryBuilderHelper = new QueryBuilderHelper(repo);
 
@@ -451,15 +651,11 @@ export class BaseService<
     jsonField: string,
     keys: string[],
   ): Promise<any> {
-    if (
-      !serviceInput.serviceModel ||
-      !serviceInput.cmd?.query ||
-      !serviceInput.dSource
-    ) {
+    if (!serviceInput.serviceModel || !serviceInput.cmd?.query || !this.db) {
       return { data: null, state: false, message: 'Invalid query' };
     }
 
-    const repo = serviceInput.dSource.getRepository(serviceInput.serviceModel);
+    const repo = this.db.getRepository(serviceInput.serviceModel);
     const queryBuilderHelper = new QueryBuilderHelper(repo);
     const queryBuilder = queryBuilderHelper.createQueryBuilder(serviceInput);
 
@@ -540,15 +736,13 @@ export class BaseService<
       if (
         !serviceInput.serviceModel ||
         !serviceInput.cmd?.query ||
-        !serviceInput.dSource ||
+        !this.db ||
         !serviceInput.cmd.query.update // Ensure update is present
       ) {
         return { data: null, state: false, message: 'Invalid update request' };
       }
 
-      const repository = serviceInput.dSource.getRepository(
-        serviceInput.serviceModel,
-      );
+      const repository = this.db.getRepository(serviceInput.serviceModel);
 
       // Ensure update is cast to the correct TypeORM update type
       const updateData = serviceInput.cmd.query
@@ -573,9 +767,13 @@ export class BaseService<
       if (req) {
         return this.cdResp;
       } else {
-        return { state: false, data: null, message: e.toString() };
+        return { state: false, data: null, message: (e as Error).toString() };
       }
     }
+  }
+
+  update$(req, res, serviceInput) {
+    return from(this.update(req, res, serviceInput));
   }
 
   async updateI(
@@ -590,9 +788,7 @@ export class BaseService<
 
       const serviceInput = createIParams.serviceInput;
 
-      const repository = serviceInput.dSource!.getRepository(
-        serviceInput.serviceModel,
-      );
+      const repository = this.db.getRepository(serviceInput.serviceModel);
 
       // Ensure update is cast to the correct TypeORM update type
       const updateData = serviceInput.cmd!.query
@@ -617,9 +813,94 @@ export class BaseService<
       if (req) {
         return this.cdResp;
       } else {
-        return { state: false, data: null, message: e.toString() };
+        return { state: false, data: null, message: (e as Error).toString() };
       }
     }
+  }
+
+  async updateSL(req, res, serviceInput: IServiceInput<T>) {
+    this.logger.logDebug('BillService::updateSL()/01');
+    await this.initSqlite(req, res);
+    const svSess = new SessionService();
+    // const repo: any = await this.sqliteConn.getRepository(serviceInput.serviceModel);
+    // this.setRepo(serviceInput.serviceModel)
+    await this.setRepo(serviceInput);
+    const repo: any = this.repo;
+    const result = await repo.update(
+      serviceInput.cmd?.query.where,
+      await this.fieldsAdaptorSL(
+        req,
+        res,
+        serviceInput.cmd?.query.update,
+        serviceInput,
+      ),
+    );
+    this.logger.logDebug('result:', result);
+    // this.cdResp.data = ret;
+    svSess.sessResp.ttl = svSess.getTtl();
+    this.setAppState(true, this.i, svSess.sessResp);
+    this.cdResp.data = result;
+    this.respond(req, res);
+  }
+
+  updateSL$(req, res, serviceInput) {
+    return from(this.updateSL(req, res, serviceInput));
+  }
+
+  async fieldsAdaptorSL(req, res, fieldsData: any, serviceInput) {
+    // get model properties
+    const propMap = await this.feildMapSL(req, res, serviceInput);
+    for (const fieldName in fieldsData) {
+      if (fieldName) {
+        const fieldMapData: any = propMap.filter(
+          (f: any) => f.propertyPath === fieldName,
+        );
+
+        /**
+         * adapt boolean values as desired
+         * in the current case, typeorm rejects 1, "1" as boolean so
+         * we convert them as desired;
+         */
+        if (fieldMapData[0]) {
+          if (this.fieldIsBoolean(fieldMapData[0].dType)) {
+            if (this.isTrueish(fieldsData[fieldName])) {
+              fieldsData[fieldName] = true;
+            } else {
+              fieldsData[fieldName] = false;
+            }
+          }
+        }
+      }
+    }
+    return fieldsData;
+  }
+
+  // fieldIsBoolean(fieldType): boolean {
+  //   return (
+  //     fieldTyp(e as Error).toString() === 'function Boolean() { [native code] }'
+  //   );
+  // }
+  fieldIsBoolean(fieldType): boolean {
+    return fieldType.toString() === 'function Boolean() { [native code] }';
+  }
+
+  isTrueish(val) {
+    let ret = false;
+    switch (val) {
+      case true:
+        ret = true;
+        break;
+      case 'true':
+        ret = true;
+        break;
+      case 1:
+        ret = true;
+        break;
+      case '1':
+        ret = true;
+        break;
+    }
+    return ret;
   }
 
   async delete(
@@ -628,17 +909,11 @@ export class BaseService<
     serviceInput: IServiceInput<T>,
   ): Promise<CdFxReturn<DeleteResult> | DeleteResult | ICdResponse> {
     try {
-      if (
-        !serviceInput.serviceModel ||
-        !serviceInput.cmd?.query ||
-        !serviceInput.dSource
-      ) {
+      if (!serviceInput.serviceModel || !serviceInput.cmd?.query || !this.db) {
         return { data: null, state: false, message: 'Invalid delete request' };
       }
 
-      const repository = serviceInput.dSource.getRepository(
-        serviceInput.serviceModel,
-      );
+      const repository = this.db.getRepository(serviceInput.serviceModel);
       const deleteResult = await repository.delete(
         serviceInput.cmd.query.where,
       );
@@ -657,8 +932,76 @@ export class BaseService<
       if (req) {
         return this.cdResp;
       } else {
-        return { state: false, data: null, message: e.toString() };
+        return { state: false, data: null, message: (e as Error).toString() };
       }
+    }
+  }
+
+  delete$(req, res, serviceInput) {
+    return from(this.delete(req, res, serviceInput));
+  }
+
+  async deleteSL(req, res, serviceInput: IServiceInput<T>) {
+    this.logger.logDebug('BillService::updateSL()/01');
+    let ret: any = [];
+    // await this.initSqlite(req, res);
+    const repo = await this.sqliteConn.getRepository(serviceInput.serviceModel);
+    const result = await repo.delete(serviceInput.cmd?.query.where);
+    this.logger.logDebug('BaseService::deleteSL()/result:', result);
+    if ('affected' in result) {
+      this.cdResp.app_state.success = true;
+      if (this.cdResp.app_state.info) {
+        this.cdResp.app_state.info.app_msg = `${result.affected} record/s deleted`;
+      }
+      ret = result;
+    } else {
+      this.cdResp.app_state.success = false;
+      if (this.cdResp.app_state.info) {
+        this.cdResp.app_state.info.app_msg = `some error occorred`;
+      }
+    }
+    return ret;
+  }
+
+  deleteSL$(req, res, serviceInput) {
+    return from(this.deleteSL(req, res, serviceInput));
+  }
+
+  isEmptyObject(obj: any): boolean {
+    return Object.keys(obj).length === 0;
+  }
+
+  async bFetch(req, res, serviceInput: IServiceInput<T>) {
+    try {
+      this.logger.logDebug('BaseService::fetch()/01');
+
+      if (!serviceInput.fetchInput) {
+        throw new Error('fetchInput is undefined');
+      }
+      const response: any = await fetch(
+        serviceInput.fetchInput.url,
+        serviceInput.fetchInput.optins,
+      );
+      // If using node-fetch or undici, .json() is available; otherwise, parse manually
+      const text = await response.text();
+      let data;
+      try {
+        data = JSON.parse(text);
+      } catch (e) {
+        data = text;
+      }
+      // this.logger.logDebug(JSON.stringify(data, null, 2));
+      return data;
+    } catch (e) {
+      this.err.push((e as Error).toString());
+      const i = {
+        messages: this.err,
+        code: 'BaseService:update',
+        app_msg: '',
+      };
+      // await this.setAppState(false, i, null);
+      await this.serviceErr(req, res, e, i.code);
+      return this.cdResp;
     }
   }
 
@@ -668,18 +1011,18 @@ export class BaseService<
     const svSess = new SessionService();
     try {
       svSess.sessResp.cd_token = req.post.dat.token;
-    } catch (er) {
+    } catch (e) {
       svSess.sessResp.cd_token = '';
-      this.err.push(e.toString(er));
+      this.err.push((e as Error).toString());
     }
 
     svSess.sessResp.ttl = svSess.getTtl();
     this.setAppState(true, this.i, svSess.sessResp);
-    this.err.push(e.toString());
+    this.err.push((e as Error).toString());
     const i = {
       messages: await this.err,
       code: eCode,
-      app_msg: `Error at ${eCode}: ${e.toString()}`,
+      app_msg: `Error at ${eCode}: ${(e as Error).toString()}`,
     };
     await this.setAppState(false, i, svSess.sessResp);
     this.cdResp.data = [];
@@ -796,23 +1139,29 @@ export class BaseService<
     return true;
   }
 
-  async validateUnique(req, res, serviceInput: IServiceInput<T>) {
+  siGet<T>(q: IQuery, dn: string, model: new () => T): IServiceInput<T> {
+    return {
+      serviceModel: model,
+      docName: dn,
+      cmd: {
+        action: 'find',
+        query: q,
+      },
+      dSource: 1,
+    };
+  }
+
+  async validateUnique(req, res, serviceInput) {
     this.logger.logDebug('BaseService::validateUnique()/01');
     this.logger.logDebug('BaseService::validateUnique()/req.post:', {
       reqPost: JSON.stringify(req.post),
     });
 
-    if (
-      !serviceInput.serviceModel ||
-      !serviceInput.cmd?.query ||
-      !serviceInput.dSource
-    ) {
+    if (!serviceInput.serviceModel || !serviceInput.cmd?.query || !this.db) {
       return { data: null, state: false, message: 'Invalid query' };
     }
 
-    const baseRepository = serviceInput.dSource.getRepository(
-      serviceInput.serviceModel,
-    );
+    const baseRepository = this.db.getRepository(serviceInput.serviceModel);
 
     // const baseRepository: any = await this.repo(req, res, params.model)
     // const baseRepository: any = await this.repo
@@ -858,7 +1207,7 @@ export class BaseService<
       ret = true;
     } else {
       this.err.push('duplicate not allowed');
-      // console.log('BaseService::create()/Error:', e.toString())
+      // console.log('BaseService::create()/Error:', (e as Error).toString())
       const i = {
         messages: this.err,
         code: 'BaseService:validateUnique',
@@ -868,6 +1217,86 @@ export class BaseService<
     }
     this.logger.logDebug('BaseService::validateUnique()/ret:', { return: ret });
     return ret;
+  }
+
+  async validateUniqueI(req, res, params: CreateIParams<T>) {
+    this.logger.logDebug('BaseService::validateUniqueI()/01');
+    this.logger.logDebug('BaseService::validateUniqueI()/req.post:', req.post);
+    this.logger.logDebug(
+      'BaseService::validateUniqueI()/req.post.dat.f_vals[0]:',
+      req.post.dat.f_vals[0],
+    );
+    this.logger.logDebug('BaseService::validateUniqueI()/params:', params);
+    await this.init(req, res);
+    // assign payload data to this.userModel
+    //** */ params.controllerInstance.userModel = this.getPlData(req);
+    // set connection
+    const baseRepository = this.db.getRepository(
+      params.serviceInput.serviceModel,
+    );
+    this.logger.logDebug('BaseService::validateUniqueI()/repo/model:', {
+      model: params.serviceInput.serviceModel,
+    });
+
+    this.logger.logDebug(
+      'BaseService::validateUniqueI()/params.serviceInput:',
+      params.serviceInput,
+    );
+    // const filterItems = await JSON.parse(strQueryItems)
+    const filterItems = await this.duplicateFilter(
+      params.controllerData,
+      params.serviceInput.serviceInstance.cRules.noDuplicate,
+    );
+    this.logger.logDebug(
+      'BaseService::validateUniqueI()/filterItems:',
+      filterItems,
+    );
+    // execute the query
+    const results = await baseRepository.count({
+      where: await filterItems,
+    });
+    this.logger.logDebug('BaseService::validateUniqueI()/results:', results);
+    // return boolean result
+    let ret = false;
+    if (results === 0) {
+      ret = true;
+    } else {
+      this.err.push('duplicate not allowed');
+      // this.logger.logDebug('BaseService::create()/Error:', (e as Error).toString())
+      const i = {
+        messages: this.err,
+        code: 'BaseService:validateUniqueI',
+        app_msg: '',
+      };
+      await this.setAppState(false, i, null);
+    }
+    this.logger.logDebug('BaseService::validateUniqueI()/ret:', {
+      return: ret,
+    });
+    return ret;
+  }
+
+  async duplicateFilter<T extends Record<string, any>>(
+    controllerData: T,
+    noDuplicate: string[],
+  ): Promise<Partial<T>> {
+    this.logger.logDebug(
+      'BaseService::duplicateFilter()/controllerData:',
+      controllerData,
+    );
+    this.logger.logDebug(
+      'BaseService::duplicateFilter()/noDuplicate:',
+      noDuplicate,
+    );
+    const filteredData = {} as Partial<T>;
+
+    for (const field of noDuplicate) {
+      if (Object.prototype.hasOwnProperty.call(controllerData, field)) {
+        (filteredData as Record<string, any>)[field] = controllerData[field];
+      }
+    }
+
+    return filteredData;
   }
 
   async validateRequired(req, res, cRules): Promise<boolean> {
@@ -896,9 +1325,7 @@ export class BaseService<
     // console.log('BaseService::getEntityPropertyMap()/model:', model)
     // const entityMetadata: EntityMetadata =
     //   await getConnection().getMetadata(model);
-    const entityMetadata = serviceInput.dSource?.getMetadata(
-      serviceInput.serviceModel,
-    );
+    const entityMetadata = this.db?.getMetadata(serviceInput.serviceModel);
     if (!entityMetadata) {
       return;
     }
@@ -1269,8 +1696,108 @@ export class BaseService<
       return jsonData; // Return the updated JSON data
     } catch (e: any) {
       // Catch unexpected errors and log them
-      this.err.push(e.toString());
+      this.err.push((e as Error).toString());
       return null;
+    }
+  }
+
+  async updateJSONColumnQB(
+    req,
+    res,
+    serviceInput: IServiceInput<any>,
+    jsonField: string,
+    updates: Record<string, any>,
+  ): Promise<any> {
+    await this.init(req, res);
+    this.logger.logDebug(
+      'BaseService::updateJSONColumnQB()/repo/model:',
+      serviceInput.serviceModel,
+    );
+    await this.setRepo(serviceInput);
+
+    // Helper function to generate JSON_SET paths recursively
+    // const buildJsonSetPaths = (jsonField: string, obj: any, prefix: string = ''): string[] => {
+    //     return Object.keys(obj).map(key => {
+    //         const path = `${prefix}${prefix ? '.' : ''}${key}`;
+    //         if (typeof obj[key] === 'object' && obj[key] !== null) {
+    //             // Recursively handle nested objects
+    //             return buildJsonSetPaths(jsonField, obj[key], path).join(', ');
+    //         } else {
+    //             return `JSON_SET(${jsonField}, '$.${path}', '${obj[key]}')`;
+    //         }
+    //     }).filter(Boolean);
+    // };
+    const buildJsonSetPaths = (
+      jsonField: string,
+      obj: any,
+      prefix: string = '',
+    ): string[] => {
+      return Object.keys(obj)
+        .map((key) => {
+          const path = `${prefix}${prefix ? '.' : ''}${key}`;
+          if (typeof obj[key] === 'object' && obj[key] !== null) {
+            // Recursively handle nested objects
+            return buildJsonSetPaths(jsonField, obj[key], path).join(', ');
+          } else {
+            // Use COALESCE to ensure JSON is initialized if null
+            return `JSON_SET(COALESCE(${jsonField}, '{}'), '$.${path}', '${obj[key]}')`;
+          }
+        })
+        .filter(Boolean);
+    };
+
+    // Generate the JSON_SET update query for the jsonField
+    const updateFields = buildJsonSetPaths(jsonField, updates).join(', ');
+
+    // this.logger.logDebug(
+    //   "BaseService::updateJSONColumnQB()/updates:",
+    //   JSON.stringify(updates)
+    // );
+    // this.logger.logDebug(
+    //   "BaseService::updateJSONColumnQB()/updateFields:",
+    //   JSON.stringify(updateFields)
+    // );
+
+    // Start building the query using the input provided in serviceInput.cmd.query
+    const queryBuilder = this.repo
+      .createQueryBuilder()
+      .update(serviceInput.serviceModel);
+
+    // Handle dynamic update fields using the update property from QueryInput
+    if (serviceInput.cmd?.query.update) {
+      queryBuilder.set(serviceInput.cmd.query.update);
+    } else {
+      // Fallback: use the JSON field update if no generic update is provided
+      queryBuilder.set({ [jsonField]: () => updateFields });
+    }
+
+    // Dynamically handle where conditions from QueryInput or use dynamic primary key
+    if (serviceInput.cmd?.query.where) {
+      Object.keys(serviceInput.cmd.query.where).forEach((key) => {
+        queryBuilder.andWhere(`${key} = :${key}`, {
+          [key]: serviceInput.cmd?.query.where[key],
+        });
+      });
+    } else {
+      // Fallback: Use the primary key based on the service model's convention <controller>_id
+      const primaryKey = serviceInput.primaryKey; // Dynamically get primary key
+      if (primaryKey) {
+        queryBuilder.where(`${primaryKey} = :${primaryKey}`, {
+          [primaryKey]: serviceInput.cmd?.query[primaryKey],
+        });
+      }
+    }
+
+    try {
+      // Execute the query
+      return await queryBuilder.execute();
+    } catch (err) {
+      return await this.serviceErr(
+        req,
+        res,
+        err,
+        'BaseService:updateJSONColumnQB',
+      );
     }
   }
 
@@ -1310,7 +1837,7 @@ export class BaseService<
         console.log('BaseService::getData()/ret:', ret);
         return ret;
       } catch (e: any) {
-        this.setAlertMessage(e.toString(), svSess, false);
+        this.setAlertMessage((e as Error).toString(), svSess, false);
         return {};
       }
     } else {
@@ -1323,7 +1850,7 @@ export class BaseService<
     req,
     extData: string | null = null,
     fValsIndex: number | null = null,
-  ) {
+  ): Promise<any> {
     this.logger.logInfo('BaseService::getPlQuery()/01');
     let ret = null;
     const svSess = new SessionService();
@@ -1348,7 +1875,7 @@ export class BaseService<
         console.log('BaseService::getQuery()/ret:', ret);
         return ret;
       } catch (e: any) {
-        this.setAlertMessage(e.toString(), svSess, false);
+        this.setAlertMessage((e as Error).toString(), svSess, false);
         return {};
       }
     } else {
@@ -1495,7 +2022,7 @@ export class BaseService<
       };
     } catch (e: any) {
       this.logger.logDebug('BaseService::redisCreate()/04');
-      this.err.push(e.toString());
+      this.err.push((e as Error).toString());
       const i = {
         messages: this.err,
         code: 'BaseService:redisCreate',
@@ -1523,7 +2050,7 @@ export class BaseService<
       };
     } catch (e: any) {
       this.logger.logDebug('BaseService::wsRedisCreate()/04');
-      this.err.push(e.toString());
+      this.err.push((e as Error).toString());
       const i = {
         messages: this.err,
         code: 'BaseService:wsRedisCreate',
@@ -1546,7 +2073,7 @@ export class BaseService<
       return getRet;
     } catch (e: any) {
       this.logger.logDebug('BaseService::redisRead()/04');
-      this.err.push(e.toString());
+      this.err.push((e as Error).toString());
       const i = {
         messages: this.err,
         code: 'BaseService:redisRead',
@@ -1562,7 +2089,7 @@ export class BaseService<
     const retData: SocketStore[] = [];
     const ret = {
       r: JSON.stringify(retData),
-      error: null,
+      error: '',
     };
     // await this.wsRedisInit();
     try {
@@ -1573,9 +2100,9 @@ export class BaseService<
       }
       this.logger.logDebug('BaseService::redisRead()/ret:', { result: ret });
       return ret;
-    } catch (e: any) {
+    } catch (e) {
       this.logger.logDebug('BaseService::redisRead()/04');
-      this.err.push(e.toString());
+      this.err.push((e as Error).toString());
       const i = {
         messages: this.err,
         code: 'BaseService:redisRead',
@@ -1583,7 +2110,7 @@ export class BaseService<
       };
       await this.wsServiceErr(this.err, 'BaseService:redisRead');
       // return this.cdResp;
-      ret.error = e.toString();
+      ret.error = (e as Error).toString();
       return ret;
     }
   }
@@ -1608,7 +2135,7 @@ export class BaseService<
 
   async wsServiceErr(e, eCode, cdToken = null) {
     this.logger.logDebug(
-      `Error as BaseService::wsServiceErr, e: ${e.toString()} `,
+      `Error as BaseService::wsServiceErr, e: ${(e as Error).toString()} `,
     );
     const svSess = new SessionService();
     if (cdToken) {
@@ -1617,11 +2144,11 @@ export class BaseService<
 
     svSess.sessResp.ttl = svSess.getTtl();
     this.setAppState(true, this.i, svSess.sessResp);
-    this.err.push(e.toString());
+    this.err.push((e as Error).toString());
     const i = {
       messages: await this.err,
       code: eCode,
-      app_msg: `Error at ${eCode}: ${e.toString()}`,
+      app_msg: `Error at ${eCode}: ${(e as Error).toString()}`,
     };
     await this.setAppState(false, i, svSess.sessResp);
     this.cdResp.data = [];
@@ -1639,7 +2166,7 @@ export class BaseService<
   //     // console.log(JSON.stringify(data, null, 2));
   //     return data;
   //   } catch (e: any) {
-  //     this.err.push(e.toString());
+  //     this.err.push((e as Error).toString());
   //     const i = {
   //       messages: this.err,
   //       code: 'BaseService:update',

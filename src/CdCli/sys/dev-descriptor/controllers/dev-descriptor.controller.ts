@@ -23,11 +23,13 @@ import ts from 'typescript';
 import { HttpService } from '../../base/http.service';
 import CdLog from '../../cd-comm/controllers/cd-logger.controller';
 
-import { CdObjService } from '../../moduleman/services/dev-descriptor.service';
+// import { CdObjService } from '../../moduleman/services/dev-descriptor.service';
 import { SessonController } from '../../user/controllers/session.controller';
 import { DevDescriptorService } from '../services/dev-descriptor.service';
 import { CdObjTypeModel } from '../../moduleman/models/cd-obj-type.model';
 import { CdCliStoreService } from '../../cd-cli/services/cd-cli-store.service';
+import { CdObjService } from '../../moduleman/services/cd-obj.service';
+import { CdObjModel } from '../../moduleman';
 
 // Fix for __dirname in ES modules
 const __filename = fileURLToPath(import.meta.url);
@@ -40,13 +42,13 @@ export class DevDescriptorController {
 
   isDev = false;
   modelsDir = '';
-  savedDescriptors: CdDescriptor[] = [];
+  savedDescriptors: CdObjModel[] = [];
   constructor() {
     this.isDev = process.env.NODE_ENV === 'development';
     this.modelsDir = join(__dirname, '../src/CdCli/sys/dev-descriptor/models');
   }
 
-  async getSrcDescriptors(): Promise<CdFxReturn<CdDescriptor[]>> {
+  async getSrcDescriptors(): Promise<CdFxReturn<CdObjModel[]>> {
     CdLog.debug('DevDescriptorController::getSrcDescriptors()/starting...');
     try {
       this.savedDescriptors = await this.fetchSavedDescriptors();
@@ -225,7 +227,7 @@ export class DevDescriptorController {
   // generateObjectId
   getCdObjIdByName(
     name: string,
-    descriptors: CdDescriptor[],
+    descriptors: CdObjModel[],
   ): number | undefined {
     const found = descriptors.find((desc) => desc.cdObjName === name);
     return found ? found.cdObjId : -1;
@@ -236,7 +238,7 @@ export class DevDescriptorController {
     json?: boolean;
     pretty?: boolean;
   }) {
-    let result: CdFxReturn<CdDescriptor[]>;
+    let result: CdFxReturn<CdObjModel[]>;
 
     CdLog.debug(
       `DevDescriptorController::showSrcDescriptors()/options?.names:${options?.names}`,
@@ -271,7 +273,7 @@ export class DevDescriptorController {
       return;
     }
 
-    const srcDescriptors: CdDescriptor[] = result.data;
+    const srcDescriptors: CdObjModel[] = result.data;
     CdLog.debug(
       `DevDescriptorController::showSrcDescriptors()/srcDescriptors:${srcDescriptors.length}`,
     );
@@ -301,7 +303,7 @@ export class DevDescriptorController {
 
   async getDescriptorsByNames(
     names: string[],
-  ): Promise<CdFxReturn<CdDescriptor[]>> {
+  ): Promise<CdFxReturn<CdObjModel[]>> {
     const result = await this.getAllDescriptors();
 
     if (!result.state) {
@@ -318,7 +320,7 @@ export class DevDescriptorController {
     return { data: filteredDescriptors, state: true };
   }
 
-  async getAllDescriptors(): Promise<CdFxReturn<CdDescriptor[]>> {
+  async getAllDescriptors(): Promise<CdFxReturn<CdObjModel[]>> {
     const result = await this.getSrcDescriptors();
 
     if (!result.state) {
@@ -350,13 +352,13 @@ export class DevDescriptorController {
     };
   }
 
-  async fetchSavedDescriptors(): Promise<CdDescriptor[]> {
+  async fetchSavedDescriptors(): Promise<CdObjModel[]> {
     const q: IQuery = {
       select: ['cdObjId', 'cdObjName'],
       where: { cdObjTypeGuid: '5ab9a944-1014-4664-ad96-8ceb737d1857' },
     };
     const svCdObj = new CdObjService();
-    const res = await svCdObj.getCdObj(q);
+    const res = (await svCdObj.getCdObj(q)) as CdFxReturn<CdObjModel[]>;
     CdLog.debug(`DevDescriptorController::fetchSavedDescriptors()/res:${res}`);
 
     if (!res.state || !res.data) {
@@ -364,14 +366,12 @@ export class DevDescriptorController {
       return [];
     }
 
-    if (res.data && !res.data.app_state.success) {
-      CdLog.error(
-        `There was an error syncing descriptors:${res.data.app_state.info?.app_msg}`,
-      );
+    if (res.data && !res.state) {
+      CdLog.error(`There was an error syncing descriptors:${res.message}`);
       return [];
     }
 
-    const descriptors: CdDescriptor[] = res.data.data.items;
+    const descriptors: CdObjModel[] = res.data;
     return descriptors;
   }
 
@@ -385,7 +385,7 @@ export class DevDescriptorController {
         `DevDescriptorController::syncDescriptors()/starting... names: ${JSON.stringify(names)}`,
       );
 
-      let result: CdFxReturn<CdDescriptor[]>;
+      let result: CdFxReturn<CdObjModel[]>;
 
       // Fetch descriptors based on provided names
       if (names && names.length > 0) {
